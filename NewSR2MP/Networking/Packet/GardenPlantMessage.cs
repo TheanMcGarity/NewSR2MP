@@ -12,7 +12,7 @@ namespace NewSR2MP.Networking.Packet
     public struct GardenPlantMessage : NetworkMessage
     {
         public string id;
-        public Identifiable.Id ident;
+        public string ident;
         public bool replace;
     }
 }

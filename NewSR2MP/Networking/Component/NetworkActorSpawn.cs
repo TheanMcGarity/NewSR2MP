@@ -26,7 +26,7 @@ namespace NewSR2MP.Networking.Component
                     position = transform.position,
                     rotation = transform.eulerAngles,
                     velocity = GetComponent<Rigidbody>().velocity,
-                    player = SRNetworkManager.playerID
+                    player = currentPlayerID
                 };
                 NetworkClient.SRMPSend(packet);
                 Destroyer.DestroyActor(gameObject, "SRMP.CancelActor");

@@ -11,6 +11,7 @@ namespace NewSR2MP
 {
     public static class Globals
     {
+        public const bool SHOW_ERRORS = false; 
         public static int Version;
         
         public static Dictionary<string, IdentifiableType> identifiableTypes = new Dictionary<string, IdentifiableType>();

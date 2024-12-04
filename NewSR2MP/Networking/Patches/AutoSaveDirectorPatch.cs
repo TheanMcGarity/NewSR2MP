@@ -31,8 +31,8 @@ namespace NewSR2MP.Networking.Patches
             }
             catch { }
 
-            SRNetworkManager.savedGame = networkGame;
-            SRNetworkManager.savedGamePath = path;
+            savedGame = networkGame;
+            savedGamePath = path;
         }
     }
     [HarmonyPatch(typeof(AutoSaveDirector), nameof(AutoSaveDirector.LoadNewGame))]
@@ -43,10 +43,10 @@ namespace NewSR2MP.Networking.Patches
             SRNetworkManager.CheckForMPSavePath();
             var path = Path.Combine(GameContext.Instance.AutoSaveDirector.StorageProvider.TryCast<FileStorageProvider>().savePath, "MultiplayerSaves", $"{displayName}.srmp");
             var networkGame = new NetworkV01();
-            networkGame.sharedKeys = SRNetworkManager.initialWorldSettings.shareKeys;
-            networkGame.sharedUpgrades = SRNetworkManager.initialWorldSettings.shareUpgrades;
+            networkGame.sharedKeys = initialWorldSettings.shareKeys;
+            networkGame.sharedUpgrades = initialWorldSettings.shareUpgrades;
             networkGame.sharedMoney
-                = SRNetworkManager.initialWorldSettings.shareMoney;
+                = initialWorldSettings.shareMoney;
             
             GameStream fs = CppFile.Create(path);
             try
@@ -55,8 +55,8 @@ namespace NewSR2MP.Networking.Patches
             } catch { }
             fs.Dispose();
             
-            SRNetworkManager.savedGame = networkGame;
-            SRNetworkManager.savedGamePath = path;
+            savedGame = networkGame;
+            savedGamePath = path;
         }
     }
     [HarmonyPatch(typeof(AutoSaveDirector), nameof(AutoSaveDirector.SaveGame))]

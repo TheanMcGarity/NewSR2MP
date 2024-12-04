@@ -1,33 +1,25 @@
-﻿using Mirror;
-using Il2CppMonomiPark.SlimeRancher.DataModel;
-using Il2CppMonomiPark.SlimeRancher.Regions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
     public struct LoadMessage : NetworkMessage
     {
-        public Il2CppSystem.Collections.Generic.List<InitActorData> initActors;
-        public Il2CppSystem.Collections.Generic.List<InitPlayerData> initPlayers;
-        public Il2CppSystem.Collections.Generic.List<InitPlotData> initPlots;
+        public List<InitActorData> initActors;
+        public List<InitPlayerData> initPlayers;
+        public List<InitPlotData> initPlots;
         public HashSet<InitGordoData> initGordos;
-        //public Il2CppSystem.Collections.Generic.List<InitGadgetData> initGadgets;
+        //public List<InitGadgetData> initGadgets;
 
-        public Il2CppSystem.Collections.Generic.List<string> initPedias;
-        public Il2CppSystem.Collections.Generic.List<string> initMaps;
+        public List<string> initPedias;
+        public List<string> initMaps;
 
-        public Il2CppSystem.Collections.Generic.List<InitAccessData> initAccess;
+        public List<InitAccessData> initAccess;
 
         public LocalPlayerData localPlayerSave;
         public int playerID;
         public int money;
         public int keys;
-        public Il2CppSystem.Collections.Generic.List<string> upgrades;
+        public List<string> upgrades;
         public double time;
 
         public bool sharedMoney;
@@ -92,6 +84,6 @@ namespace NewSR2MP.Networking.Packet
         public Vector3 pos;
         public Vector3 rot;
 
-        public Il2CppSystem.Collections.Generic.List<AmmoData> ammo;
+        public List<AmmoData> ammo;
     }
 }

@@ -19,7 +19,7 @@ namespace NewSR2MP.Networking.Patches
 
             if (NetworkClient.active || NetworkServer.active)
             {
-                if (NetworkServer.activeHost && SRNetworkManager.savedGame.sharedMoney)
+                if (NetworkServer.activeHost && savedGame.sharedMoney)
                 {
                     return;
                 }
@@ -39,7 +39,7 @@ namespace NewSR2MP.Networking.Patches
 
             if (NetworkClient.active || NetworkServer.active)
             {
-                if (NetworkServer.activeHost && SRNetworkManager.savedGame.sharedMoney)
+                if (NetworkServer.activeHost && savedGame.sharedMoney)
                 {
                     return;
                 }
@@ -74,7 +74,7 @@ namespace NewSR2MP.Networking.Patches
 
             if (NetworkClient.active || NetworkServer.active)
             {
-                if (NetworkServer.activeHost && SRNetworkManager.savedGame.sharedKeys)
+                if (NetworkServer.activeHost && savedGame.sharedKeys)
                 {
                     return true;
                 }
@@ -98,7 +98,7 @@ namespace NewSR2MP.Networking.Patches
             if (NetworkClient.active || NetworkServer.active)
             {
 
-                if (NetworkServer.activeHost && SRNetworkManager.savedGame.sharedKeys)
+                if (NetworkServer.activeHost && savedGame.sharedKeys)
                 {
                     return;
                 }

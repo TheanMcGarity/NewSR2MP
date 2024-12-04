@@ -53,7 +53,7 @@ namespace NewSR2MP.Networking.Component
             var packet = new ActorUpdateOwnerMessage()
             {
                 id = GetComponent<IdentifiableActor>().GetActorId().Value,
-                player = SRNetworkManager.playerID
+                player = currentPlayerID
             };
             SRNetworkManager.NetworkSend(packet);
         }

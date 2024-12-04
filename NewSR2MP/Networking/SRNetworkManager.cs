@@ -130,7 +130,7 @@ namespace NewSR2MP.Networking
             var joinMsg = new ClientUserMessage()
             {
                 guid = Main.data.Player,
-                name = Main.data.Name,
+                name = Main.data.Username,
             };
             NetworkClient.SRMPSend(joinMsg);
         }

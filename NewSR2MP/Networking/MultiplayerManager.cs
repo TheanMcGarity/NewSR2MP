@@ -244,7 +244,7 @@ namespace NewSR2MP.Networking
 
             try
             {
-                SRNetworkManager.clientToGuid.Add(nctc.connectionId, savingID);
+                clientToGuid.Add(nctc.connectionId, savingID);
                 // Variables
                 double time = SceneContext.Instance.TimeDirector.CurrTime();
                 Il2CppSystem.Collections.Generic.List<InitActorData> actors = new Il2CppSystem.Collections.Generic.List<InitActorData>();
@@ -258,12 +258,12 @@ namespace NewSR2MP.Networking
                 upgrades = SceneContext.Instance.PlayerState.;
 
 
-                var newPlayer = !SRNetworkManager.savedGame.savedPlayers.playerList.TryGetValue(savingID, out var playerData);
+                var newPlayer = !savedGame.savedPlayers.playerList.TryGetValue(savingID, out var playerData);
                 if (newPlayer)
                 {
                     playerData = new NetPlayerV01();
 
-                    SRNetworkManager.savedGame.savedPlayers.playerList.Add(savingID, playerData);
+                    savedGame.savedPlayers.playerList.Add(savingID, playerData);
                 }
 
 
@@ -309,7 +309,7 @@ namespace NewSR2MP.Networking
                 }
 
                 // Current Players
-                foreach (var player in SRNetworkManager.players)
+                foreach (var player in players)
                 {
                     if (player.Key != 0) // idk how my code works anymore and too lazy to try catch. // Note, quite the opposite: not lazy enough to try catch. :skull:
                     {
@@ -433,11 +433,11 @@ namespace NewSR2MP.Networking
 
                 var keys = SceneContext.Instance.PlayerState.model.keys;
                 var money = SceneContext.Instance.PlayerState.model.currency;
-                if (!SRNetworkManager.savedGame.sharedKeys)
+                if (!savedGame.sharedKeys)
                     keys = playerData.keys;
-                if (!SRNetworkManager.savedGame.sharedMoney)
+                if (!savedGame.sharedMoney)
                     money = playerData.money;
-                if (!SRNetworkManager.savedGame.sharedUpgrades)
+                if (!savedGame.sharedUpgrades)
                     upgrades = playerData.upgrades;
 
 
@@ -456,9 +456,9 @@ namespace NewSR2MP.Networking
                     keys = keys,
                     time = time,
                     localPlayerSave = localPlayerData,
-                    sharedKeys = SRNetworkManager.savedGame.sharedKeys,
-                    sharedMoney = SRNetworkManager.savedGame.sharedMoney,
-                    sharedUpgrades = SRNetworkManager.savedGame.sharedUpgrades,
+                    sharedKeys = savedGame.sharedKeys,
+                    sharedMoney = savedGame.sharedMoney,
+                    sharedUpgrades = savedGame.sharedUpgrades,
                     upgrades = upgrades,
                 };
                 NetworkServer.SRMPSend(saveMessage, nctc);
@@ -480,7 +480,7 @@ namespace NewSR2MP.Networking
                     var player = Instantiate(Instance.onlinePlayerPrefab);
                     player.name = $"Player{nctc.connectionId}";
                     var netPlayer = player.GetComponent<NetworkPlayer>();
-                    SRNetworkManager.players.Add(nctc.connectionId, netPlayer);
+                    players.Add(nctc.connectionId, netPlayer);
                     netPlayer.id = nctc.connectionId;
                     player.SetActive(true);
                     var packet = new PlayerJoinMessage()
@@ -498,7 +498,7 @@ namespace NewSR2MP.Networking
             }
             catch (Exception ex)
             {
-                SRNetworkManager.clientToGuid.Remove(nctc.connectionId);
+                clientToGuid.Remove(nctc.connectionId);
                 OnJoinAttempt?.Invoke(nctc,ex.ToString());
                 SRMP.Log(ex.ToString());
             }

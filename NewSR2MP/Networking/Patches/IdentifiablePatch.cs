@@ -52,7 +52,7 @@ namespace NewSR2MP.Networking.Patches
                         actor.AddComponent<NetworkActorOwnerToggle>();
                     }
                     var ts = actor.GetComponent<TransformSmoother>();
-                    SRNetworkManager.actors.Add(__instance.GetActorId().Value, actor.GetComponent<NetworkActor>());
+                    actors.Add(__instance.GetActorId().Value, actor.GetComponent<NetworkActor>());
 
 
                     ts.interpolPeriod = 0.15f;
@@ -90,7 +90,7 @@ namespace NewSR2MP.Networking.Patches
                     };
                     SRNetworkManager.NetworkSend(packet);
 
-                    SRNetworkManager.actors.Remove(id);
+                    actors.Remove(id);
 
                 }
             }

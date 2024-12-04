@@ -11,14 +11,14 @@ namespace NewSR2MP.Networking.Packet
 {
     public struct AmmoEditSlotMessage : NetworkMessage
     {
-        public Identifiable.Id ident;
+        public string ident;
         public int slot;
         public int count;
         public string id;
     }
     public struct AmmoAddMessage : NetworkMessage
     {
-        public Identifiable.Id ident;
+        public string ident;
         public string id;
     }
     public struct AmmoRemoveMessage : NetworkMessage

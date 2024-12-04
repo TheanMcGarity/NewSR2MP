@@ -24,7 +24,7 @@ namespace NewSR2MP.Networking.Component
 
                 thisPlayer = GetComponent<NetworkPlayer>();
 
-                SRNetworkManager.playerRegionCheckValues.Add(thisPlayer.id, (Vector3.one * 9999));
+                playerRegionCheckValues.Add(thisPlayer.id, (Vector3.one * 9999));
             }
         }
         public NetworkPlayer thisPlayer;

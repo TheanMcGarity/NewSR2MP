@@ -1,21 +1,14 @@
-﻿using Mirror;
+﻿using Main = NewSR2MP.Main;
+
+
+
 using Il2CppMonomiPark.SlimeRancher.DataModel;
-using System.Reflection;
-using Il2CppAssets.Script.Util.Extensions;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.World;
-using Il2CppSystem;
-using Il2CppSystem.Collections;
-using Il2CppSystem.Linq;
-using MelonLoader;
 using Newtonsoft.Json;
-using Il2CppTMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using Convert = System.Convert;
 using Exception = System.Exception;
 using Guid = System.Guid;
-using Object = Il2CppSystem.Object;
 
 
 namespace NewSR2MP
@@ -61,12 +54,11 @@ namespace NewSR2MP
 
             var guid = Guid.NewGuid();
 
-            dat.Name = $"User{i}";
+            dat.Username = $"User{i}";
             dat.Player = guid;
-            dat.compareDLC = true;
-            dat.ignoredMods = new Il2CppSystem.Collections.Generic.List<string>()
+            dat.ignoredMods = new List<string>()
             {
-                "newsr2mp"
+                "NewSR2MP"
             };
             data = dat;
 
@@ -200,7 +192,7 @@ namespace NewSR2MP
 
                             obj2.transform.position = newActor.pos;
 
-                            SRNetworkManager.actors.Add(newActor.id, obj2.GetComponent<NetworkActor>());
+                            actors.Add(newActor.id, obj2.GetComponent<NetworkActor>());
                         }
                     }
                     catch (Exception e)
@@ -326,65 +318,18 @@ namespace NewSR2MP
             }
         }
 
-        // Called right before PostLoad
-        // Used to register stuff that needs lookupdirector access
-        public override void Load()
-        {
-            modifiedGameUI = AssetBundle.LoadFromStream(Assembly.GetExecutingAssembly().GetManifestResourceStream("SRMP.modified_sr_ui"));
-
-            SRCallbacks.OnMainMenuLoaded += OverrideSaveMenu;
-
-            OverrideSaveMenu(Resources.FindObjectsOfTypeAll<MainMenuUI>().FirstOrDefault(x => x.gameObject.scene.isLoaded));
-
-
-
-            // SRCallbacks.OnSaveGameLoaded += OnClientSaveLoaded;
-
-            if (m_GameObject != null) return;
-
-            SRMP.Log("Loading SRMP SRML Version");
-
-
-            m_GameObject = new GameObject("SRMP");
-            m_GameObject.AddComponent<MultiplayerManager>();
-            
-            //mark all mod objects and do not destroy
-            GameObject.DontDestroyOnLoad(m_GameObject);
-
-            //get current mod version
-            Globals.Version = Assembly.GetExecutingAssembly().GetName().Version.Revision;
-
-            //mark the mod as a background task
-            Application.runInBackground = true;
-
-            //initialize connect to the harmony patcher
-            HarmonyPatcher.GetInstance().PatchAll(Assembly.GetExecutingAssembly());
-
-
-            SRML.Console.Console.RegisterCommand(new TeleportCommand());
-            SRML.Console.Console.RegisterCommand(new PlayerCameraCommand());
-        }
 
         /// <summary>
         /// Multplayer User Data
         /// </summary>
         public class UserData
         {
-            public string Name;
+            public string Username;
             /// <summary>
             /// Used for player saving.
             /// </summary>
             public Guid Player;
-            public bool compareDLC;
-            public Il2CppSystem.Collections.Generic.List<string> ignoredMods;
-        }
-
-        // Called after GameContext.Start
-        // stuff like gamecontext.lookupdirector are available in this step, generally for when you want to access
-        // ingame prefabs and the such
-        public override void PostLoad()
-        {
-
+            public List<string> ignoredMods;
         }
     }
 }
