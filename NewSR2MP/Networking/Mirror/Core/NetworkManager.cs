@@ -361,7 +361,6 @@ namespace Mirror
             // otherwise spawn directly
             else
             {
-                NetworkServer.SpawnObjects();
             }
         }
 
@@ -547,8 +546,6 @@ namespace Mirror
             // is called after the server is actually properly started.
             OnStartHost();
 
-            // server scene was loaded. now spawn all the objects
-            NetworkServer.SpawnObjects();
 
             // connect client and call OnStartClient AFTER server scene was
             // loaded and all objects were spawned.
@@ -946,8 +943,6 @@ namespace Mirror
             {
                 if (NetworkServer.active)
                 {
-                    // TODO only respawn the server objects from that scene later!
-                    NetworkServer.SpawnObjects();
                     // Debug.Log($"Respawned Server objects after additive scene load: {scene.name}");
                 }
                 if (NetworkClient.active)
@@ -1043,8 +1038,6 @@ namespace Mirror
             // otherwise we just changed a scene in host mode
             else
             {
-                // spawn server objects
-                NetworkServer.SpawnObjects();
 
                 // call OnServerSceneChanged
                 OnServerSceneChanged(networkSceneName);
@@ -1061,8 +1054,7 @@ namespace Mirror
             // debug message is very important. if we ever break anything then
             // it's very obvious to notice.
             //Debug.Log("Finished loading scene in server-only mode.");
-
-            NetworkServer.SpawnObjects();
+            
             OnServerSceneChanged(networkSceneName);
         }
 
@@ -1293,11 +1285,6 @@ namespace Mirror
         // Called by NetworkServer.OnTransportDisconnect!
         public virtual void OnServerDisconnect(NetworkConnectionToClient conn)
         {
-            // by default, this function destroys the connection's player.
-            // can be overwritten for cases like delayed logouts in MMOs to
-            // avoid players escaping from PvP situations by logging out.
-            NetworkServer.DestroyPlayerForConnection(conn);
-            //Debug.Log("OnServerDisconnect: Client disconnected.");
         }
 
         /// <summary>Called on the server when a client is ready (= loaded the scene)</summary>

@@ -8,6 +8,7 @@ using Il2CppInterop.Runtime.InteropTypes.Arrays;
 
 namespace NewSR2MP.Networking.Component
 {
+    [RegisterTypeInIl2Cpp(false)]
     public class NetworkAmmo : Ammo
     {
         public int GetSlotIDX(IdentifiableType id)
@@ -38,22 +39,22 @@ namespace NewSR2MP.Networking.Component
             }
             return -1;
         }
-        public static Slot[] SRMPAmmoDataToSlots(List<AmmoDataV01> ammo)
+        public static Slot[] SRMPAmmoDataToSlots(Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammo)
         {
             Slot[] array = new Slot[ammo.Count];
             for (int i = 0; i < ammo.Count; i++)
             {
-                bool isSlotEmpty = ammo[i].ID == -1;
+                bool isSlotEmpty = ammo._items[i].ID == -1;
                 if (isSlotEmpty)
                 {
                     array[i] = null;
                     continue;
                 }
 
-                array[i]._count = ammo[i].Count;
-                array[i]._id = GameContext.Instance.AutoSaveDirector.SavedGame.persistenceIdToIdentifiableType.GetIdentifiableType(ammo[i].ID);
+                array[i]._count = ammo._items[i].Count;
+                array[i]._id = GameContext.Instance.AutoSaveDirector.SavedGame.persistenceIdToIdentifiableType.GetIdentifiableType(ammo._items[i].ID);
                 array[i].Emotions = new SlimeEmotionData();
-                foreach (Il2CppSystem.Collections.Generic.KeyValuePair<SlimeEmotions.Emotion, float> emotionDatum in ammo[i].EmotionData.EmotionData)
+                foreach (Il2CppSystem.Collections.Generic.KeyValuePair<SlimeEmotions.Emotion, float> emotionDatum in ammo._items[i].EmotionData.EmotionData)
                 {
                     array[i].Emotions[emotionDatum.Key] = emotionDatum.Value;
                 }

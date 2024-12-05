@@ -30,24 +30,13 @@ namespace NewSR2MP.Networking.Component
 
         void OnDestroy()
         {
-            if (this.IsHandling()) return;
+            if (GetComponent<HandledDummy>()) return;
 
             var msg = new PlayerLeaveMessage()
             {
                 id = id,
             };
             SRNetworkManager.NetworkSend(msg);
-        }
-
-        /// <summary>
-        /// Use this to preview the player camera.
-        /// </summary>
-        public void StartCamera()
-        {
-            MultiplayerManager.Instance.currentPreviewRenderer = this;
-            cam.enabled = true;
-            cam.targetTexture = MultiplayerManager.Instance.playerCameraPreviewImage;
-            MultiplayerManager.Instance.AddPreviewToUI();
         }
 
         /// <summary>

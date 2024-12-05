@@ -11,6 +11,6 @@ namespace NewSR2MP.Networking.Packet
 {
     public struct PediaMessage : NetworkMessage
     {
-        public PediaDirector.Id id;
+        public string id;
     }
 }

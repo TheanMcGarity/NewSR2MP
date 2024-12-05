@@ -45,7 +45,6 @@ namespace NewSR2MP.Networking
             Writer<AmmoRemoveMessage>.write = new Action<NetworkWriter, AmmoRemoveMessage>((w, v) => NetworkWriterExtensions.Write(w, v));
             Writer<MapUnlockMessage>.write = new Action<NetworkWriter, MapUnlockMessage>((w, v) => NetworkWriterExtensions.Write(w, v));
             Writer<DoorOpenMessage>.write = new Action<NetworkWriter, DoorOpenMessage>((w, v) => NetworkWriterExtensions.Write(w, v));
-            Writer<SetKeysMessage>.write = new Action<NetworkWriter, SetKeysMessage>((w, v) => NetworkWriterExtensions.Write(w, v));
             Writer<ResourceStateMessage>.write = new Action<NetworkWriter, ResourceStateMessage>((w, v) => NetworkWriterExtensions.Write(w, v));
             Writer<GardenPlantMessage>.write = new Action<NetworkWriter, GardenPlantMessage>((w, v) => NetworkWriterExtensions.Write(w, v));
             Writer<ActorChangeHeldOwnerMessage>.write = new Action<NetworkWriter, ActorChangeHeldOwnerMessage>((w, v) => NetworkWriterExtensions.Write(w, v));

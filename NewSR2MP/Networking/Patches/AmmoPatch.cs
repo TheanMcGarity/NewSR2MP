@@ -1,22 +1,11 @@
 ﻿using HarmonyLib;
-using Mirror;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
-using System;
-using System.Collections.Generic;
-using System.EnterpriseServices;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine.UIElements;
-
 
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(Ammo), nameof(Ammo.MaybeAddToSpecificSlot), typeof(Identifiable.Id), typeof(Identifiable), typeof(int), typeof(int), typeof(bool))]
+    [HarmonyPatch(typeof(Ammo), nameof(Ammo.MaybeAddToSpecificSlot), typeof(IdentifiableType), typeof(Identifiable), typeof(int), typeof(int), typeof(bool))]
     public class AmmoMaybeAddToSpecificSlot
     {
-        public static void Postfix(Ammo __instance, ref bool __result, Identifiable.Id id, Identifiable identifiable, int slotIdx, int count, bool overflow)
+        public static void Postfix(Ammo __instance, ref bool __result,IdentifiableType id, Identifiable identifiable, int slotIdx, int count, bool overflow)
         {
             if (!(NetworkClient.active || NetworkServer.active))
                 return;
@@ -27,7 +16,7 @@ namespace NewSR2MP.Networking.Patches
                 {
                     var packet = new AmmoEditSlotMessage()
                     {
-                        ident = id,
+                        ident = id.name,
                         slot = slotIdx,
                         count = count,
                         id = netAmmo.ammoId
@@ -38,11 +27,11 @@ namespace NewSR2MP.Networking.Patches
         }
     }
 
-    [HarmonyPatch(typeof(Ammo), nameof(Ammo.MaybeAddToSlot), typeof(Identifiable.Id), typeof(Identifiable))]
+    [HarmonyPatch(typeof(Ammo), nameof(Ammo.MaybeAddToSlot), typeof(IdentifiableType), typeof(Identifiable), typeof(SlimeAppearance.AppearanceSaveSet))]
     public class AmmoMaybeAddToSlot
     {
 
-        public static bool Prefix(Ammo __instance, ref bool __result, Identifiable.Id id, Identifiable identifiable)
+        public static bool Prefix(Ammo __instance, ref bool __result, IdentifiableType id, Identifiable identifiable, SlimeAppearance.AppearanceSaveSet appearance)
         {
             if (!(NetworkClient.active || NetworkServer.active))
                 return true;
@@ -67,7 +56,7 @@ namespace NewSR2MP.Networking.Patches
                 return;
             if (__instance is NetworkAmmo netAmmo)
             {
-                if (__instance.Slots[index].count <= 0) __instance.Slots[index] = null;
+                if (__instance.Slots[index]._count <= 0) __instance.Slots[index]._id = null;
 
                 var packet = new AmmoRemoveMessage()
                 {
@@ -91,11 +80,11 @@ namespace NewSR2MP.Networking.Patches
             if (__instance is NetworkAmmo netAmmo)
             {
                 
-                if (__instance.Slots[netAmmo.selectedAmmoIdx] != null && __instance.Slots[netAmmo.selectedAmmoIdx].count <= 0) __instance.Slots[netAmmo.selectedAmmoIdx] = null;
+                if (__instance.Slots[netAmmo._selectedAmmoIdx] != null && __instance.Slots[netAmmo._selectedAmmoIdx]._count <= 0) __instance.Slots[netAmmo._selectedAmmoIdx] = null;
 
                 var packet = new AmmoRemoveMessage()
                 {
-                    index = netAmmo.selectedAmmoIdx,
+                    index = netAmmo._selectedAmmoIdx,
                     count = amount,
                     id = netAmmo.ammoId
                 };

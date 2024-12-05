@@ -20,17 +20,13 @@ namespace NewSR2MP.Networking.Patches
         {
             if (NetworkClient.active) return;
             SRNetworkManager.CheckForMPSavePath();
-            var path = Path.Combine(((FileStorageProvider)GameContext.Instance.AutoSaveDirector.StorageProvider).SavePath(), "MultiplayerSaves", $"{gameName}.srmp");
+            var path = Path.Combine(GameContext.Instance.AutoSaveDirector.StorageProvider.Cast<FileStorageProvider>().savePath, "MultiplayerSaves", $"{gameName}.srmp");
             var networkGame = new NetworkV01();
-            try
-            {
-                using (FileStream fs = File.Open(path, FileMode.OpenOrCreate))
-                {
-                    networkGame.Load(fs);
-                }
-            }
-            catch { }
 
+            GameStream fs = CppFile.Open(path, Il2CppSystem.IO.FileMode.OpenOrCreate);
+            try { networkGame.Load(fs); } catch { }
+            fs.Dispose();
+            
             savedGame = networkGame;
             savedGamePath = path;
         }
@@ -38,15 +34,11 @@ namespace NewSR2MP.Networking.Patches
     [HarmonyPatch(typeof(AutoSaveDirector), nameof(AutoSaveDirector.LoadNewGame))]
     public class AutoSaveDirectorLoadNewGame
     {
-        public static void Postfix(AutoSaveDirector __instance, string displayName, Identifiable.Id gameIconId, GameMode gameMode, Action onError)
+        public static void Postfix(AutoSaveDirector __instance, AutoSaveDirector.LoadNewGameMetadata metadata, Il2CppSystem.Action onError)
         {
             SRNetworkManager.CheckForMPSavePath();
-            var path = Path.Combine(GameContext.Instance.AutoSaveDirector.StorageProvider.TryCast<FileStorageProvider>().savePath, "MultiplayerSaves", $"{displayName}.srmp");
+            var path = Path.Combine(GameContext.Instance.AutoSaveDirector.StorageProvider.TryCast<FileStorageProvider>().savePath, "MultiplayerSaves", $"{__instance._currentGameName}.srmp");
             var networkGame = new NetworkV01();
-            networkGame.sharedKeys = initialWorldSettings.shareKeys;
-            networkGame.sharedUpgrades = initialWorldSettings.shareUpgrades;
-            networkGame.sharedMoney
-                = initialWorldSettings.shareMoney;
             
             GameStream fs = CppFile.Create(path);
             try

@@ -19,12 +19,12 @@ namespace NewSR2MP.Networking.Patches
         {
             try
             {
-                if ((NetworkServer.active || NetworkClient.active) && !__instance.IsHandling())
+                if ((NetworkServer.active || NetworkClient.active) && !__instance.GetComponent<HandledDummy>())
                 {
                     var packet = new GordoEatMessage()
                     {
-                        id = __instance.id,
-                        count = __instance.gordoModel.gordoEatenCount
+                        id = __instance._id,
+                        count = __instance.GordoModel.gordoEatCount
                     };
 
                     SRNetworkManager.NetworkSend(packet);
@@ -41,11 +41,11 @@ namespace NewSR2MP.Networking.Patches
         {
             try
             {
-                if ((NetworkServer.active || NetworkClient.active) && !__instance.IsHandling())
+                if ((NetworkServer.active || NetworkClient.active) && !__instance.GetComponent<HandledDummy>())
                 {
                     var packet = new GordoBurstMessage()
                     {
-                        id = __instance.id
+                        id = __instance._id
                     };
 
                     SRNetworkManager.NetworkSend(packet);

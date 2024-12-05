@@ -19,7 +19,7 @@ namespace NewSR2MP.Networking.Patches
         {
             try
             {
-                if ((NetworkServer.active || NetworkClient.active) && !__instance.IsHandling())
+                if ((NetworkServer.active || NetworkClient.active) && !__instance.GetComponent<HandledDummy>())
                 {
                     var packet = new LandPlotMessage()
                     {
@@ -42,7 +42,7 @@ namespace NewSR2MP.Networking.Patches
         {
             try
             {
-                if ((NetworkServer.active || NetworkClient.active) && !__instance.IsHandling())
+                if ((NetworkServer.active || NetworkClient.active) && !__instance.GetComponent<HandledDummy>())
                 {
                     var packet = new GardenPlantMessage()
                     {

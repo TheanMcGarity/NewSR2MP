@@ -31,6 +31,7 @@ namespace NewSR2MP.Networking
         public bool shareKeys;
         public bool shareUpgrades;
     }
+    [RegisterTypeInIl2Cpp(false)]
     public class SRNetworkManager : NetworkManager
     {
         public static NetGameInitialSettings initialWorldSettings = new NetGameInitialSettings();
@@ -39,15 +40,13 @@ namespace NewSR2MP.Networking
         {
             if (!Directory.Exists(Path.Combine(GameContext.Instance.AutoSaveDirector.StorageProvider.Cast<FileStorageProvider>().savePath, "MultiplayerSaves")))
             {
-                Directory.CreateDirectory(Path.Combine(Path.Combine(GameContext.Instance.AutoSaveDirector.StorageProvider.Cast<FileStorageProvider>().savePath, "MultiplayerSaves"));
+                Directory.CreateDirectory(Path.Combine(Path.Combine(GameContext.Instance.AutoSaveDirector.StorageProvider.Cast<FileStorageProvider>().savePath, "MultiplayerSaves")));
             }
         }
 
 
-        public static Dictionary<long, NetworkActor> actors = new Dictionary<long, NetworkActor>();
         public static Dictionary<long, long> actorIDLocals = new Dictionary<long, long>();
 
-        public static Dictionary<int, NetworkRegion> regions = new Dictionary<int, NetworkRegion>();
 
         public override void OnStartClient()
         {
@@ -86,7 +85,6 @@ namespace NewSR2MP.Networking
         public override void OnStopHost()
         {
             NetworkAmmo.all.Clear();
-            MultiplayerManager.Instance.isHosting = false;
 
         }
         public override void OnStartServer()
@@ -197,23 +195,20 @@ namespace NewSR2MP.Networking
             foreach (var player in players)
             {
                 Guid playerID = clientToGuid[player.Key];
-                NetworkAmmo normalAmmo = (NetworkAmmo)ammos[$"player_{playerID}_normal"];
-                NetworkAmmo nimbleAmmo = (NetworkAmmo)ammos[$"player_{playerID}_nimble"];
-                Dictionary<AmmoMode, Il2CppSystem.Collections.Generic.List<AmmoDataV02>> ammoData = new Dictionary<AmmoMode, Il2CppSystem.Collections.Generic.List<AmmoDataV02>>();
-                ammoData.Add(AmmoMode.DEFAULT, GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(normalAmmo.Slots));
-                ammoData.Add(AmmoMode.NIMBLE_VALLEY, GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(nimbleAmmo.Slots));
+                NetworkAmmo ammo = (NetworkAmmo)ammos[$"player_{playerID}"];
+                Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData =GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots, GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
                 savedGame.savedPlayers.playerList[playerID].ammo = ammoData;
-                var playerPos = new Vector3V02();
-                playerPos.value = player.Value.transform.position;
-                var playerRot = new Vector3V02();
-                playerRot.value = player.Value.transform.eulerAngles;
+                var playerPos = new Vector3V01();
+                playerPos.Value = player.Value.transform.position;
+                var playerRot = new Vector3V01();
+                playerRot.Value = player.Value.transform.eulerAngles;
                 savedGame.savedPlayers.playerList[playerID].position = playerPos;
                 savedGame.savedPlayers.playerList[playerID].rotation = playerRot;
             }
-            using (FileStream fs = File.Open(savedGamePath, FileMode.Create))
-            {
-                savedGame.Write(fs);
-            }
+
+            GameStream fs = CppFile.Open(savedGamePath, Il2CppSystem.IO.FileMode.Create);
+            savedGame.Write(fs);
+            fs.Dispose();
         }
     }
 

@@ -1,4 +1,3 @@
-using Mirror.RemoteCalls;
 using UnityEngine;
 
 namespace Mirror
@@ -298,7 +297,6 @@ namespace Mirror
             // Commands can be for player objects, OR other objects with client-authority
             // -> so if this connection's controller has a different netId then
             //    only allow the command if clientAuthorityOwner
-            bool requiresAuthority = RemoteProcedureCalls.CommandRequiresAuthority(msg.functionHash);
             
 
             // Debug.Log($"OnCommandMessage for netId:{msg.netId} conn:{conn}");

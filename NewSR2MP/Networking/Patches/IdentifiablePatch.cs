@@ -14,35 +14,31 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(Identifiable),nameof(Identifiable.SetModel))]
+    [HarmonyPatch(typeof(IdentifiableActor),nameof(IdentifiableActor.SetModel))]
     public class IdentifiableSetModel
     {
 
-        public static void Postfix(Identifiable __instance)
+        public static void Postfix(IdentifiableActor __instance)
         {
 
-            if (NetworkClient.active && !NetworkServer.activeHost && __instance.id != Identifiable.Id.PLAYER && __instance.GetComponent<NetworkActor>() == null)
+            if (NetworkClient.active && !NetworkServer.activeHost && !__instance.identType.IsPlayer && __instance.GetComponent<NetworkActor>() == null)
             {
-                
-                if (Globals.isLoaded)
+                if (__instance.GetComponent<NetworkActor>() == null)
                 {
-                    if (__instance.GetComponent<NetworkActor>() == null)
+                    try
                     {
-                        try
-                        {
 
-                            __instance.transform.GetChild(0).gameObject.SetActive(false);
-                            __instance.GetComponent<Collider>().isTrigger = true;
-                            __instance.gameObject.AddComponent<NetworkActorSpawn>();
-                            return;
-                        }
-                        catch { }
+                        __instance.transform.GetChild(0).gameObject.SetActive(false);
+                        __instance.GetComponent<Collider>().isTrigger = true;
+                        __instance.gameObject.AddComponent<NetworkActorSpawn>();
+                        return;
                     }
+                    catch { }
                 }
             }
             else if (NetworkServer.activeHost)
             {
-                if (__instance.id != Identifiable.Id.PLAYER)
+                if (!__instance.identType.IsPlayer)
                 {
                     var actor = __instance.gameObject;
                     if (actor.GetComponent<NetworkActor>() == null)
@@ -57,11 +53,11 @@ namespace NewSR2MP.Networking.Patches
 
                     ts.interpolPeriod = 0.15f;
                     ts.enabled = false;
-                    var id = __instance.GetActorId();
+                    var id = __instance.GetActorId().Value;
                     var packet = new ActorSpawnMessage()
                     {
                         id = id,
-                        ident = __instance.id,
+                        ident = __instance.identType.name,
                         position = __instance.transform.position,
                         rotation = __instance.transform.eulerAngles
 
@@ -81,9 +77,9 @@ namespace NewSR2MP.Networking.Patches
         {
             if (NetworkServer.active || NetworkClient.active)
             {
-                if (__instance.id != Identifiable.Id.PLAYER)
+                if (!__instance.identType.IsPlayer)
                 {
-                    var id = __instance.GetActorId();
+                    var id = __instance.GetActorId().Value;
                     var packet = new ActorDestroyGlobalMessage()
                     {
                         id = id

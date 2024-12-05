@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Component
 {
+    [RegisterTypeInIl2Cpp(false)]
     public class NetworkActorSpawn : MonoBehaviour
     {
         private byte frame = 0;
@@ -19,10 +20,10 @@ namespace NewSR2MP.Networking.Component
 
             if (frame > 1) // On frame 2
             {
-                Identifiable ident = GetComponent<Identifiable>();
+                Identifiable ident = GetComponent<IdentifiableActor>();
                 var packet = new ActorSpawnClientMessage()
                 {
-                    ident = ident.id,
+                    ident = ident.identType.name,
                     position = transform.position,
                     rotation = transform.eulerAngles,
                     velocity = GetComponent<Rigidbody>().velocity,

@@ -17,14 +17,10 @@ namespace NewSR2MP.Networking.Packet
 
         public LocalPlayerData localPlayerSave;
         public int playerID;
+        
         public int money;
-        public int keys;
-        public List<string> upgrades;
+        public Il2CppSystem.Collections.Generic.Dictionary<int, int> upgrades; // Needs to be Il2Cpp so it can be moved right into the player upgrades model.
         public double time;
-
-        public bool sharedMoney;
-        public bool sharedKeys;
-        public bool sharedUpgrades;
     }
 
     public struct InitActorData
@@ -55,7 +51,7 @@ namespace NewSR2MP.Networking.Packet
     {
         public string id;
         public LandPlot.Id type;
-        public HashSet<LandPlot.Upgrade> upgrades;
+        public Il2CppSystem.Collections.Generic.HashSet<LandPlot.Upgrade> upgrades;
         public string cropIdent;
 
         public InitSiloData siloData;
@@ -84,6 +80,8 @@ namespace NewSR2MP.Networking.Packet
         public Vector3 pos;
         public Vector3 rot;
 
+        public int sceneGroup;
+        
         public List<AmmoData> ammo;
     }
 }

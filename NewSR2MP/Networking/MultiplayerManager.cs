@@ -1,29 +1,11 @@
-﻿using kcp2k;
-using Mirror;
-using Mirror.Discovery;
-using Il2CppMonomiPark.SlimeRancher.Persist;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
-using NewSR2MP.Networking.Patches;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
+﻿using Mirror.Discovery;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
-using Il2CppTMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using NewSR2MP.Networking.UI;
-using UnityEngine.UI;
-using Mirror.FizzySteam;
-using NewSR2MP.Networking.Steam;
-using NewSR2MP.Networking.SaveModels;
 
 using EpicTransport;
+using Il2CppMonomiPark.SlimeRancher.Event;
+using Il2CppMonomiPark.World;
 
 namespace NewSR2MP.Networking
 {
@@ -79,16 +61,14 @@ namespace NewSR2MP.Networking
 
         /// <summary>
         /// This event occurrs after a player attempts to join, when the code for sending a save errors or finishes.
-        /// The parameters for this event are a client and a error if occurred.
+        /// The parameters for this event are a client and an error if occurred.
         /// </summary>
         public static event OnPlayerAttemptedJoin OnJoinAttempt;
-
-        internal static AssetBundle uiBundle = AssetBundle.LoadFromStream(Assembly.GetExecutingAssembly().GetManifestResourceStream("SRMP.ui"));
 
 
         private NetworkManager networkManager;
 
-        public EpicTransport. networkInGameHUD;
+        public EOSLobbyUI prototypeLobbyUI;
 
         private NetworkDiscovery discoveryManager;
 
@@ -116,20 +96,11 @@ namespace NewSR2MP.Networking
 
         public static MultiplayerManager Instance;
 
-        public static SteamLobby steamLobby;
-
         public void Awake()
         {
             Instance = this;
+            gameObject.AddComponent<EOSSDKComponent>();
         }
-
-
-        public const bool isEpicOnlineTest =
-#if EOS_PLATFORM_WINDOWS_64 && EOS_UNITY
-            true;
-#else
-            false;
-#endif
 
 
         private void Start()
@@ -150,17 +121,7 @@ namespace NewSR2MP.Networking
             networkManager.transport = transport;
             Transport.active = transport;
 
-            networkMainMenuHUD = gameObject.AddComponent<NetworkingMainMenuUI>();
-            
-            networkConnectedHUD = gameObject.AddComponent<NetworkingClientUI>();
-
-            networkInGameHUD = gameObject.AddComponent<NetworkingIngameUI>();
-
-
-            discoveryManager = gameObject.AddComponent<NetworkDiscovery>();
-            networkDiscoverHUD = gameObject.AddComponent<CustomDiscoveryUI>();
-
-            networkMainMenuHUD.offsetY = Screen.height - 75;
+            prototypeLobbyUI = gameObject.AddComponent<EOSLobbyUI>();
             
             NetworkManager.dontDestroyOnLoad = true;
             discoveryManager.enableActiveDiscovery = true;
@@ -168,13 +129,6 @@ namespace NewSR2MP.Networking
 
 
             NetworkClient.OnDisconnectedEvent += ClientLeave;
-
-
-            foreach (var text in ui.transform.GetComponentsInChildren<TextMeshProUGUI>())
-            {
-                text.alignment = TextAlignmentOptions.Center;
-            }
-            EOSInit();
         }
 
         void GeneratePlayerBean()
@@ -188,7 +142,7 @@ namespace NewSR2MP.Networking
             onlinePlayerPrefab.AddComponent<NetworkPlayer>();
             onlinePlayerPrefab.AddComponent<TransformSmoother>();
             onlinePlayerPrefab.GetComponent<NetworkPlayer>().enabled = false;
-            onlinePlayerPrefab.DontDestroyOnLoad();
+            DontDestroyOnLoad(onlinePlayerPrefab);
             onlinePlayerPrefab.SetActive(false);
             playerModel.transform.parent = onlinePlayerPrefab.transform;
 
@@ -229,8 +183,10 @@ namespace NewSR2MP.Networking
 
             foreach (var pedia in pedias)
             {
-                
+                ret.Add(pedia.name);
             }
+
+            return ret;
         }
         
         // Hefty code
@@ -247,16 +203,14 @@ namespace NewSR2MP.Networking
                 clientToGuid.Add(nctc.connectionId, savingID);
                 // Variables
                 double time = SceneContext.Instance.TimeDirector.CurrTime();
-                Il2CppSystem.Collections.Generic.List<InitActorData> actors = new Il2CppSystem.Collections.Generic.List<InitActorData>();
+                List<InitActorData> actors = new List<InitActorData>();
                 HashSet<InitGordoData> gordos = new HashSet<InitGordoData>();
-                Il2CppSystem.Collections.Generic.List<InitPlayerData> players = new Il2CppSystem.Collections.Generic.List<InitPlayerData>();
-                Il2CppSystem.Collections.Generic.List<InitPlotData> plots = new Il2CppSystem.Collections.Generic.List<InitPlotData>();
-                HashSet<string> pedias = new HashSet<string>();
-                Il2CppSystem.Collections.Generic.List<string> upgrades = new Il2CppSystem.Collections.Generic.List<string>();
-                
+                List<InitPlayerData> initPlayers = new List<InitPlayerData>();
+                List<InitPlotData> plots = new List<InitPlotData>();
+                List<string> pedias = new List<string>();
 
-                upgrades = SceneContext.Instance.PlayerState.;
 
+                var upgrades = SceneContext.Instance.PlayerState._model.upgradeModel.upgradeLevels;
 
                 var newPlayer = !savedGame.savedPlayers.playerList.TryGetValue(savingID, out var playerData);
                 if (newPlayer)
@@ -280,7 +234,7 @@ namespace NewSR2MP.Networking
                             var data = new InitActorData()
                             {
                                 id = a.GetActorId().Value,
-                                ident = a.id,
+                                ident = a.identType.name,
                                 pos = a.transform.position
                             };
                             actors.Add(data);
@@ -294,16 +248,16 @@ namespace NewSR2MP.Networking
                 {
                     try
                     {
-
-                        if (g.gameObject.scene.name == "worldGenerated")
+                        if (g.gameObject.hideFlags != HideFlags.HideAndDontSave && g.gameObject.activeInHierarchy)
                         {
-                            InitGordoData data = new InitGordoData()
-                            {
-                                id = g.id,
-                                eaten = g.gordoModel.gordoEatenCount
-                            };
-                            gordos.Add(data);
+                            
                         }
+                        InitGordoData data = new InitGordoData()
+                        {
+                            id = g.Id,
+                            eaten = g.GordoModel.gordoEatCount
+                        };
+                        gordos.Add(data);
                     }
                     catch { }
                 }
@@ -311,21 +265,21 @@ namespace NewSR2MP.Networking
                 // Current Players
                 foreach (var player in players)
                 {
-                    if (player.Key != 0) // idk how my code works anymore and too lazy to try catch. // Note, quite the opposite: not lazy enough to try catch. :skull:
+                    if (player.Key != 0)
                     {
 
                         var p = new InitPlayerData()
                         {
                             id = player.Key,
                         };
-                        players.Add(p);
+                        initPlayers.Add(p);
                     }
                 }
                 var p2 = new InitPlayerData()
                 {
                     id = 0
                 };
-                players.Add(p2);
+                initPlayers.Add(p2);
 
 
 
@@ -347,15 +301,15 @@ namespace NewSR2MP.Networking
                             {
                                 HashSet<AmmoData> ammo = new HashSet<AmmoData>();
                                 var idx = 0;
-                                foreach (var a in silo.ammo.Slots)
+                                foreach (var a in silo.Ammo.Slots)
                                 {
                                     if (a != null)
                                     {
                                         var ammoSlot = new AmmoData()
                                         {
                                             slot = idx,
-                                            id = a.id,
-                                            count = a.count,
+                                            id = a.Id.name,
+                                            count = a.Count,
                                         };
                                         ammo.Add(ammoSlot);
                                     }
@@ -364,7 +318,7 @@ namespace NewSR2MP.Networking
                                         var ammoSlot = new AmmoData()
                                         {
                                             slot = idx,
-                                            id = Identifiable.Id.NONE,
+                                            id = "",
                                             count = 0,
                                         };
                                         ammo.Add(ammoSlot);
@@ -373,17 +327,17 @@ namespace NewSR2MP.Networking
                                 }
                                 s = new InitSiloData()
                                 {
-                                    slots = silo.numSlots,
+                                    slots = silo.LocalAmmo.Slots.Count,
                                     ammo = ammo
                                 };
                             }
 
                             var p = new InitPlotData()
                             {
-                                id = plot.model.gameObj.GetComponent<LandPlotLocation>().id,
-                                type = plot.model.typeId,
-                                upgrades = plot.model.upgrades,
-                                cropIdent = plot.GetAttachedCropId(),
+                                id = plot._model.gameObj.GetComponent<LandPlotLocation>().Id,
+                                type = plot._model.typeId,
+                                upgrades = plot._model.upgrades,
+                                cropIdent = plot.GetAttachedCropId().name,
 
                                 siloData = s,
                             };
@@ -394,7 +348,7 @@ namespace NewSR2MP.Networking
                 }
 
                 // Slime Gates || Ranch expansions
-                HashSet<InitAccessData> access = new HashSet<InitAccessData>();
+                List<InitAccessData> access = new List<InitAccessData>();
                 foreach (var accessDoor in SceneContext.Instance.GameModel.doors)
                 {
                     access.Add(new InitAccessData()
@@ -403,76 +357,63 @@ namespace NewSR2MP.Networking
                         id = accessDoor.Key
                     });
                 }
-                Dictionary<AmmoMode, Il2CppSystem.Collections.Generic.List<AmmoData>> playerAmmoData = new Dictionary<AmmoMode, Il2CppSystem.Collections.Generic.List<AmmoData>>();
-                foreach (var ammo in playerData.ammo)
+                List<AmmoData> playerAmmoData = new List<AmmoData>();
+                int i = 0;
+                foreach (var ammoSlot in playerData.ammo)
                 {
-                    Il2CppSystem.Collections.Generic.List<AmmoData> ammoSlotData = new Il2CppSystem.Collections.Generic.List<AmmoData>();
-                    int i = 0;
-                    foreach (var ammoSlot in ammo.Value)
-                    {
 
-                        var playerSlot = new AmmoData()
-                        {
-                            slot = i,
-                            id = ammoSlot.id,
-                            count = ammoSlot.count,
-                        };
-                        ammoSlotData.Add(playerSlot);
-                        i++;
-                    }
-                    playerAmmoData.Add(ammo.Key, ammoSlotData);
+                    var playerSlot = new AmmoData()
+                    {
+                        slot = i,
+                        id = GetStringFromPersistentID_IdentifiableType(ammoSlot.ID),
+                        count = ammoSlot.Count,
+                    };
+                    playerAmmoData.Add(playerSlot);
+                    i++;
                 }
 
                 LocalPlayerData localPlayerData = new LocalPlayerData()
                 {
-                    pos = playerData.position.value,
-                    rot = playerData.rotation.value,
+                    pos = playerData.position.Value,
+                    rot = playerData.rotation.Value,
                     ammo = playerAmmoData
                 };
 
 
-                var keys = SceneContext.Instance.PlayerState.model.keys;
-                var money = SceneContext.Instance.PlayerState.model.currency;
-                if (!savedGame.sharedKeys)
-                    keys = playerData.keys;
-                if (!savedGame.sharedMoney)
-                    money = playerData.money;
-                if (!savedGame.sharedUpgrades)
-                    upgrades = playerData.upgrades;
+                List<string> GetListFromFogEvents(Il2CppSystem.Collections.Generic.Dictionary<string, EventRecordModel.Entry>.KeyCollection events)
+                {
+                    var ret = new List<string>();
+                    foreach (var e in events)
+                        ret.Add(e);
+                    return ret;
+                }
+                
 
+                var money = SceneContext.Instance.PlayerState._model.currency;
 
                 // Send save data.
                 var saveMessage = new LoadMessage()
                 {
                     initActors = actors,
-                    initPlayers = players,
+                    initPlayers = initPlayers,
                     initPlots = plots,
                     initGordos = gordos,
                     initPedias = pedias,
                     initAccess = access,
-                    initMaps = SceneContext.Instance.PlayerState.model.unlockedZoneMaps,
+                    initMaps = GetListFromFogEvents(SceneContext.Instance.eventDirector._model.table["fogRevealed"]._keys),
                     playerID = nctc.connectionId,
                     money = money,
-                    keys = keys,
                     time = time,
                     localPlayerSave = localPlayerData,
-                    sharedKeys = savedGame.sharedKeys,
-                    sharedMoney = savedGame.sharedMoney,
-                    sharedUpgrades = savedGame.sharedUpgrades,
                     upgrades = upgrades,
                 };
                 NetworkServer.SRMPSend(saveMessage, nctc);
                 SRMP.Log("sent world");
 
-                Ammo currentHostAmmoNormal = SceneContext.Instance.PlayerState.GetAmmo(AmmoMode.DEFAULT);
-                NetworkAmmo normalNetAmmo = new NetworkAmmo($"player_{savingID}_normal",currentHostAmmoNormal.potentialAmmo,currentHostAmmoNormal.numSlots,currentHostAmmoNormal.ammoModel.usableSlots,currentHostAmmoNormal.slotPreds,currentHostAmmoNormal.ammoModel.slotMaxCountFunction);
+                Ammo currentHostAmmo = SceneContext.Instance.PlayerState.Ammo;
+                NetworkAmmo netAmmo = new NetworkAmmo($"player_{savingID}",SceneContext.Instance.PlayerState._ammoSlotDefinitions);
 
-                normalNetAmmo.ammoModel.slots = NetworkAmmo.SRMPAmmoDataToSlots(playerData.ammo[AmmoMode.DEFAULT]);
-
-                Ammo currentHostAmmoNimble = SceneContext.Instance.PlayerState.GetAmmo(AmmoMode.NIMBLE_VALLEY);
-
-                NetworkAmmo nimbleNetAmmo = new NetworkAmmo($"player_{savingID}_nimble", currentHostAmmoNimble.potentialAmmo, currentHostAmmoNimble.numSlots, currentHostAmmoNimble.ammoModel.usableSlots, currentHostAmmoNimble.slotPreds,currentHostAmmoNimble.ammoModel.slotMaxCountFunction);
-                nimbleNetAmmo.ammoModel.slots = NetworkAmmo.SRMPAmmoDataToSlots(playerData.ammo[AmmoMode.NIMBLE_VALLEY]);
+                netAmmo._ammoModel.slots = NetworkAmmo.SRMPAmmoDataToSlots(playerData.ammo);
 
                 // Spawn player for host
                 try
@@ -490,7 +431,6 @@ namespace NewSR2MP.Networking
                     };
                     NetworkServer.SRMPSendToConnections(packet, NetworkServer.NetworkConnectionListExcept(nctc));
 
-                    TeleportCommand.playerLookup.Add(TeleportCommand.playerLookup.Count, nctc.connectionId);
                 }
                 catch
                 { }
@@ -512,99 +452,16 @@ namespace NewSR2MP.Networking
 
         public void Connect(string ip, ushort port)
         {
-
-            if (transport is KcpTransport)
-                (transport as KcpTransport).port = port;
-            networkManager.StartClient();
-            NetworkClient.Connect(ip);
+            // Please use EOS
         }
-        public bool isHosting;
-        public void Host(ushort port)
+        public void Host()
         {
-            if (transport is KcpTransport)
-            {
-                (transport as KcpTransport).port = port;
-                networkManager.StartHost();
-                transport.ServerStart();
-                discoveryManager.AdvertiseServer();
-            }
-            else if (transport is FizzySteamworks)
-            {
-                steamLobby.HostLobby();
-            }
-            isHosting = true;
-        }
-
-
-        void UIUpdate()
-        {
-
-            if (NetworkServer.activeHost)
-            {
-                networkConnectedHUD.enabled = false;
-                networkMainMenuHUD.enabled = false;
-                networkDiscoverHUD.enabled = false;
-            }
-            else if (NetworkClient.isConnected)
-            {
-                networkMainMenuHUD.enabled = false;
-                networkInGameHUD.enabled = false;
-                networkDiscoverHUD.enabled = false;
-            }
-            else if (NetworkClient.isConnecting)
-            {
-                networkConnectedHUD.enabled = false;
-                networkMainMenuHUD.enabled = false;
-                networkInGameHUD.enabled = false;
-                networkDiscoverHUD.enabled = false;
-                // Show connecting ui
-            }
-            else if (Levels.isMainMenu())
-            {
-                networkConnectedHUD.enabled = false;
-                networkInGameHUD.enabled = false;
-                networkMainMenuHUD.enabled = true; // Show connect ui
-                networkDiscoverHUD.enabled = true; // Show connect to lan ui
-            }
-            else if (Time.timeScale == 0 && !NetworkClient.isConnected && !NetworkClient.isConnecting && !NetworkServer.activeHost)
-            {
-                networkConnectedHUD.enabled = false;
-                networkMainMenuHUD.enabled = false;
-                networkInGameHUD.enabled = true; // Show ingame ui
-                networkDiscoverHUD.enabled = false;
-            }
-            else
-            {
-                // Show no ui
-                networkConnectedHUD.enabled = false;
-                networkMainMenuHUD.enabled = false;
-                networkInGameHUD.enabled = false;
-                networkDiscoverHUD.enabled = false;
-            }
-
-        }
-
-        void EOSInit()
-        {
-            Epic.OnlineServices.Platform.PlatformInterface.Initialize(new Epic.OnlineServices.Platform.AndroidInitializeOptions());
-        }
-
-        void EOSUpdate()
-        {
-
+            // Please use EOS
         }
 
 
         private void Update()
         {
-            if (isEpicOnlineTest)
-            {
-                EOSUpdate();
-            }
-            else
-            {
-                UIUpdate();
-            }
             // Ticks
             if (NetworkServer.activeHost)
             {

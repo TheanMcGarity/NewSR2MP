@@ -29,7 +29,7 @@ namespace NewSR2MP.Networking.Component
             {
                 var msg = new TimeSyncMessage()
                 {
-                    time = dir.worldModel.worldTime
+                    time = dir._worldModel.worldTime
                 };
                 SRNetworkManager.NetworkSend(msg);
             }

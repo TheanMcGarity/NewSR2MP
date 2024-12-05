@@ -11,6 +11,7 @@ namespace NewSR2MP.Networking.Component
     /// <summary>
     /// Slime Key handler.
     /// </summary>
+    [RegisterTypeInIl2Cpp(false)]
     public class HandledKey : MonoBehaviour
     {
         internal static bool collected = false;

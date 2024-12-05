@@ -51,7 +51,7 @@ namespace NewSR2MP.Networking.Patches
             }
             catch (Exception e)
             {
-                if (SRMLConfig.SHOW_SRMP_ERRORS) SRMP.Log($"Error in network ammo!\n{e}\nThis can cause major desync!");
+                if (SHOW_ERRORS) SRMP.Log($"Error in network ammo!\n{e}\nThis can cause major desync!");
             }
             return true;
         }

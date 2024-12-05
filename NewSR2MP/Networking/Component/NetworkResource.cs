@@ -49,8 +49,8 @@ namespace NewSR2MP.Networking.Component
                     {
                         var message = new ResourceStateMessage()
                         {
-                            state = resource.model.state,
-                            id = identComp.GetActorId()
+                            state = resource._model.state,
+                            id = identComp.GetActorId().Value
                         };
                         SRNetworkManager.NetworkSend(message);
                     }
@@ -60,7 +60,7 @@ namespace NewSR2MP.Networking.Component
 
             if (NetworkClient.active && !NetworkServer.active)
             {
-                resource.model.progressTime = double.MaxValue;
+                resource._model.progressTime = double.MaxValue;
             }
         }
     }

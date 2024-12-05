@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿using Il2CppMonomiPark.SlimeRancher.Analytics.Event;
+using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
+using Il2CppMonomiPark.SlimeRancher.UI.Map;
+using Il2CppMonomiPark.World;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 
@@ -139,7 +143,7 @@ namespace NewSR2MP.Networking
                     savedGame.savedPlayers.playerList[clientToGuid[nctc.connectionId]].money = packet.newMoney;
                     return;
                 }
-                SceneContext.Instance.PlayerState.model.currency = packet.newMoney;
+                SceneContext.Instance.PlayerState._model.currency = packet.newMoney;
 
                 // Notify others
                 foreach (var conn in NetworkServer.connections.Values)
@@ -153,24 +157,6 @@ namespace NewSR2MP.Networking
             }
             public static void HandleKeysChange(NetworkConnectionToClient nctc, SetKeysMessage packet)
             {
-
-                if (!savedGame.sharedKeys)
-                {
-                    savedGame.savedPlayers.playerList[clientToGuid[nctc.connectionId]].keys = packet.newMoney;
-                    return;
-                }
-
-                SceneContext.Instance.PlayerState.model.keys = packet.newMoney;
-
-                // Notify others
-                foreach (var conn in NetworkServer.connections.Values)
-                {
-                    if (conn.connectionId != nctc.connectionId)
-                    {
-
-                        NetworkServer.SRMPSend(packet, conn);
-                    }
-                }
             }
             public static void HandlePlayerJoin(NetworkConnectionToClient nctc, PlayerJoinMessage packet)
             {
@@ -179,7 +165,7 @@ namespace NewSR2MP.Networking
             public static void HandlePlayerLeave(NetworkConnectionToClient nctc, PlayerLeaveMessage packet)
             {
                 // Packet should only be S2C
-                SRMP.Log("Bug Alert!!! Packet should only be Server To Client, but it was sent from Client To Server.");
+                SRMP.Error("Bug Alert!!! Packet should only be Server To Client, but it was sent from Client To Server.");
             }
             public static void HandleClientSleep(NetworkConnectionToClient nctc, SleepMessage packet)
             {
@@ -191,19 +177,19 @@ namespace NewSR2MP.Networking
                 {
                     SRMP.Log($"Actor spawned with velocity {packet.velocity}.");
                     Quaternion quat = Quaternion.Euler(packet.rotation.x, packet.rotation.y, packet.rotation.z);
-                    var identObj = GameContext.Instance.LookupDirector.identifiablePrefabDict[packet.ident];
+                    var identObj = identifiableTypes[packet.ident].prefab;
                     if (identObj.GetComponent<NetworkActor>() == null)
                         identObj.AddComponent<NetworkActor>();
                     if (identObj.GetComponent<NetworkActorOwnerToggle>() == null)
                         identObj.AddComponent<NetworkActorOwnerToggle>();
                     if (identObj.GetComponent<TransformSmoother>() == null)
                         identObj.AddComponent<TransformSmoother>();
-                    var obj = SRBehaviour.InstantiateActor(identObj, packet.region, packet.position, quat, false);
+                    var obj = InstantiateActor(identObj, SystemContext.Instance.SceneLoader._currentSceneGroup, packet.position, quat, false);
                     identObj.RemoveComponent<NetworkActor>();
                     identObj.RemoveComponent<NetworkActorOwnerToggle>();
                     identObj.RemoveComponent<TransformSmoother>();
                     obj.AddComponent<NetworkResource>();
-                    if (!actors.ContainsKey(obj.GetComponent<Identifiable>().GetActorId())) // Most useless if statement ever.
+                    if (!actors.ContainsKey(obj.GetComponent<IdentifiableActor>().GetActorId().Value)) // Most useless if statement ever.
                     {
                         obj.GetComponent<TransformSmoother>().enabled = false;
                         actors.Add(obj.GetComponent<Identifiable>().GetActorId().Value, obj.GetComponent<NetworkActor>());
@@ -379,14 +365,14 @@ namespace NewSR2MP.Networking
                     var g = plot.transform.GetComponentInChildren<GardenCatcher>();
 
                     // Check if is destroy (planting NONE)
-                    if (packet.ident.IsNullOrEmpty())
+                    if (string.IsNullOrEmpty(packet.ident))
                     {
                         // Add handled component.
                         lp.gameObject.AddComponent<HandledDummy>();
                         
                         // Plant
-                        if (g.CanAccept(packet.ident))
-                            g.Plant(packet.ident, false);
+                        if (g.CanAccept(identifiableTypes[packet.ident]))
+                            g.Plant(identifiableTypes[packet.ident], false);
 
                         // Remove handled component.
                         lp.gameObject.RemoveComponent<HandledDummy>();
@@ -497,11 +483,12 @@ namespace NewSR2MP.Networking
                 }
                 catch { }
 
+                if (packet.id.ToLower().Contains("player")) return;
+                
                 foreach (var conn in NetworkServer.connections.Values)
                 {
                     if (conn.connectionId != nctc.connectionId)
                     {
-
                         NetworkServer.SRMPSend(packet, conn);
                     }
                 }
@@ -588,7 +575,7 @@ namespace NewSR2MP.Networking
                 try
                 {
                     var actor = actors[packet.id];
-                    SceneContext.Instance.player.GetComponentInChildren<WeaponVacuum>().ClearVac();
+                    SceneContext.Instance.player.GetComponentInChildren<VacuumItem>().ClearVac();
                 }
                 catch (Exception e)
                 {
@@ -631,7 +618,6 @@ namespace NewSR2MP.Networking
                 NetworkClient.RegisterHandler(new Action<AmmoRemoveMessage>(HandleAmmoReverse));
                 NetworkClient.RegisterHandler(new Action<MapUnlockMessage>(HandleMap));
                 NetworkClient.RegisterHandler(new Action<DoorOpenMessage>(HandleDoor));
-                NetworkClient.RegisterHandler(new Action<SetKeysMessage>(HandleKeysChange));
                 NetworkClient.RegisterHandler(new Action<ResourceStateMessage>(HandleResourceState));
                 NetworkClient.RegisterHandler(new Action<GardenPlantMessage>(HandleGarden));
                 NetworkClient.RegisterHandler(new Action<ActorChangeHeldOwnerMessage>(HandleActorHold));
@@ -639,12 +625,9 @@ namespace NewSR2MP.Networking
             }
             public static void HandleMoneyChange(SetMoneyMessage packet)
             {
-                SceneContext.Instance.PlayerState.model.currency = packet.newMoney;
+                SceneContext.Instance.PlayerState._model.currency = packet.newMoney;
             }
-            public static void HandleKeysChange(SetKeysMessage packet)
-            {
-                SceneContext.Instance.PlayerState.model.keys = packet.newMoney;
-            }
+           
             public static void HandleSave(LoadMessage save)
             {
                 latestSaveJoined = save;
@@ -660,12 +643,12 @@ namespace NewSR2MP.Networking
                     var lp = plot.transform.GetChild(0).GetComponent<LandPlot>();
                     var g = plot.transform.GetComponentInChildren<GardenCatcher>();
 
-                    if (packet.ident != Identifiable.Id.NONE)
+                    if (packet.ident != "")
                     {
                         lp.gameObject.AddComponent<HandledDummy>();
                         
-                        if (g.CanAccept(packet.ident))
-                            g.Plant(packet.ident, false);
+                        if (g.CanAccept(identifiableTypes[packet.ident]))
+                            g.Plant(identifiableTypes[packet.ident], false);
 
                         lp.gameObject.RemoveComponent<HandledDummy>();
                     }
@@ -692,56 +675,56 @@ namespace NewSR2MP.Networking
                 try
                 {
                     var res = actors[packet.id].GetComponent<ResourceCycle>();
-                    Rigidbody rigidbody = res.body;
+                    Rigidbody rigidbody = res._body;
 
                     switch (packet.state)
                     {
                         case ResourceCycle.State.ROTTEN:
-                            if (res.model.state == ResourceCycle.State.ROTTEN) break;
+                            if (res._model.state == ResourceCycle.State.ROTTEN) break;
                             res.Rot();
                             res.SetRotten(true);
                             break;
                         case ResourceCycle.State.RIPE:
-                            if (res.model.state == ResourceCycle.State.RIPE) break;
+                            if (res._model.state == ResourceCycle.State.RIPE) break;
                             res.Ripen();
-                            if (res.vacuumableWhenRipe)
+                            if (res.VacuumableWhenRipe)
                             {
-                                res.vacuumable.enabled = true;
+                                res._vacuumable.enabled = true;
                             }
 
-                            if (res.gameObject.transform.localScale.x < res.defaultScale.x * 0.33f)
+                            if (res.gameObject.transform.localScale.x < res._defaultScale.x * 0.33f)
                             {
-                                res.gameObject.transform.localScale = res.defaultScale * 0.33f;
+                                res.gameObject.transform.localScale = res._defaultScale * 0.33f;
                             }
 
-                            TweenUtil.ScaleTo(res.gameObject, res.defaultScale, 4f);
+                            TweenUtil.ScaleTo(res.gameObject, res._defaultScale, 4f);
                             break;
                         case ResourceCycle.State.UNRIPE:
-                            if (res.model.state == ResourceCycle.State.UNRIPE) break;
-                            res.model.state = ResourceCycle.State.UNRIPE;
-                            res.transform.localScale = res.defaultScale * 0.33f;
+                            if (res._model.state == ResourceCycle.State.UNRIPE) break;
+                            res._model.state = ResourceCycle.State.UNRIPE;
+                            res.transform.localScale = res._defaultScale * 0.33f;
                             break;
                         case ResourceCycle.State.EDIBLE:
-                            if (res.model.state == ResourceCycle.State.EDIBLE) break;
+                            if (res._model.state == ResourceCycle.State.EDIBLE) break;
                             res.MakeEdible();
-                            res.additionalRipenessDelegate = null;
+                            res._additionalRipenessDelegate = null;
                             rigidbody.isKinematic = false;
-                            if (res.preparingToRelease)
+                            if (res._preparingToRelease)
                             {
-                                res.preparingToRelease = false;
-                                res.releaseAt = 0f;
-                                res.toShake.localPosition = res.toShakeDefaultPos;
-                                if (res.releaseCue != null)
+                                res._preparingToRelease = false;
+                                res._releaseAt = 0f;
+                                res.ToShake.localPosition = res._toShakeDefaultPos;
+                                if (res.ReleaseCue != null)
                                 {
                                     SECTR_PointSource component = res.GetComponent<SECTR_PointSource>();
-                                    component.Cue = res.releaseCue;
+                                    component.Cue = res.ReleaseCue;
                                     component.Play();
                                 }
                             }
                             break;
                     }
 
-                    res.model.progressTime = double.MaxValue;
+                    res._model.progressTime = double.MaxValue;
 
                 }
                 catch (Exception e)
@@ -769,9 +752,6 @@ namespace NewSR2MP.Networking
                         netPlayer.id = packet.id;
                         player.SetActive(true);
                         UnityEngine.Object.DontDestroyOnLoad(player);
-                        var marker = UnityEngine.Object.Instantiate(Map.Instance.mapUI.transform.GetComponentInChildren<PlayerMapMarker>().gameObject);
-                        playerToMarkerDict.Add(netPlayer, marker.GetComponent<PlayerMapMarker>());
-                        TeleportCommand.playerLookup.Add(TeleportCommand.playerLookup.Count, packet.id);
                     }
                 }
                 catch { } // Some reason it does happen.
@@ -779,7 +759,7 @@ namespace NewSR2MP.Networking
             public static void HandlePlayerLeave(PlayerLeaveMessage packet)
             {
                 players[packet.id].gameObject.AddComponent<HandledDummy>();
-                players[packet.id].gameObject.Destroy();
+                players[packet.id].gameObject.RemoveComponent<HandledDummy>();
                 players.Remove(packet.id);
             }
             public static void HandlePlayer(PlayerUpdateMessage packet)
@@ -802,7 +782,7 @@ namespace NewSR2MP.Networking
             {
                 try
                 {
-                    SceneContext.Instance.TimeDirector.worldModel.worldTime = packet.time;
+                    SceneContext.Instance.TimeDirector._worldModel.worldTime = packet.time;
                 }
                 catch { }
             }
@@ -824,14 +804,14 @@ namespace NewSR2MP.Networking
                 try
                 {
                     Quaternion quat = Quaternion.Euler(packet.rotation.x, packet.rotation.y, packet.rotation.z);
-                    var identObj = GameContext.Instance.LookupDirector.identifiablePrefabDict[packet.ident]; 
+                    var identObj = identifiableTypes[packet.ident].prefab; 
                     if (identObj.GetComponent<NetworkActor>() == null)
                         identObj.AddComponent<NetworkActor>();
                     if (identObj.GetComponent<NetworkActorOwnerToggle>() == null)
                         identObj.AddComponent<NetworkActorOwnerToggle>();
                     if (identObj.GetComponent<TransformSmoother>() == null)
                         identObj.AddComponent<TransformSmoother>();
-                    var obj = SceneContext.Instance.GameModel.InstantiateActor(packet.id, identObj, packet.region, packet.position, quat, false, false);
+                    var obj = InstantiateActor(identObj, SystemContext.Instance.SceneLoader._currentSceneGroup, packet.position, quat, false);
                     obj.GetComponent<NetworkActor>().enabled = false;
                     UnityEngine.Object.Destroy(identObj.GetComponent<TransformSmoother>());
                     UnityEngine.Object.Destroy(identObj.GetComponent<NetworkActor>());
@@ -890,7 +870,7 @@ namespace NewSR2MP.Networking
                     {
                         plot.AddComponent<HandledDummy>();
 
-                        plot.GetComponent<LandPlotLocation>().Replace(plot.transform.GetChild(0).GetComponent<LandPlot>(), GameContext.Instance.LookupDirector.plotPrefabDict[packet.type]);
+                        plot.GetComponent<LandPlotLocation>().Replace(plot.transform.GetChild(0).GetComponent<LandPlot>(), GameContext.Instance.LookupDirector._plotPrefabDict[packet.type]);
 
                         UnityEngine.Object.Destroy(plot.GetComponent<HandledDummy>());
 
@@ -920,7 +900,7 @@ namespace NewSR2MP.Networking
             {
                 try
                 {
-                    SceneContext.Instance.GameModel.gordos[packet.id].gordoEatenCount = packet.count;
+                    SceneContext.Instance.GameModel.gordos[packet.id].gordoEatCount = packet.count;
                 }
                 catch (Exception e)
                 {
@@ -931,9 +911,8 @@ namespace NewSR2MP.Networking
             public static void HandlePedia(PediaMessage packet)
             {
                 SceneContext.Instance.gameObject.AddComponent<HandledDummy>();
-                SceneContext.Instance.PediaDirector.MaybeShowPopup(packet.id);
-                UnityEngine.Object.Destroy(SceneContext.Instance.gameObject.GetComponent<HandledDummy>());
-
+                SceneContext.Instance.PediaDirector.ShowPedia(pediaEntries[packet.id], PediaOpenedAnalyticsEvent.Opener.HOTKEY_WITH_POPUP);
+                SceneContext.Instance.gameObject.RemoveComponent<HandledDummy>();
             }
             public static void HandleGordoBurst(GordoBurstMessage packet)
             {
@@ -954,15 +933,14 @@ namespace NewSR2MP.Networking
             {
                 try
                 {
-                    Ammo ammo = NetworkAmmo.all[packet.id];
-                    if (ammo.Slots[packet.slot] != null)
+                    var ammo = ammos[packet.id];
+
+                    if (!ammo.Slots[packet.slot]._id.name.Equals(packet.id))
                     {
-                        ammo.Slots[packet.slot].count += packet.count;
+                        ammo.Slots[packet.slot]._id = identifiableTypes[packet.ident];
                     }
-                    else
-                    {
-                        ammo.Slots[packet.slot] = new Ammo.Slot(packet.ident, packet.count);
-                    }
+                    ammo.Slots[packet.slot]._count += packet.count;
+                    
                 }
                 catch
                 {
@@ -976,22 +954,21 @@ namespace NewSR2MP.Networking
                 {
                     Ammo ammo = NetworkAmmo.all[packet.id];
                     int slot = -1;
-                    for (int i = 0; i < ammo.ammoModel.usableSlots; i++)
+                    for (int i = 0; i < ammo._ammoModel.slots.Count; i++)
                     {
-                        if (ammo.Slots[i].count + 1 <= ammo.ammoModel.GetSlotMaxCount(packet.ident, i))
+                        if (ammo.Slots[i]._count + 1 <= ammo._ammoModel.GetSlotMaxCount(identifiableTypes[packet.ident], i))
                         {
                             slot = i;
                             continue;
                         }
                     }
-                    if (ammo.Slots[slot] != null)
+                    if (!ammo.Slots[slot]._id.name.Equals(packet.id))
                     {
-                        ammo.Slots[slot].count++;
+                        ammo.Slots[slot]._id = identifiableTypes[packet.ident];
                     }
-                    else
-                    {
-                        ammo.Slots[slot] = new Ammo.Slot(packet.ident, 1);
-                    }
+                    ammo.Slots[slot]._count++;
+
+
                 }
                 catch
                 {
@@ -1002,19 +979,20 @@ namespace NewSR2MP.Networking
 
             public static void HandleAmmoReverse(AmmoRemoveMessage packet)
             {
-                SRMP.Log("recieve");
-
                 try
                 {
                     Ammo ammo = NetworkAmmo.all[packet.id];
                     if (ammo.Slots[packet.index] != null)
                     {
-                        if (ammo.Slots[packet.index].count <= packet.count)
+                        if (ammo.Slots[packet.index]._count <= packet.count)
                         {
-                            ammo.Slots[packet.index] = null;
+                            ammo.Slots[packet.index]._id = null;
+                            ammo.Slots[packet.index]._count = 0;
+                            return;
                         }
-                        else
-                            ammo.Slots[packet.index].count -= packet.count;
+                        ammo.Slots[packet.index]._count -= packet.count;
+
+
                     }
                 }
                 catch
@@ -1025,7 +1003,7 @@ namespace NewSR2MP.Networking
             }
             public static void HandleMap(MapUnlockMessage packet)
             {
-                SceneContext.Instance.PlayerState.model.unlockedZoneMaps.Add(packet.id);
+                // SceneContext.Instance.eventDirector.RaiseEvent();
             }
 
 
@@ -1040,7 +1018,7 @@ namespace NewSR2MP.Networking
                 try
                 {
                     var actor = actors[packet.id];
-                    SceneContext.Instance.player.GetComponentInChildren<WeaponVacuum>().ClearVac();
+                    SceneContext.Instance.PlayerState.VacuumItem.ClearVac();
                 }
                 catch (Exception e)
                 {

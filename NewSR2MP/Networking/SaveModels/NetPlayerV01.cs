@@ -18,6 +18,8 @@ namespace NewSR2MP.Networking.SaveModels
         public override string Identifier => "MPPL";
         public override uint Version => 1;
 
+        public int sceneGroup = 1;
+        
         public Vector3V01 position;
         public Vector3V01 rotation;
 
@@ -33,7 +35,7 @@ namespace NewSR2MP.Networking.SaveModels
 
         public Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammo = new Il2CppSystem.Collections.Generic.List<AmmoDataV01>();
 
-        public Il2CppSystem.Collections.Generic.List<string> upgrades = new Il2CppSystem.Collections.Generic.List<string>();
+        public List<string> upgrades = new List<string>();
 
         public Guid playerID;
 
@@ -69,7 +71,7 @@ namespace NewSR2MP.Networking.SaveModels
 
             var upgradeC = reader.ReadInt32();
 
-            upgrades = new Il2CppSystem.Collections.Generic.List<string>();
+            upgrades = new List<string>();
 
             for (int i = 0; i < upgradeC; i++)
             {
@@ -77,6 +79,8 @@ namespace NewSR2MP.Networking.SaveModels
             }
 
             playerID = Guid.Parse(reader.ReadString());
+            
+            sceneGroup = reader.ReadInt32();
         }
 
         public override void WriteData(GameBinaryWriter writer)
@@ -100,6 +104,8 @@ namespace NewSR2MP.Networking.SaveModels
             {
                 writer.Write(upgrade);
             }
+            
+            writer.Write(sceneGroup);
         }
     }
 }

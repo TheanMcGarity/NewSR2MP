@@ -43,9 +43,9 @@ namespace NewSR2MP.Networking.SaveModels
 
         public static PlayerListV01 Load(GameBinaryReader reader)
         {
-            var Il2CppSystem.Collections.Generic.List = new PlayerListV01();
-            Il2CppSystem.Collections.Generic.List.Load(reader.BaseStream);
-            return Il2CppSystem.Collections.Generic.List;
+            var list = new PlayerListV01();
+            list.Load(reader.BaseStream);
+            return list;
         }
     }
 }

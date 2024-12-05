@@ -11,7 +11,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(PediaDirector __instance, PediaDirector.Id id)
         {
-            if ((NetworkClient.active || NetworkServer.active) && !__instance.IsHandling())
+            if ((NetworkClient.active || NetworkServer.active) && !__instance.GetComponent<HandledDummy>())
             {
                 PediaMessage message = new PediaMessage()
                 {

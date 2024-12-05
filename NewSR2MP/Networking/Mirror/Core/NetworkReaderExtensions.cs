@@ -207,7 +207,7 @@ namespace Mirror
         // structs may have .List<T> members which weaver needs to be able to
         // fully serialize for NetworkMessages etc.
         // note that Weaver/Readers/GenerateReader() handles this manually.
-        public static Il2CppSystem.Collections.Generic.List<T> ReadList<T>(this NetworkReader reader)
+        public static List<T> ReadList<T>(this NetworkReader reader)
         {
             int length = reader.ReadInt();
 
@@ -220,10 +220,10 @@ namespace Mirror
             if (length > NetworkReader.AllocationLimit)
             {
                 // throw EndOfStream for consistency with ReadBlittable when out of data
-                throw new EndOfStreamException($"NetworkReader attempted to allocate a Il2CppSystem.Collections.Generic.List<{typeof(T)}> {length} elements, which is larger than the allowed limit of {NetworkReader.AllocationLimit}.");
+                throw new EndOfStreamException($"NetworkReader attempted to allocate a List<{typeof(T)}> {length} elements, which is larger than the allowed limit of {NetworkReader.AllocationLimit}.");
             }
 
-            Il2CppSystem.Collections.Generic.List<T> result = new Il2CppSystem.Collections.Generic.List<T>(length);
+            List<T> result = new List<T>(length);
             for (int i = 0; i < length; i++)
             {
                 result.Add(reader.Read<T>());
@@ -548,8 +548,8 @@ namespace Mirror
 
             int length = reader.ReadInt();
 
-            Il2CppSystem.Collections.Generic.List<InitActorData> actors = new Il2CppSystem.Collections.Generic.List<InitActorData>();
-            for (int i = 0; i < length; i++) 
+            List<InitActorData> actors = new List<InitActorData>();
+            for (int i = 0; i < length; i++)
             {
                 long id = reader.ReadLong();
                 string ident = reader.ReadString();
@@ -561,8 +561,9 @@ namespace Mirror
                     pos = actorPos
                 });
             }
+
             int length2 = reader.ReadInt();
-            Il2CppSystem.Collections.Generic.List<InitPlayerData> players = new Il2CppSystem.Collections.Generic.List<InitPlayerData>();
+            List<InitPlayerData> players = new List<InitPlayerData>();
             for (int i = 0; i < length2; i++)
             {
                 int id = reader.ReadInt();
@@ -571,18 +572,20 @@ namespace Mirror
                     id = id
                 });
             }
+
             int length3 = reader.ReadInt();
-            Il2CppSystem.Collections.Generic.List<InitPlotData> plots = new Il2CppSystem.Collections.Generic.List<InitPlotData>();
+            List<InitPlotData> plots = new List<InitPlotData>();
             for (int i = 0; i < length3; i++)
             {
                 string id = reader.ReadString();
                 LandPlot.Id type = (LandPlot.Id)reader.ReadInt();
                 int upgLength = reader.ReadInt();
-                HashSet<LandPlot.Upgrade> upgrades = new HashSet<LandPlot.Upgrade>();
+                Il2CppSystem.Collections.Generic.HashSet<LandPlot.Upgrade> upgrades = new Il2CppSystem.Collections.Generic.HashSet<LandPlot.Upgrade>();
                 for (int i2 = 0; i2 < upgLength; i2++)
                 {
                     upgrades.Add((LandPlot.Upgrade)reader.ReadInt());
                 }
+
                 InitSiloData siloData;
                 int slots = reader.ReadInt();
                 int ammLength = reader.ReadInt();
@@ -592,6 +595,7 @@ namespace Mirror
                     var data = reader.ReadAmmoData();
                     ammoDatas.Add(data);
                 }
+
                 siloData = new InitSiloData()
                 {
                     slots = slots,
@@ -607,6 +611,7 @@ namespace Mirror
                     cropIdent = crop
                 });
             }
+
             int length4 = reader.ReadInt();
             HashSet<InitGordoData> gordos = new HashSet<InitGordoData>();
             for (int i = 0; i < length4; i++)
@@ -621,19 +626,21 @@ namespace Mirror
             }
 
             int pedLength = reader.ReadInt();
-            Il2CppSystem.Collections.Generic.List<string> pedias = new Il2CppSystem.Collections.Generic.List<string>();
+            List<string> pedias = new List<string>();
             for (int i = 0; i < pedLength; i++)
             {
                 pedias.Add(reader.ReadString());
             }
+
             int mapLength = reader.ReadInt();
-            Il2CppSystem.Collections.Generic.List<string> maps = new Il2CppSystem.Collections.Generic.List<string>();
+            List<string> maps = new List<string>();
             for (int i = 0; i < mapLength; i++)
             {
                 maps.Add(reader.ReadString());
             }
+
             int accLength = reader.ReadInt();
-            Il2CppSystem.Collections.Generic.List<InitAccessData> access = new  Il2CppSystem.Collections.Generic.List<InitAccessData>();
+            List<InitAccessData> access = new List<InitAccessData>();
             for (int i = 0; i < accLength; i++)
             {
                 string id = reader.ReadString();
@@ -649,39 +656,43 @@ namespace Mirror
             var pid = reader.ReadInt();
             var pos = reader.ReadVector3();
             var rot = reader.ReadVector3();
-            
+
             var localAmmoCount = reader.ReadInt();
-            
-            Il2CppSystem.Collections.Generic.List<AmmoData> localAmmo = new Il2CppSystem.Collections.Generic.List<AmmoData>();
+
+            List<AmmoData> localAmmo = new List<AmmoData>();
             for (int i = 0; i < localAmmoCount; i++)
             {
                 localAmmo.Add(reader.ReadAmmoData());
             }
 
+            int scene = reader.ReadInt();
+
             var player = new LocalPlayerData()
             {
                 pos = pos,
                 rot = rot,
-                ammo = localAmmo
+                ammo = localAmmo,
+                sceneGroup = scene
             };
 
             var money = reader.ReadInt();
-            var keys = reader.ReadInt();
 
             var pUpgradesCount = reader.ReadInt();
-            Il2CppSystem.Collections.Generic.List<string> pUpgrades = new Il2CppSystem.Collections.Generic.List<string>();
+            Il2CppSystem.Collections.Generic.Dictionary<int, int> pUpgrades = new Il2CppSystem.Collections.Generic.Dictionary<int, int>();
+
             for (int i = 0; i < pUpgradesCount; i++)
             {
-                var upg = reader.ReadString();
-
-                pUpgrades.Add(upg);
+                var key = reader.ReadInt();
+                var val = reader.ReadInt();
+                
+                pUpgrades.Add(key,val);
             }
 
-            var time = reader.ReadDouble();
+        var time = reader.ReadDouble();
 
-            var sm = reader.ReadBool();
-            var sk = reader.ReadBool();
-            var su = reader.ReadBool();
+            //var sm = reader.ReadBool();
+            //var sk = reader.ReadBool();
+            //var su = reader.ReadBool();
 
             return new LoadMessage()
             {
@@ -695,12 +706,8 @@ namespace Mirror
                 localPlayerSave = player,
                 playerID = pid,
                 money = money,
-                keys = keys,
                 upgrades = pUpgrades,
                 time = time,
-                sharedKeys=sk,
-                sharedMoney=sm,
-                sharedUpgrades=su,
             };
         }
         public static TimeSyncMessage ReadTimeMessage(this NetworkReader reader)
@@ -781,14 +788,16 @@ namespace Mirror
             var ident = reader.ReadString();
             var pos = reader.ReadVector3();
             var rot = reader.ReadVector3();
-            var p = reader.ReadInt();
+            var scene = reader.ReadInt();
+            var player = reader.ReadInt();
             return new ActorSpawnMessage()
             {
                 ident = ident,
                 position = pos,
                 rotation = rot,
                 id = id,
-                player = p
+                player = player,
+                scene = scene
             };
         }
         public static DoorOpenMessage ReadDoorOpenMessage(this NetworkReader reader)

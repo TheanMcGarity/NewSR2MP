@@ -9,8 +9,7 @@ namespace NewSR2MP.Networking.Packet
         public Vector3 position;
         public Vector3 rotation;
         public Vector3 velocity;
-        public string ident;
-        public RegionRegistry.RegionSetId region;
+        public string ident;    
         public int player;
     }
 }

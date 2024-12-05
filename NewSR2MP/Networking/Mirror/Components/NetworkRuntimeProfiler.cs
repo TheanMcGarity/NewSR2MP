@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Mirror.RemoteCalls;
 using UnityEngine;
 
 namespace Mirror
@@ -105,11 +104,6 @@ namespace Mirror
                 if (!RpcByHash.TryGetValue(hash, out Stat stat))
                 {
                     string name = "n/a";
-                    RemoteCallDelegate rpcDelegate = RemoteProcedureCalls.GetDelegate(hash);
-                    if (rpcDelegate != null)
-                    {
-                        name = $"{rpcDelegate.Method.DeclaringType}.{rpcDelegate.GetMethodName().Replace(RemoteProcedureCalls.InvokeRpcPrefix, "")}";
-                    }
                     stat = new Stat
                     {
                         Name = name,

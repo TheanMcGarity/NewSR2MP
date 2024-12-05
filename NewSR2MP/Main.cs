@@ -73,7 +73,7 @@ namespace NewSR2MP
 
         public static GameObject modSettingsUI;
 
-        public static Il2CppSystem.Collections.Generic.IEnumerable<LandPlot.Upgrade> ConvertToIEnumerable(HashSet<LandPlot.Upgrade> upgrades)
+        public static Il2CppSystem.Collections.Generic.IEnumerable<LandPlot.Upgrade> ConvertToIEnumerable(Il2CppSystem.Collections.Generic.HashSet<LandPlot.Upgrade> upgrades)
         {
             var list = new Il2CppSystem.Collections.Generic.List<LandPlot.Upgrade>();
 
@@ -232,7 +232,6 @@ namespace NewSR2MP
 
 
                 SceneContext.Instance.PlayerState._model.currency = save.money;
-                SceneContext.Instance.PlayerState._model.keys = save.keys;
 
                 var pediaEntries = new Il2CppSystem.Collections.Generic.HashSet<PediaEntry>();
                 foreach (var pediaEntry in save.initPedias)
@@ -246,7 +245,8 @@ namespace NewSR2MP
                     SceneContext.Instance.GameModel.mapDirector.DefaultMap.Prefab.transform.FindChild("zone_fog_areas");
                 foreach (var fog in save.initMaps)
                 {
-                    var fogObject = mapFogs.FindChild($"map_fog_{fog}")
+                    var fogObject = mapFogs.FindChild($"map_fog_{fog}");
+                    fogObject.gameObject.SetActive(false);
                 }
 
                 var np = SceneContext.Instance.player.AddComponent<NetworkPlayer>();

@@ -1,14 +1,5 @@
-using InControl;
 using Mirror.Discovery;
-using Newtonsoft.Json.Linq;
-using NewSR2MP.Networking.Packet;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.IO;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 
 namespace Mirror
@@ -233,96 +224,13 @@ namespace Mirror
                 writer.WriteGuid(value.Value);
         }
 
-        public static void WriteNetworkIdentity(this NetworkWriter writer, NetworkIdentity value)
-        {
-            if (value == null)
-            {
-                writer.WriteUInt(0);
-                return;
-            }
-
-            // users might try to use unspawned / prefab GameObjects in
-            // rpcs/cmds/syncvars/messages. they would be null on the other
-            // end, and it might not be obvious why. let's make it obvious.
-            // https://github.com/vis2k/Mirror/issues/2060
-            //
-            // => warning (instead of exception) because we also use a warning
-            //    if a GameObject doesn't have a NetworkIdentity component etc.
-            if (value.netId == 0)
-                Debug.LogWarning($"Attempted to serialize unspawned GameObject: {value.name}. Prefabs and unspawned GameObjects would always be null on the other side. Please spawn it before using it in [SyncVar]s/Rpcs/Cmds/NetworkMessages etc.");
-
-            writer.WriteUInt(value.netId);
-        }
-
-        public static void WriteNetworkBehaviour(this NetworkWriter writer, NetworkBehaviour value)
-        {
-            if (value == null)
-            {
-                writer.WriteUInt(0);
-                return;
-            }
-
-            // users might try to use unspawned / prefab NetworkBehaviours in
-            // rpcs/cmds/syncvars/messages. they would be null on the other
-            // end, and it might not be obvious why. let's make it obvious.
-            // https://github.com/vis2k/Mirror/issues/2060
-            // and more recently https://github.com/MirrorNetworking/Mirror/issues/3399
-            //
-            // => warning (instead of exception) because we also use a warning
-            //    when writing an unspawned NetworkIdentity
-            if (value.netId == 0)
-            {
-                Debug.LogWarning($"Attempted to serialize unspawned NetworkBehaviour: of type {value.GetType()} on GameObject {value.name}. Prefabs and unspawned GameObjects would always be null on the other side. Please spawn it before using it in [SyncVar]s/Rpcs/Cmds/NetworkMessages etc.");
-                writer.WriteUInt(0);
-                return;
-            }
-
-            writer.WriteUInt(value.netId);
-            writer.WriteByte(value.ComponentIndex);
-        }
-
-        public static void WriteTransform(this NetworkWriter writer, Transform value)
-        {
-            if (value == null)
-            {
-                writer.WriteUInt(0);
-                return;
-            }
-            if (value.TryGetComponent(out NetworkIdentity identity))
-            {
-                writer.WriteUInt(identity.netId);
-            }
-            else
-            {
-                // if users attempt to pass a transform without NetworkIdentity
-                // to a [Command] or [SyncVar], it should show an obvious warning.
-                Debug.LogWarning($"Attempted to sync a Transform ({value}) which isn't networked. Transforms without a NetworkIdentity component can't be synced.");
-                writer.WriteUInt(0);
-            }
-        }
-
-        public static void WriteGameObject(this NetworkWriter writer, GameObject value)
-        {
-            if (value == null)
-            {
-                writer.WriteUInt(0);
-                return;
-            }
-
-            // warn if the GameObject doesn't have a NetworkIdentity,
-            if (!value.TryGetComponent(out NetworkIdentity identity))
-                Debug.LogWarning($"Attempted to sync a GameObject ({value}) which isn't networked. GameObject without a NetworkIdentity component can't be synced.");
-
-            // serialize the correct amount of data in any case to make sure
-            // that the other end can read the expected amount of data too.
-            writer.WriteNetworkIdentity(identity);
-        }
+        
 
         // while SyncList<T> is recommended for NetworkBehaviours,
         // structs may have .List<T> members which weaver needs to be able to
         // fully serialize for NetworkMessages etc.
         // note that Weaver/Writers/GenerateWriter() handles this manually.
-        public static void WriteList<T>(this NetworkWriter writer, Il2CppSystem.Collections.Generic.List<T> Il2CppSystem.Collections.Generic.List)
+        public static void WriteList<T>(this NetworkWriter writer, List<T> list)
         {
             // 'null' is encoded as '-1'
             if (list is null)
@@ -333,10 +241,10 @@ namespace Mirror
 
             // check if within max size, otherwise Reader can't read it.
             if (list.Count > NetworkReader.AllocationLimit)
-                throw new IndexOutOfRangeException($"NetworkWriter.WriteList - Il2CppSystem.Collections.Generic.List<{typeof(T)}> too big: {list.Count} elements. Limit: {NetworkReader.AllocationLimit}");
+                throw new IndexOutOfRangeException($"NetworkWriter.WriteList - List<{typeof(T)}> too big: {list.Count} elements. Limit: {NetworkReader.AllocationLimit}");
 
             writer.WriteInt(list.Count);
-            for (int i = 0; i < Il2CppSystem.Collections.Generic.List.Count; i++)
+            for (int i = 0; i < list.Count; i++)
                 writer.Write(list[i]);
         }
 
@@ -381,49 +289,6 @@ namespace Mirror
         {
             writer.WriteString(uri?.ToString());
         }
-
-        public static void WriteTexture2D(this NetworkWriter writer, Texture2D texture2D)
-        {
-            // TODO allocation protection when sending textures to server.
-            //      currently can allocate 32k x 32k x 4 byte = 3.8 GB
-
-            // support 'null' textures for [SyncVar]s etc.
-            // https://github.com/vis2k/Mirror/issues/3144
-            // simply send -1 for width.
-            if (texture2D == null)
-            {
-                writer.WriteShort(-1);
-                return;
-            }
-
-            // check if within max size, otherwise Reader can't read it.
-            int totalSize = texture2D.width * texture2D.height;
-            if (totalSize > NetworkReader.AllocationLimit)
-                throw new IndexOutOfRangeException($"NetworkWriter.WriteTexture2D - Texture2D total size (width*height) too big: {totalSize}. Limit: {NetworkReader.AllocationLimit}");
-
-            // write dimensions first so reader can create the texture with size
-            // 32k x 32k short is more than enough
-            writer.WriteShort((short)texture2D.width);
-            writer.WriteShort((short)texture2D.height);
-            writer.WriteArray(texture2D.GetPixels32());
-        }
-
-        public static void WriteSprite(this NetworkWriter writer, Sprite sprite)
-        {
-            // support 'null' textures for [SyncVar]s etc.
-            // https://github.com/vis2k/Mirror/issues/3144
-            // simply send a 'null' for texture content.
-            if (sprite == null)
-            {
-                writer.WriteTexture2D(null);
-                return;
-            }
-
-            writer.WriteTexture2D(sprite.texture);
-            writer.WriteRect(sprite.rect);
-            writer.WriteVector2(sprite.pivot);
-        }
-
         public static void WriteDateTime(this NetworkWriter writer, DateTime dateTime)
         {
             writer.WriteDouble(dateTime.ToOADate());
@@ -447,9 +312,7 @@ namespace Mirror
 
         public static void Write(this NetworkWriter writer, TestLogMessage value)
         {
-            if (false /*please remove if found*/) SRMP.Log(value.MessageToLog);
             writer.WriteString(value.MessageToLog); // Message
-            if (false /*please remove if found*/) SRMP.Log(writer.Position.ToString());
         }
         public static void Write(this NetworkWriter writer, ServerRequest value) {}
         public static void Write(this NetworkWriter writer, NetworkPingMessage value) 
@@ -502,17 +365,13 @@ namespace Mirror
         {
             writer.WriteInt(value.newMoney);
         }
-        public static void Write(this NetworkWriter writer, SetKeysMessage value)
-        {
-            writer.WriteInt(value.newMoney);
-        }
         public static void Write(this NetworkWriter writer, TimeSyncMessage value)
         {
             writer.WriteDouble(value.time);
         }
         public static void Write(this NetworkWriter writer, AmmoAddMessage value)
         {
-            writer.WriteInt((int)value.ident);
+            writer.WriteString(value.ident);
             writer.WriteString(value.id);
         }
         public static void Write(this NetworkWriter writer, AmmoRemoveMessage value)
@@ -523,7 +382,7 @@ namespace Mirror
         }
         public static void Write(this NetworkWriter writer, AmmoEditSlotMessage value)
         {
-            writer.WriteInt((int)value.ident);
+            writer.WriteString(value.ident);
             writer.WriteInt(value.slot);
             writer.WriteInt(value.count);
             writer.WriteString(value.id);
@@ -534,20 +393,19 @@ namespace Mirror
         }
         public static void Write(this NetworkWriter writer, ActorSpawnClientMessage value)
         {
-            writer.WriteInt((int)value.ident);
+            writer.WriteString(value.ident);
             writer.WriteVector3(value.position);
             writer.WriteVector3(value.rotation);
             writer.WriteVector3(value.velocity);
-            writer.WriteInt((int)value.region);
             writer.WriteInt(value.player);
         }
         public static void Write(this NetworkWriter writer, ActorSpawnMessage value)
         {
             writer.WriteLong(value.id);
-            writer.WriteInt((int)value.ident);
+            writer.WriteString(value.ident);
             writer.WriteVector3(value.position);
             writer.WriteVector3(value.rotation);
-            writer.WriteInt((int)value.region);
+            writer.WriteInt(value.scene);
             writer.WriteInt(value.player);
         }
         public static void Write(this NetworkWriter writer, ActorDestroyGlobalMessage value)
@@ -559,7 +417,7 @@ namespace Mirror
         {
             writer.WriteInt(ammo.count);
             writer.WriteInt(ammo.slot);
-            writer.WriteInt((int)ammo.id);
+            writer.WriteString(ammo.id);
         }
         
 
@@ -569,7 +427,7 @@ namespace Mirror
             foreach (var actor in value.initActors)
             {
                 writer.WriteLong(actor.id);
-                writer.WriteInt((int)actor.ident);
+                writer.WriteString(actor.ident);
                 writer.WriteVector3(actor.pos);
             }
             writer.WriteInt(value.initPlayers.Count);
@@ -595,7 +453,7 @@ namespace Mirror
                 {
                     writer.WriteAmmoData(ammo);
                 }
-                writer.WriteInt((int)plot.cropIdent);
+                writer.WriteString(plot.cropIdent);
             }
             writer.WriteInt(value.initGordos.Count);
             foreach (var gordo in value.initGordos)
@@ -606,12 +464,12 @@ namespace Mirror
             writer.WriteInt(value.initPedias.Count);
             foreach (var pedia in value.initPedias)
             {
-                writer.WriteInt((int)pedia);
+                writer.WriteString(pedia);
             }
             writer.WriteInt(value.initMaps.Count);
             foreach (var map in value.initMaps)
             {
-                writer.WriteByte((byte)map);
+                writer.WriteString(map);
             }
             writer.WriteInt(value.initAccess.Count);
             foreach (var access in value.initAccess)
@@ -627,35 +485,33 @@ namespace Mirror
 
             foreach (var amm in value.localPlayerSave.ammo)
             {
-                writer.WriteByte((byte)amm.Key);
-                writer.WriteInt(amm.Value.Count);
-                foreach (var amm2 in amm.Value)
-                    writer.WriteAmmoData(amm2);
+                writer.WriteAmmoData(amm);
             }
-
+            writer.WriteInt(value.localPlayerSave.sceneGroup);
+            
+            
+            
+            
             writer.WriteInt(value.money);
-            writer.WriteInt(value.keys);
 
 
             writer.WriteInt(value.upgrades.Count);
             foreach (var upg in value.upgrades)
             {
-                writer.WriteByte((byte)upg);
+                writer.WriteInt(upg.key);
+                writer.WriteInt(upg.value);
             }
 
             writer.WriteDouble(value.time);
 
-            writer.WriteBool(value.sharedMoney);
-            writer.WriteBool(value.sharedKeys);
-            writer.WriteBool(value.sharedUpgrades);
         }
         public static void Write(this NetworkWriter writer, PediaMessage value)
         {
-            writer.WriteInt((int)value.id);
+            writer.WriteString(value.id);
         }
         public static void Write(this NetworkWriter writer, GardenPlantMessage value)
         {
-            writer.WriteInt((int)value.ident);
+            writer.WriteString(value.ident);
             writer.WriteBool(value.replace);
             writer.WriteString(value.id);
         }
@@ -670,7 +526,7 @@ namespace Mirror
         }
         public static void Write(this NetworkWriter writer, MapUnlockMessage value)
         {
-            writer.WriteByte((byte)value.id);
+            writer.WriteString(value.id);
         }
         public static void Write(this NetworkWriter writer, ActorUpdateOwnerMessage value)
         {

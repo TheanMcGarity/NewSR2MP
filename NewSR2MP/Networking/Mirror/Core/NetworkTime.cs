@@ -126,7 +126,7 @@ namespace Mirror
         public static double rttVariance => _rtt.Variance;
 
         // RuntimeInitializeOnLoadMethod -> fast playmode without domain reload
-        [RuntimeInitializeOnLoadMethod]
+        
         public static void ResetStatics()
         {
             PingInterval = DefaultPingInterval;
