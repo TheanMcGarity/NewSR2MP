@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Il2CppSystem.Reflection;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
@@ -13,9 +13,112 @@ namespace NewSR2MP
 {
     public static class Globals
     {
+        //
+        // Copied from SR2E
+        //
+        public static T getObjRec<T>(this GameObject obj, string name) where T : class
+        {
+            var transform = obj.transform;
+
+            List<GameObject> totalChildren = getAllChildren(transform);
+            for (int i = 0; i < totalChildren.Count; i++)
+                if (totalChildren[i].name == name)
+                {
+                    if (typeof(T) == typeof(GameObject))
+                        return totalChildren[i] as T;
+                    if (typeof(T) == typeof(Transform))
+                        return totalChildren[i].transform as T;
+                    if (totalChildren[i].GetComponent<T>() != null)
+                        return totalChildren[i].GetComponent<T>();
+                }
+            return null;
+        }
+
+        public static List<Transform> GetChildren(this Transform obj)
+        {
+            List<Transform> children = new List<Transform>();
+            for (int i = 0; i < obj.childCount; i++)
+                children.Add(obj.GetChild(i)); 
+            return children;
+        }
+        public static void DestroyAllChildren(this Transform obj)
+        {
+            for (int i = 0; i < obj.childCount; i++) GameObject.Destroy(obj.GetChild(i).gameObject); 
+        }
+        public static List<GameObject> getAllChildren(this GameObject obj)
+        {
+            var container = obj.transform;
+            List<GameObject> allChildren = new List<GameObject>();
+            for (int i = 0; i < container.childCount; i++)
+            {
+                var child = container.GetChild(i);
+                allChildren.Add(child.gameObject);
+                allChildren.AddRange(getAllChildren(child));
+            }
+            return allChildren;
+        }
+
+        public static T[] getAllChildrenOfType<T>(this GameObject obj) where T : Component
+        {
+            List<T> children = new List<T>();
+            foreach (var child in obj.getAllChildren())
+            {
+                if (child.GetComponent<T>() != null)
+                {
+                    children.Add(child.GetComponent<T>());
+                }
+            }
+            return children.ToArray();
+        }
+
+        public static T[] getAllChildrenOfType<T>(this Transform obj) where T : Component
+        {
+            List<T> children = new List<T>();
+            foreach (var child in obj.getAllChildren())
+            {
+                if (child.GetComponent<T>() != null)
+                {
+                    children.Add(child.GetComponent<T>());
+                }
+            }
+            return children.ToArray();
+        }
+
+        public static T getObjRec<T>(this Transform transform, string name) where T : class
+        {
+            List<GameObject> totalChildren = getAllChildren(transform);
+            for (int i = 0; i < totalChildren.Count; i++)
+                if (totalChildren[i].name == name)
+                {
+                    if (typeof(T) == typeof(GameObject))
+                        return totalChildren[i] as T;
+                    if (typeof(T) == typeof(Transform))
+                        return totalChildren[i].transform as T;
+                    if (totalChildren[i].GetComponent<T>() != null)
+                        return totalChildren[i].GetComponent<T>();
+                }
+            return null;
+        } public static List<GameObject> getAllChildren(this Transform container)
+        {
+            List<GameObject> allChildren = new List<GameObject>();
+            for (int i = 0; i < container.childCount; i++)
+            {
+                var child = container.GetChild(i);
+                allChildren.Add(child.gameObject);
+                allChildren.AddRange(getAllChildren(child));
+            }
+            return allChildren;
+        }
+        
         public static AssetBundle InitializeAssetBundle(string bundleName)
         {
-            return AssetBundle.LoadFromStream(Assembly.GetExecutingAssembly().GetManifestResourceStream($"NewSR2MP.Resources.{bundleName}"));
+            System.IO.Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"NewSR2MP.{bundleName}");
+            byte[] buffer = new byte[16 * 1024];
+            Il2CppSystem.IO.MemoryStream ms = new Il2CppSystem.IO.MemoryStream();
+            int read;
+            while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+                ms.Write(buffer, 0, read);
+            return AssetBundle.LoadFromMemory(ms.ToArray());
         }
         
         public static string GenerateServerCode()

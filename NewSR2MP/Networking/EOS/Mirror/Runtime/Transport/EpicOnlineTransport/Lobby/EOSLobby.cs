@@ -209,7 +209,7 @@ public class EOSLobby : MonoBehaviour {
             }
 
             //invoke event
-            FindLobbiesSucceeded?.Invoke(foundLobbies);
+            
         });
     }
 

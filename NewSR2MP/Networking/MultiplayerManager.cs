@@ -70,7 +70,7 @@ namespace NewSR2MP.Networking
 
         private NetworkManager networkManager;
 
-        public EOSLobbyGUI prototypeLobbyGUI;
+        //public EOSLobbyGUI prototypeLobbyGUI;
 
 
         public GameObject onlinePlayerPrefab;
@@ -114,7 +114,7 @@ namespace NewSR2MP.Networking
             networkManager.transport = transport;
             Transport.active = transport;
 
-            prototypeLobbyGUI = gameObject.AddComponent<EOSLobbyGUI>();
+            //prototypeLobbyGUI = gameObject.AddComponent<EOSLobbyGUI>();
             
             NetworkManager.dontDestroyOnLoad = true;
 

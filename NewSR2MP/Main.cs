@@ -24,9 +24,6 @@ namespace NewSR2MP
         
         private static GameObject m_GameObject;
 
-        // Called before GameContext.Awake
-        // this is where you want to register stuff (like custom enum values or identifiable id's)
-        // and patch anything you want to patch with harmony
         public override void OnLateInitializeMelon()
         {
             LoadData();
@@ -322,7 +319,8 @@ namespace NewSR2MP
 
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
-            if (sceneName == "GameCore")
+            if (sceneName == "SystemCore")
+            if (sceneName == "SystemCore")
             {
                 Initialize();
             }
