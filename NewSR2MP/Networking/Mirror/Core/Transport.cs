@@ -27,14 +27,15 @@ using UnityEngine;
 
 namespace Mirror
 {
+    [RegisterTypeInIl2Cpp(false)]
     /// <summary>Abstract transport layer component</summary>
-    public abstract class Transport : MonoBehaviour
+    public class Transport : MonoBehaviour
     {
         /// <summary>The current transport used by Mirror.</summary>
         public static Transport active;
 
         /// <summary>Is this transport available in the current platform?</summary>
-        public abstract bool Available();
+        public virtual bool Available() => true;
 
         /// <summary>Is this transported encrypted for secure communication?</summary>
         public virtual bool IsEncrypted => false;
@@ -93,10 +94,13 @@ namespace Mirror
 
         // client functions ////////////////////////////////////////////////////
         /// <summary>True if the client is currently connected to the server.</summary>
-        public abstract bool ClientConnected();
+        public virtual bool ClientConnected() => true;
 
         /// <summary>Connects the client to the server at the address.</summary>
-        public abstract void ClientConnect(string address);
+        public virtual void ClientConnect(string address)
+        {
+            return;
+        }
 
         /// <summary>Connects the client to the server at the Uri.</summary>
         public virtual void ClientConnect(Uri uri)
@@ -108,34 +112,51 @@ namespace Mirror
 
         /// <summary>Sends a message to the server over the given channel.</summary>
         // The ArraySegment is only valid until returning. Copy if needed.
-        public abstract void ClientSend(ArraySegment<byte> segment, int channelId = Channels.Reliable);
+        public virtual void ClientSend(ArraySegment<byte> segment, int channelId = Channels.Reliable)
+        {
+            return;
+        }
+
 
         /// <summary>Disconnects the client from the server</summary>
-        public abstract void ClientDisconnect();
+        public virtual void ClientDisconnect()
+        {
+            return;
+        }
+
 
         // server functions ////////////////////////////////////////////////////
         /// <summary>Returns server address as Uri.</summary>
         // Useful for NetworkDiscovery.
-        public abstract Uri ServerUri();
+        public virtual Uri ServerUri() => null;
 
         /// <summary>True if the server is currently Il2CppSystem.Collections.Generic.Listening for connections.</summary>
-        public abstract bool ServerActive();
+        public virtual bool ServerActive() => false;
 
         /// <summary>Start Il2CppSystem.Collections.Generic.Listening for connections.</summary>
-        public abstract void ServerStart();
+        public virtual void ServerStart(){
+            return;
+        }
 
         /// <summary>Send a message to a client over the given channel.</summary>
-        public abstract void ServerSend(int connectionId, ArraySegment<byte> segment, int channelId = Channels.Reliable);
+        public virtual void ServerSend(int connectionId, ArraySegment<byte> segment, int channelId = Channels.Reliable){
+            return;
+        }
 
         /// <summary>Disconnect a client from the server.</summary>
-        public abstract void ServerDisconnect(int connectionId);
+        public virtual void ServerDisconnect(int connectionId){
+            return;
+        }
 
         /// <summary>Get a client's address on the server.</summary>
         // Can be useful for Game Master IP bans etc.
-        public abstract string ServerGetClientAddress(int connectionId);
+        public virtual string ServerGetClientAddress(int connectionId) => "";
 
         /// <summary>Stop Il2CppSystem.Collections.Generic.Listening and disconnect all connections.</summary>
-        public abstract void ServerStop();
+        public virtual void ServerStop()
+        {
+            return;
+        }
 
         /// <summary>Maximum message size for the given channel.</summary>
         // Different channels often have different sizes, ranging from MTU to
@@ -143,7 +164,7 @@ namespace Mirror
         //
         // Needs to return a value at all times, even if the Transport isn't
         // running or available because it's needed for initializations.
-        public abstract int GetMaxPacketSize(int channelId = Channels.Reliable);
+        public virtual int GetMaxPacketSize(int channelId = Channels.Reliable) => 0;
 
         /// <summary>Recommended Batching threshold for this transport.</summary>
         // Uses GetMaxPacketSize by default.
@@ -190,7 +211,10 @@ namespace Mirror
         public virtual void ServerLateUpdate() {}
 
         /// <summary>Shut down the transport, both as client and server</summary>
-        public abstract void Shutdown();
+        public virtual void Shutdown()
+        {
+            return;
+        }
 
         /// <summary>Called by Unity when quitting. Inheriting Transports should call base for proper Shutdown.</summary>
         public virtual void OnApplicationQuit()

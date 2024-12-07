@@ -12,7 +12,7 @@ namespace Mirror
     /// <para>Hook parameter allows you to define a method to be invoked when gets an value update. Notice that the hook method will not be called on the change side.</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public class SyncVarAttribute : PropertyAttribute
+    public class SyncVarAttribute : Attribute
     {
         public string hook;
     }
@@ -91,5 +91,5 @@ namespace Mirror
     /// Used to make a field readonly in the inspector
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public class ReadOnlyAttribute : PropertyAttribute {}
+    public class ReadOnlyAttribute : Attribute {}
 }

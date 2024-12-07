@@ -12,9 +12,5 @@ using NewSR2MP.Networking.Packet;
 using UnityEngine;
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(TutorialDirector), nameof(TutorialDirector.MaybeShowPopup))]
-    public class TutorialDirectorShowPopup
-    {
-        public static bool Prefix(TutorialDirector __instance, TutorialDirector.Id id) => !SRMLConfig.DEBUG_STOP_TUTORIALS;
-    }
+    // You can disable tutorials in sr2!
 }

@@ -1,11 +1,13 @@
-﻿using Mirror.Discovery;
+﻿
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 using EpicTransport;
 using Il2CppMonomiPark.SlimeRancher.Event;
+using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.World;
+using UnityEngine.Serialization;
 
 namespace NewSR2MP.Networking
 {
@@ -68,9 +70,8 @@ namespace NewSR2MP.Networking
 
         private NetworkManager networkManager;
 
-        public EOSLobbyUI prototypeLobbyUI;
+        public EOSLobbyGUI prototypeLobbyGUI;
 
-        private NetworkDiscovery discoveryManager;
 
         public GameObject onlinePlayerPrefab;
 
@@ -83,14 +84,6 @@ namespace NewSR2MP.Networking
             get
             {
                 return Instance.networkManager;
-            }
-        }
-
-        public static NetworkDiscovery DiscoveryManager
-        {
-            get
-            {
-                return Instance.discoveryManager;
             }
         }
 
@@ -121,10 +114,9 @@ namespace NewSR2MP.Networking
             networkManager.transport = transport;
             Transport.active = transport;
 
-            prototypeLobbyUI = gameObject.AddComponent<EOSLobbyUI>();
+            prototypeLobbyGUI = gameObject.AddComponent<EOSLobbyGUI>();
             
             NetworkManager.dontDestroyOnLoad = true;
-            discoveryManager.enableActiveDiscovery = true;
 
 
 
@@ -447,7 +439,7 @@ namespace NewSR2MP.Networking
 
         public static void ClientLeave()
         {
-            SceneManager.LoadScene("MainMenu");
+            SystemContext.Instance.SceneLoader.LoadSceneGroup(SystemContext.Instance.SceneLoader._mainMenuSceneGroup);
         }
 
         public void Connect(string ip, ushort port)

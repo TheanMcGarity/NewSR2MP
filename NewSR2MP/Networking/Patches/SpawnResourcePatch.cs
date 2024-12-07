@@ -9,7 +9,7 @@ namespace NewSR2MP.Networking.Patches
         public static void Postfix(SpawnResource __instance)
         {
             if (NetworkClient.active && !NetworkServer.activeHost)
-                __instance.model.nextSpawnTime = double.MaxValue;
+                __instance._model.nextSpawnTime = double.MaxValue;
         }
     }
 }

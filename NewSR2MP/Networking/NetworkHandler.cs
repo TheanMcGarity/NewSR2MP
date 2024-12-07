@@ -631,7 +631,7 @@ namespace NewSR2MP.Networking
             public static void HandleSave(LoadMessage save)
             {
                 latestSaveJoined = save;
-                SceneManager.LoadScene("worldGenerated");
+                SystemContext.Instance.SceneLoader.LoadSceneGroup(GameContext.Instance.AutoSaveDirector._savedGame._sceneGroupTranslation.ReverseLookupTable.Get(save.localPlayerSave.sceneGroup));
             }
 
             public static void HandleGarden(GardenPlantMessage packet)

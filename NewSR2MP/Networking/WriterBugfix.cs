@@ -1,5 +1,5 @@
 ﻿using Mirror;
-using Mirror.Discovery;
+
 using NewSR2MP.Networking.Packet;
 using System;
 using System.Collections.Generic;
@@ -13,8 +13,6 @@ namespace NewSR2MP.Networking
     {
         public static void FixWriters()
         {
-            Writer<ServerRequest>.write = new Action<NetworkWriter, ServerRequest>((w, v) => NetworkWriterExtensions.Write(w, v));
-            Writer<ServerResponse>.write = new Action<NetworkWriter, ServerResponse>((w, v) => NetworkWriterExtensions.Write(w, v));
             Writer<TestLogMessage>.write = new Action<NetworkWriter, TestLogMessage>((w, v) => NetworkWriterExtensions.Write(w, v));
             Writer<NetworkPingMessage>.write = new Action<NetworkWriter, NetworkPingMessage>((w, v) => NetworkWriterExtensions.Write(w, v));
             Writer<SceneMessage>.write = new Action<NetworkWriter, SceneMessage>((w, v) => NetworkWriterExtensions.Write(w, v));

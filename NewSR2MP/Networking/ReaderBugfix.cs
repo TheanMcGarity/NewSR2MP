@@ -1,5 +1,5 @@
 ﻿using Mirror;
-using Mirror.Discovery;
+
 using NewSR2MP.Networking.Packet;
 using System;
 using System.Collections.Generic;
@@ -13,8 +13,6 @@ namespace NewSR2MP.Networking
     {
         public static void FixReaders()
         {
-            Reader<ServerRequest>.read = new Func<NetworkReader, ServerRequest>((r) => NetworkReaderExtensions.ReadDiscoveryRequestMessage(r)); 
-            Reader<ServerResponse>.read = new Func<NetworkReader, ServerResponse>((r) => NetworkReaderExtensions.ReadDiscoveryResponseMessage(r));
             Reader<TestLogMessage>.read = new Func<NetworkReader, TestLogMessage>((r) => NetworkReaderExtensions.ReadTestLogMessage(r));
             Reader<NetworkPingMessage>.read = new Func<NetworkReader, NetworkPingMessage>((r) => NetworkReaderExtensions.ReadPingMessage(r));
             Reader<SceneMessage>.read = new Func<NetworkReader, SceneMessage>((r) => NetworkReaderExtensions.ReadSceneMessage(r));

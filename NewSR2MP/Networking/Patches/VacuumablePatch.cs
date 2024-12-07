@@ -38,13 +38,13 @@ namespace NewSR2MP.Networking.Patches
                 if (!(ammo is NetworkAmmo)) return true;
 
                 NetworkAmmo netAmmo = (NetworkAmmo)ammo;
-                var openSlot = netAmmo.GetSlotIDX(__instance.identifiable.id);
+                var openSlot = netAmmo.GetSlotIDX(__instance.identifiable.identType);
                 if (openSlot == -1)
                 {
                     __result = false;
                     return false;
                 }
-                netAmmo.MaybeAddToSpecificSlot(__instance.identifiable.id, __instance.identifiable, openSlot);
+                netAmmo.MaybeAddToSpecificSlot(__instance.identifiable.identType, __instance.identifiable, openSlot);
                 Destroyer.Destroy(__instance.gameObject, "SRMP.NetworkVac");
                 __result = true;
                 return false;

@@ -23,8 +23,8 @@ namespace NewSR2MP.Networking.Patches
                 {
                     var packet = new LandPlotMessage()
                     {
-                        id = __instance.id,
-                        type = replacementPrefab.GetComponent<LandPlot>().typeId,
+                        id = __instance._id,
+                        type = replacementPrefab.GetComponent<LandPlot>().TypeId,
                         messageType = LandplotUpdateType.SET
                     };
 

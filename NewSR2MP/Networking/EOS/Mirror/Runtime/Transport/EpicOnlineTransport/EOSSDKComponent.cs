@@ -26,10 +26,10 @@ namespace EpicTransport {
 
         
         public bool authInterfaceLogin = false;
-        public Epic.OnlineServices.Auth.LoginCredentialType authInterfaceCredentialType = Epic.OnlineServices.Auth.LoginCredentialType.AccountPortal;
+        public Epic.OnlineServices.Auth.LoginCredentialType authInterfaceCredentialType = Epic.OnlineServices.Auth.LoginCredentialType.ExternalAuth;
         public uint devAuthToolPort = 7878;
         public string devAuthToolCredentialName = "";
-        public Epic.OnlineServices.ExternalCredentialType connectInterfaceCredentialType = Epic.OnlineServices.ExternalCredentialType.DiscordAccessToken;
+        public Epic.OnlineServices.ExternalCredentialType connectInterfaceCredentialType = Epic.OnlineServices.ExternalCredentialType.DeviceidAccessToken;
         public string deviceModel = "PC Windows 64bit";
         public string displayName = "User";
         public static string DisplayName {

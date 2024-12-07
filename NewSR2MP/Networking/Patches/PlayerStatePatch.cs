@@ -5,8 +5,7 @@ using NewSR2MP.Networking;
 using NewSR2MP.Networking.Component;
 using NewSR2MP.Networking.Packet;
 using System;
-
-
+using Il2CppMonomiPark.SlimeRancher.UI.Map;
 
 
 namespace NewSR2MP.Networking.Patches
@@ -51,21 +50,6 @@ namespace NewSR2MP.Networking.Patches
             }
         }
     }
-    [HarmonyPatch(typeof(PlayerState), nameof(PlayerState.UnlockMap))]
-    internal class PlayerStateUnlockMap
-    {
-        public static void Postfix(PlayerState __instance, ZoneDirector.Zone zone)
-        {
-            if (NetworkClient.active || NetworkServer.active)
-            {
-                MapUnlockMessage message = new MapUnlockMessage()
-                {
-                    id = zone
-                };
-                SRNetworkManager.NetworkSend(message);
-            }
-        }
-    }
     [HarmonyPatch(typeof(PlayerState), nameof(PlayerState.AddKey))]
     internal class PlayerStateAddKey
     {
@@ -82,7 +66,7 @@ namespace NewSR2MP.Networking.Patches
                 HandledKey.StartTimer();
                 SetKeysMessage message = new SetKeysMessage()
                 {
-                    newMoney = __instance.model.keys + 1
+                    newMoney = __instance._model.keys + 1
                 };
                 SRNetworkManager.NetworkSend(message);
             }
@@ -104,7 +88,7 @@ namespace NewSR2MP.Networking.Patches
                 }
                 SetKeysMessage message = new SetKeysMessage()
                 {
-                    newMoney = __instance.model.keys
+                    newMoney = __instance._model.keys
                 };
                 SRNetworkManager.NetworkSend(message);
             }

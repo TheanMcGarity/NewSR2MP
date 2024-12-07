@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Il2CppSystem.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
@@ -12,10 +13,31 @@ namespace NewSR2MP
 {
     public static class Globals
     {
+        public static AssetBundle InitializeAssetBundle(string bundleName)
+        {
+            return AssetBundle.LoadFromStream(Assembly.GetExecutingAssembly().GetManifestResourceStream($"NewSR2MP.Resources.{bundleName}"));
+        }
+        
+        public static string GenerateServerCode()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            System.Random random = new System.Random();
+            char[] result = new char[7];
+
+            for (int i = 0; i < 7; i++)
+            {
+                result[i] = chars[random.Next(chars.Length)];
+            }
+
+            return new string(result);
+        }
+        
         internal static EosApiKey GetAPIKey()
         {
             var key = ScriptableObject.CreateInstance<EosApiKey>();
 
+            key.epicDeploymentId = "85657bc0947f45b8976082409f60b3ad";
+            key.epicSandboxId = "dfcf7f2faa004223b14b04d7f5aaeac1";
             key.epicClientId = "xyza7891vEIt18NTG5woeNE6E7eKG7Yr";
             key.epicClientSecret = "AaAXPKUogRkC6C0J4N5512Ye81vzr+jJ2zV7nytjptU";
             key.epicProductId = "5cabbf45e03042e9b93f40449849c50d";

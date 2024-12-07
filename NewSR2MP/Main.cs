@@ -20,15 +20,17 @@ namespace NewSR2MP
     
     public class Main : MelonMod
     {
+        public static AssetBundle ui;
+        
         private static GameObject m_GameObject;
 
         // Called before GameContext.Awake
         // this is where you want to register stuff (like custom enum values or identifiable id's)
         // and patch anything you want to patch with harmony
-        public override void OnEarlyInitializeMelon()
+        public override void OnLateInitializeMelon()
         {
             LoadData();
-            Application.add_quitting(new System.Action(SaveData));;
+            Application.add_quitting(new System.Action(SaveData));
         }
         public static UserData data;
 
@@ -318,7 +320,28 @@ namespace NewSR2MP
             }
         }
 
+        public override void OnSceneWasLoaded(int buildIndex, string sceneName)
+        {
+            if (sceneName == "GameCore")
+            {
+                Initialize();
+            }
+        }
 
+        public static void Initialize()
+        {
+            ui = InitializeAssetBundle("ui");
+            
+            var obj = new GameObject();
+            obj.name = "MultiplayerContext";
+            obj.AddComponent<MultiplayerManager>();
+            UnityEngine.Object.DontDestroyOnLoad(obj);
+
+            UnityEngine.Object.Instantiate(ui.LoadAsset<GameObject>("LobbyUI")).transform.SetParent(obj.transform);
+            
+            SRMP.Log("Multiplayer Initialized!");
+        }
+        
         /// <summary>
         /// Multplayer User Data
         /// </summary>
@@ -331,5 +354,6 @@ namespace NewSR2MP
             public Guid Player;
             public List<string> ignoredMods;
         }
+        
     }
 }

@@ -16,7 +16,7 @@ namespace NewSR2MP.Networking.Patches
         {
             try
             {
-                var aid = __instance.transform.GetComponentInParent<LandPlotLocation>().id;
+                var aid = __instance.transform.GetComponentInParent<LandPlotLocation>()._id;
 
                 if (NetworkAmmo.all.ContainsKey(aid))
                 {
@@ -38,14 +38,14 @@ namespace NewSR2MP.Networking.Patches
                 {
                     aid += "-5";
                 } // idk why this happens, i only ever indended for it to go to _1.
-                if (__instance.ammo == null)
+                if (__instance.Ammo == null)
                 {
                     
-                    __instance.ammo = new NetworkAmmo(aid, __instance.type.GetContents(), __instance.numSlots, __instance.numSlots, new Predicate<Identifiable.Id>[__instance.numSlots], (Identifiable.Id id, int index) => __instance.maxAmmo);
+                    __instance.Ammo = new NetworkAmmo(aid, __instance.AmmoSlotDefinitions);
                 }
-                else if (!(__instance.ammo is NetworkAmmo))
+                else if (!(__instance.Ammo is NetworkAmmo))
                 {
-                    __instance.ammo = new NetworkAmmo(aid, __instance.type.GetContents(), __instance.numSlots, __instance.numSlots, new Predicate<Identifiable.Id>[__instance.numSlots], (Identifiable.Id id, int index) => __instance.maxAmmo);
+                    __instance.Ammo = new NetworkAmmo(aid,  __instance.AmmoSlotDefinitions);
                 }
                 return false;
             }

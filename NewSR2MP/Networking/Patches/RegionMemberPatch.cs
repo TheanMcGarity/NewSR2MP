@@ -18,13 +18,9 @@ namespace NewSR2MP.Networking.Patches
     [HarmonyPatch(typeof(RegionMember), nameof(RegionMember.UpdateRegionMembership))]
     public class UpdateRegionMembership
     {
+        // Used to be RegionSetId patch, but that doesn't exist in SR2
         public static bool Prefix(RegionMember __instance)
         {
-            if (__instance.setId == RegionRegistry.RegionSetId.UNSET)
-            {
-                __instance.actorModel.currRegionSetId = RegionRegistry.RegionSetId.HOME;
-                return false;
-            }
             return true;
         }
     }

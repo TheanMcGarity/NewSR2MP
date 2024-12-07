@@ -1,4 +1,4 @@
-using Mirror.Discovery;
+
 using Il2CppMonomiPark.SlimeRancher.Regions;
 using NewSR2MP.Networking.Packet;
 using System;
@@ -342,10 +342,6 @@ namespace Mirror
             return new TestLogMessage() { MessageToLog = log };
         }
 
-        public static ServerRequest ReadDiscoveryRequestMessage(this NetworkReader reader)
-        {
-            return new ServerRequest();
-        }
         public static SetMoneyMessage ReadMoneyMessage(this NetworkReader reader)
         {
             var mon = reader.ReadInt();
@@ -377,25 +373,7 @@ namespace Mirror
         public static ReadyMessage ReadReadyMessage(this NetworkReader reader) => new ReadyMessage();
         public static AddPlayerMessage ReadAddPlayerMessage(this NetworkReader reader) => new AddPlayerMessage();
         public static TimeSnapshotMessage ReadTimeSnapshotMessage(this NetworkReader reader) => new TimeSnapshotMessage();
-        public static ServerResponse ReadDiscoveryResponseMessage(this NetworkReader reader)
-        {
-            Uri path = reader.ReadUri();
-
-            //int port = reader.ReadInt();
-            //long address = reader.ReadLong();
-
-            long id = reader.ReadLong();
-            string pc = reader.ReadString();
-
-            ServerResponse res = new ServerResponse()
-            {
-                serverId = id,
-                uri = path,
-                ServerName = pc
-            };
-
-            return res;
-        }
+        
         public static PlayerUpdateMessage ReadPlayerMessage(this NetworkReader reader)
         {
             var id = reader.ReadInt();

@@ -11,6 +11,7 @@ using UnityEngine;
 /// in order to create an instance of this scriptable object
 /// </summary>
 
+[RegisterTypeInIl2Cpp(false)]
 public class EosApiKey : ScriptableObject {
     public string epicProductName = "MyApplication";
     public string epicProductVersion = "1.0";

@@ -23,7 +23,7 @@ namespace NewSR2MP.Networking.Patches
                 {
                     var packet = new LandPlotMessage()
                     {
-                        id = __instance.model.gameObj.GetComponent<LandPlotLocation>().id,
+                        id = __instance._model.gameObj.GetComponent<LandPlotLocation>()._id,
                         upgrade = upgrade,
                         messageType = LandplotUpdateType.UPGRADE
                     };
@@ -46,8 +46,8 @@ namespace NewSR2MP.Networking.Patches
                 {
                     var packet = new GardenPlantMessage()
                     {
-                        id = __instance.model.gameObj.GetComponent<LandPlotLocation>().id,
-                        ident = Identifiable.Id.NONE,
+                        id = __instance._model.gameObj.GetComponent<LandPlotLocation>()._id,
+                        ident = "",
                         replace = true,
                     };
 

@@ -5,7 +5,7 @@ using EpicTransport;
 using Mirror;
 
 [RegisterTypeInIl2Cpp(false)]
-public class EOSLobbyUI : EOSLobby {
+public class EOSLobbyGUI : EOSLobby {
     private string lobbyName = "My Lobby";
     private bool showLobbyList = false;
     private bool showPlayerList = false;

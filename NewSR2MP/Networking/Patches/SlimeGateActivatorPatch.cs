@@ -10,7 +10,7 @@ namespace NewSR2MP.Networking.Patches
         {
             var message = new DoorOpenMessage()
             {
-                id = __instance.gateDoor.id
+                id = __instance.GateDoor._id
             };
             SRNetworkManager.NetworkSend(message);
         }

@@ -1,4 +1,4 @@
-using Mirror.Discovery;
+
 using UnityEngine;
 
 
@@ -314,20 +314,10 @@ namespace Mirror
         {
             writer.WriteString(value.MessageToLog); // Message
         }
-        public static void Write(this NetworkWriter writer, ServerRequest value) {}
         public static void Write(this NetworkWriter writer, NetworkPingMessage value) 
         {
             writer.WriteDouble(value.localTime);
             writer.WriteDouble(value.predictedTimeAdjusted);
-        }
-        public static void Write(this NetworkWriter writer, ServerResponse value)
-        {
-
-            writer.WriteUri(value.uri); // Server path
-
-            writer.WriteLong(value.serverId); // Server ID
-
-            writer.WriteString(value.ServerName); // PC Name
         }
         public static void Write(this NetworkWriter writer, ReadyMessage value) { }
 

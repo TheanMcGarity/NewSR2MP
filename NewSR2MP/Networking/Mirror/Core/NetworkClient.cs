@@ -18,6 +18,7 @@ namespace Mirror
         Disconnected
     }
 
+    
     /// <summary>NetworkClient with connection to server.</summary>
     public static partial class NetworkClient
     {

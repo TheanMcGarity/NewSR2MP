@@ -108,13 +108,13 @@ namespace Mirror
         // capture full Unity update time from before Early- to after LateUpdate
         public static TimeSample fullUpdateDuration;
 
-        /// <summary>Starts server and Il2CppSystem.Collections.Generic.Listens to incoming connections with max connections limit.</summary>
+        /// <summary>Starts server and Listens to incoming connections with max connections limit.</summary>
         public static void Listen(int maxConns)
         {
             Initialize();
             maxConnections = maxConns;
 
-            // only start server if we want to Il2CppSystem.Collections.Generic.Listen
+            // only start server if we want to Listen
             if (!dontListen)
             {
                 Transport.active.ServerStart();
@@ -146,7 +146,7 @@ namespace Mirror
             // and other random errors at runtime instead. this is cleaner.
             if (!WeaverFuse.Weaved())
             {
-                // if it failed, throw an exception to early exit all Il2CppSystem.Collections.Generic.Listen calls.
+                // if it failed, throw an exception to early exit all Listen calls.
                 throw new Exception("NetworkServer won't start because Weaving failed or didn't run.");
             }
 
@@ -159,7 +159,7 @@ namespace Mirror
             // reset NetworkTime
             NetworkTime.ResetStatics();
 
-            Debug.Assert(Transport.active != null, "There was no active transport when calling NetworkServer.Listen, If you are calling Il2CppSystem.Collections.Generic.Listen manually then make sure to set 'Transport.active' first");
+            Debug.Assert(Transport.active != null, "There was no active transport when calling NetworkServer.Listen, If you are calling Listen manually then make sure to set 'Transport.active' first");
             AddTransportHandlers();
             RegisterMessageHandlers();
 
@@ -528,7 +528,7 @@ namespace Mirror
 
         public static NetworkConnectionToClient[] NetworkConnectionListExcept(NetworkConnectionToClient except)
         {
-            Il2CppSystem.Collections.Generic.List<NetworkConnectionToClient> list = new Il2CppSystem.Collections.Generic.List<NetworkConnectionToClient>();
+            List<NetworkConnectionToClient> list = new List<NetworkConnectionToClient>();
 
             foreach (var conn in connections.Values)
             {
@@ -1180,8 +1180,8 @@ namespace Mirror
         // NetworkLateUpdate called after any Update/FixedUpdate/LateUpdate
         // (we add this to the UnityEngine in NetworkLoop)
         // internal for tests
-        internal static readonly Il2CppSystem.Collections.Generic.List<NetworkConnectionToClient> connectionsCopy =
-            new Il2CppSystem.Collections.Generic.List<NetworkConnectionToClient>();
+        internal static readonly List<NetworkConnectionToClient> connectionsCopy =
+            new List<NetworkConnectionToClient>();
 
         static void Broadcast()
         {

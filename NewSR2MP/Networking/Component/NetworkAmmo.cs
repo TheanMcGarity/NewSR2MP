@@ -74,5 +74,9 @@ namespace NewSR2MP.Networking.Component
             ammoId = id;
             all.Add(ammoId, this);
         }
+
+        public NetworkAmmo() : base(DerivedConstructorPointer<NetworkAmmo>())
+        {
+        }
     }
 }
