@@ -10,24 +10,21 @@ using System.Threading.Tasks;
 
 namespace NewSR2MP.Networking.Patches
 {
-    internal class TimeDirectorPatch
+    [HarmonyPatch(typeof(TimeDirector), nameof(TimeDirector.FastForwardTo))]
+    internal class TimeDirectorFastForwardTo
     {
-        [HarmonyPatch(typeof(TimeDirector), nameof(TimeDirector.FastForwardTo))]
-        internal class SceneContextAwake
+        public static bool Prefix (TimeDirector __instance, double fastForwardUntil)
         {
-            public static bool Prefix (TimeDirector __instance, double fastForwardUntil)
+            if (NetworkClient.active && !NetworkServer.activeHost)
             {
-                if (NetworkClient.active && !NetworkServer.activeHost)
+                var packet = new SleepMessage()
                 {
-                    var packet = new SleepMessage()
-                    {
-                        time = fastForwardUntil
-                    };
-                    NetworkClient.SRMPSend(packet);
-                    return false;
-                }
-                return true;
+                    time = fastForwardUntil
+                };
+                NetworkClient.SRMPSend(packet);
+                return false;
             }
+            return true;
         }
     }
 }

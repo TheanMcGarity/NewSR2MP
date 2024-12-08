@@ -3,7 +3,11 @@ using Epic.OnlineServices.Lobby;
 using EpicTransport;
 using Il2CppTMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
+
+
 
 /// <summary>
 /// SR2MP Lobby UI.
@@ -12,6 +16,7 @@ using UnityEngine.UI;
 [RegisterTypeInIl2Cpp(false)]
 public class MultiplayerLobbyUI : EOSLobby
 {
+    
     // EOS Premade
     private List<Epic.OnlineServices.Lobby.Attribute> lobbyData = new List<Epic.OnlineServices.Lobby.Attribute>();
 
@@ -34,21 +39,21 @@ public class MultiplayerLobbyUI : EOSLobby
     private void OnCreateLobbySuccess(List<Epic.OnlineServices.Lobby.Attribute> attributes) {
         lobbyData = attributes;
 
-        GetComponent<NetworkManager>().StartHost();
+        SRNetworkManager.singleton.StartHost();
     }
 
     //when the user joined the lobby successfully, set network address and connect
     private void OnJoinLobbySuccess(List<Epic.OnlineServices.Lobby.Attribute> attributes) {
         lobbyData = attributes;
 
-        NetworkManager netManager = GetComponent<NetworkManager>();
+        NetworkManager netManager = SRNetworkManager.singleton;
         netManager.networkAddress = attributes.Find((x) => x.Data.Key == hostAddressKey).Data.Value.AsUtf8;
         netManager.StartClient();
     }
 
     //when the lobby was left successfully, stop the host/client
     private void OnLeaveLobbySuccess() {
-        NetworkManager netManager = GetComponent<NetworkManager>();
+        NetworkManager netManager = SRNetworkManager.singleton;
         netManager.StopHost();
         netManager.StopClient();
     }
@@ -57,16 +62,19 @@ public class MultiplayerLobbyUI : EOSLobby
     
     void Start()
     {
-        rootObject = gameObject.getObjRec<GameObject>("Root");
+        rootObject = gameObject.getObjRec<GameObject>("Root"); 
+
         connectPanel = gameObject.getObjRec<GameObject>("ConnectPanel");
         lobbyCodeInput = gameObject.getObjRec<GameObject>("LobbyCode").GetComponentInChildren<TMP_InputField>();
-        joinViaCodeButton = connectPanel.transform.FindChild("Button").GetComponent<Button>();
+        joinViaCodeButton = connectPanel.transform.FindChild("Button").GetComponent<Button>(); 
+        lobbyCodePaste = gameObject.getObjRec<Button>("PasteButton");
+
         hostPanel = gameObject.getObjRec<GameObject>("HostPanel");
-        hostButton = connectPanel.transform.FindChild("Button").GetComponent<Button>();
+        hostButton = hostPanel.transform.FindChild("Button").GetComponent<Button>();
+        
         lobbyPanel = gameObject.getObjRec<GameObject>("LobbyPanel");
         adminSubpanel = gameObject.getObjRec<GameObject>("LobbyAdminPanel");
         lobbyCodeText = gameObject.getObjRec<GameObject>("LobbyAdminPanel").transform.GetChild(0).GetComponent<TMP_Text>();
-        
         
         // Button Functions
         hostButton.onClick.AddListener(new System.Action(() =>
@@ -81,8 +89,13 @@ public class MultiplayerLobbyUI : EOSLobby
             FindLobbyByCode(lobbyCodeInput.m_Text);
         }));
         
-        // Lobby Events
+        lobbyCodePaste.onClick.AddListener(new System.Action(() =>
+        {
+            lobbyCodeInput.SetText(GUIUtility.systemCopyBuffer);
+        }));
         
+        // Temp
+        lobbyCodeInput.interactable = false;
     }
     public void FindLobbyByCode(string lobbyCode) {
         LobbySearch search = new LobbySearch();
@@ -131,6 +144,8 @@ public class MultiplayerLobbyUI : EOSLobby
     {
         get
         {
+            if (isForceClosed) return LobbyUIState.CLOSED;
+            
             if (isInMainMenu) return LobbyUIState.MAIN_MENU;
             if (!isPaused) return LobbyUIState.CLOSED;
             if (isConnected && isHost) return LobbyUIState.LOBBY_HOST_MENU;
@@ -144,6 +159,7 @@ public class MultiplayerLobbyUI : EOSLobby
 
     public GameObject connectPanel;
     public TMP_InputField lobbyCodeInput;
+    public Button lobbyCodePaste;
     public Button joinViaCodeButton;
     
 
@@ -162,14 +178,18 @@ public class MultiplayerLobbyUI : EOSLobby
     public bool isInMainMenu = false;
     public bool isConnected = false;
     
+    public bool isForceClosed = false;
+    
     public string lobbyCode;
 
     void CheckFlags()
     {
         isPaused = Time.timeScale == 0;
-        isInMainMenu = SystemContext.Instance.SceneLoader._currentSceneGroup == SystemContext.Instance.SceneLoader._mainMenuSceneGroup;
+        isInMainMenu = SystemContext.Instance.SceneLoader._currentSceneGroup.name.Contains("MainMenu"); // Using name because there are 2 main menu scene groups for some reason.
         isConnected = ConnectedToLobby;
     }
+
+    internal bool isCodeInputSelected = false;
     
     void Update()
     {
@@ -200,5 +220,15 @@ public class MultiplayerLobbyUI : EOSLobby
                 // CLOSED, or unimplemented.
                 break;
         }
+
+        if (isCodeInputSelected)
+        {
+            if (Keyboard.current.escapeKey.isPressed || Keyboard.current.enterKey.isPressed || state != LobbyUIState.MAIN_MENU)
+            {
+                isCodeInputSelected = false;
+            }
+        }
+
+        if (Keyboard.current.f4Key.wasPressedThisFrame) isForceClosed = !isForceClosed;
     }
 }

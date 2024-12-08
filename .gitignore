@@ -404,3 +404,4 @@ FodyWeavers.xsd
 *.png
 *.ttf
 /NewSR2MP/Networking/EOS/Mirror/Runtime/Transport/EpicOnlineTransport/EOSSDK
+NewSR2MP/Networking/Patches/SteamContextPatch.cs

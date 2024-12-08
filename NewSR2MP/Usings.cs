@@ -8,6 +8,7 @@ global using NewSR2MP.Networking.SaveModels;
 global using Il2CppMonomiPark;
 global using Il2CppMonomiPark.SlimeRancher;
 global using MelonLoader;
+global using HarmonyLib;
 
 global using static Il2CppInterop.Runtime.Injection.ClassInjector;
 global using static Il2Cpp.InstantiationHelpers;

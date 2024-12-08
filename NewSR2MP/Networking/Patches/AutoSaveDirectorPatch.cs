@@ -16,7 +16,7 @@ namespace NewSR2MP.Networking.Patches
     [HarmonyPatch(typeof(AutoSaveDirector), nameof(AutoSaveDirector.LoadSave))]
     public class AutoSaveDirectorLoadSave
     {
-        public static void Postfix(AutoSaveDirector __instance, string gameName, string saveName, bool promptDLCPurgedException, Action onError)
+        public static void Postfix(AutoSaveDirector __instance, string gameName, string saveName, Il2CppSystem.Action onError, bool reloadAllCoreScenes = false)
         {
             if (NetworkClient.active) return;
             SRNetworkManager.CheckForMPSavePath();

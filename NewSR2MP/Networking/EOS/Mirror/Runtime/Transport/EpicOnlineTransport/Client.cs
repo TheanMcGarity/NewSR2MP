@@ -59,18 +59,18 @@ namespace EpicTransport {
                 Task connectedCompleteTask = connectedComplete.Task;
 
                 if (await Task.WhenAny(connectedCompleteTask, Task.Delay(ConnectionTimeout/*, cancelToken.Token*/)) != connectedCompleteTask) {
-                    Debug.LogError($"Connection to {host} timed out.");
+                    SRMP.Error($"Connection to {host} timed out.");
                     OnConnected -= SetConnectedComplete;
                     OnConnectionFailed(hostProductId);
                 }
 
                 OnConnected -= SetConnectedComplete;
             } catch (FormatException) {
-                Debug.LogError($"Connection string was not in the right format. Did you enter a ProductId?");
+                SRMP.Error($"Connection string was not in the right format. Did you enter a ProductId?");
                 Error = true;
                 OnConnectionFailed(hostProductId);
             } catch (Exception ex) {
-                Debug.LogError(ex.Message);
+                SRMP.Error(ex.Message);
                 Error = true;
                 OnConnectionFailed(hostProductId);
             } finally {
@@ -106,7 +106,7 @@ namespace EpicTransport {
             }
 
             if (clientUserId != hostProductId) {
-                Debug.LogError("Received a message from an unknown");
+                SRMP.Error("Received a message from an unknown");
                 return;
             }
 
@@ -119,7 +119,7 @@ namespace EpicTransport {
             }
 
             if (deadSockets.Contains(result.SocketId.SocketName)) {
-                Debug.LogError("Received incoming connection request from dead socket");
+                SRMP.Error("Received incoming connection request from dead socket");
                 return;
             }
 
@@ -131,7 +131,7 @@ namespace EpicTransport {
                         SocketId = result.SocketId
                     });
             } else {
-                Debug.LogError("P2P Acceptance Request from unknown host ID.");
+                SRMP.Error("P2P Acceptance Request from unknown host ID.");
             }
         }
 
