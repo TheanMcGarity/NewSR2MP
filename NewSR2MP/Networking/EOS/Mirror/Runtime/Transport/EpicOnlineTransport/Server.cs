@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace EpicTransport {
+    [RegisterTypeInIl2Cpp(false)]
     public class Server : Common {
         private event Action<int> OnConnected;
         private event Action<int, byte[], int> OnReceivedData;

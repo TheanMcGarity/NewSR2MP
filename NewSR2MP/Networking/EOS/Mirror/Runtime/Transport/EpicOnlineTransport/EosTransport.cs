@@ -115,7 +115,7 @@ namespace EpicTransport {
                 return;
             }
 
-            StartCoroutine("FetchEpicAccountId");
+            MelonCoroutines.Start(FetchEpicAccountId());
 
             if (ServerActive()) {
                 Debug.LogError("Transport already running as server!");
@@ -173,7 +173,7 @@ namespace EpicTransport {
                 return;
             }
 
-            StartCoroutine("FetchEpicAccountId");
+            MelonCoroutines.Start(FetchEpicAccountId());
 
             if (ClientActive()) {
                 Debug.LogError("Transport already running as client!");

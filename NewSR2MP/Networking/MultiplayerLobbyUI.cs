@@ -8,6 +8,49 @@ using UnityEngine.UI;
 [RegisterTypeInIl2Cpp(false)]
 public class MultiplayerLobbyUI : EOSLobby
 {
+    // EOS Premade
+    private List<Epic.OnlineServices.Lobby.Attribute> lobbyData = new List<Epic.OnlineServices.Lobby.Attribute>();
+
+    private void OnEnable() {
+        //subscribe to events
+        CreateLobbySucceeded += OnCreateLobbySuccess;
+        JoinLobbySucceeded += OnJoinLobbySuccess;
+        LeaveLobbySucceeded += OnLeaveLobbySuccess;
+    }
+
+    //deregister events
+    private void OnDisable() {
+        //unsubscribe from events
+        CreateLobbySucceeded -= OnCreateLobbySuccess;
+        JoinLobbySucceeded -= OnJoinLobbySuccess;
+        LeaveLobbySucceeded -= OnLeaveLobbySuccess;
+    }
+
+    //when the lobby is successfully created, start the host
+    private void OnCreateLobbySuccess(List<Epic.OnlineServices.Lobby.Attribute> attributes) {
+        lobbyData = attributes;
+
+        GetComponent<NetworkManager>().StartHost();
+    }
+
+    //when the user joined the lobby successfully, set network address and connect
+    private void OnJoinLobbySuccess(List<Epic.OnlineServices.Lobby.Attribute> attributes) {
+        lobbyData = attributes;
+
+        NetworkManager netManager = GetComponent<NetworkManager>();
+        netManager.networkAddress = attributes.Find((x) => x.Data.Key == hostAddressKey).Data.Value.AsUtf8;
+        netManager.StartClient();
+    }
+
+    //when the lobby was left successfully, stop the host/client
+    private void OnLeaveLobbySuccess() {
+        NetworkManager netManager = GetComponent<NetworkManager>();
+        netManager.StopHost();
+        netManager.StopClient();
+    }
+    
+    // SRMP Stuff
+    
     void Start()
     {
         rootObject = gameObject.getObjRec<GameObject>("Root");
@@ -33,6 +76,9 @@ public class MultiplayerLobbyUI : EOSLobby
         {
             FindLobbyByCode(lobbyCodeInput.m_Text);
         }));
+        
+        // Lobby Events
+        
     }
     public void FindLobbyByCode(string lobbyCode) {
         LobbySearch search = new LobbySearch();
