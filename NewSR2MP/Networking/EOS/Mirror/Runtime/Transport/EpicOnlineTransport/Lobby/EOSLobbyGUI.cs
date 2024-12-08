@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using EpicTransport;
 using Mirror;
 
+/// <summary>
+/// DO NOT USE THIS! THIS WILL NOT WORK IN IL2CPP! PLEASE ADJUST THE ACTUAL UI CLASS+PREFAB
+/// </summary>
+
 [RegisterTypeInIl2Cpp(false)]
 public class EOSLobbyGUI : EOSLobby {
     private string lobbyName = "My Lobby";

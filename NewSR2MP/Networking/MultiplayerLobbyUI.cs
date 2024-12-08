@@ -5,6 +5,10 @@ using Il2CppTMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// SR2MP Lobby UI.
+/// SR2MP uses one class for all UI unlike SRMP.
+/// </summary>
 [RegisterTypeInIl2Cpp(false)]
 public class MultiplayerLobbyUI : EOSLobby
 {
@@ -105,6 +109,9 @@ public class MultiplayerLobbyUI : EOSLobby
     
     public static MultiplayerLobbyUI instance;
     
+    /// <summary>
+    /// Current menu for UI. Should automatically be set by the behaviour.
+    /// </summary>
     public enum LobbyUIState
     {
         CLOSED,
@@ -117,6 +124,9 @@ public class MultiplayerLobbyUI : EOSLobby
     
     public GameObject rootObject;
 
+    /// <summary>
+    /// This handles all logic for which menu to leave open. Settings menu has not yet been implemented.
+    /// </summary>
     public LobbyUIState state
     {
         get
@@ -163,6 +173,8 @@ public class MultiplayerLobbyUI : EOSLobby
     
     void Update()
     {
+        CheckFlags();
+        
         lobbyPanel.SetActive(false);
         adminSubpanel.SetActive(false);
         connectPanel.SetActive(false);
