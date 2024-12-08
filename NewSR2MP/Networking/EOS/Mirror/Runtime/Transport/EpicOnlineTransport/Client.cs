@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 
 namespace EpicTransport {
-    [RegisterTypeInIl2Cpp(false)]
     public class Client : Common {
 
         public SocketId socketId;

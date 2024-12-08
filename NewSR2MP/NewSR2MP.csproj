@@ -512,7 +512,7 @@
     </ItemGroup>
 
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-      <Exec Command="&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)Properties\AssemblyInfo.tt&quot;&#xA;&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)modinfo.tt&quot;&#xA;&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)asmver.tt&quot;" />
+      <Exec Command="&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)Properties\AssemblyInfo.tt&quot;&#xA;&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)asmver.tt&quot;" />
     </Target>
 
 </Project>

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace EpicTransport {   
-    [RegisterTypeInIl2Cpp(false)]
     public abstract class Common {
 
         private PacketReliability[] channels;

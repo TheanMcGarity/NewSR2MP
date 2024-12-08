@@ -11,10 +11,11 @@ using UnityEngine;
 
 namespace NewSR2MP
 {
-    public static class Globals
+    public static class FinnDevExtentions
     {
         //
         // Copied from SR2E
+        // I do technically partially own sr2e as well but these methods were made by Finn (https://github.com/ThatFinnDev)
         //
         public static T getObjRec<T>(this GameObject obj, string name) where T : class
         {
@@ -110,6 +111,11 @@ namespace NewSR2MP
             return allChildren;
         }
         
+    }
+    
+    public static class Globals
+    {
+        
         public static AssetBundle InitializeAssetBundle(string bundleName)
         {
             System.IO.Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"NewSR2MP.{bundleName}");
@@ -121,6 +127,10 @@ namespace NewSR2MP
             return AssetBundle.LoadFromMemory(ms.ToArray());
         }
         
+        /// <summary>
+        /// Generates a 7 digit random string containing capital letters (A - Z), and numbers (0 - 9). This string is used for an easily sharable server code.
+        /// </summary>
+        /// <returns>The 7 digit server code</returns>
         public static string GenerateServerCode()
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -135,6 +145,16 @@ namespace NewSR2MP
             return new string(result);
         }
         
+        /// <summary>
+        /// Do not use this in your own programs!
+        /// </summary>
+        /// <returns>The mod's very own API key. DO NOT USE THIS FOR YOUR OWN PROJECTS</returns>
+        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
+        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
+        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
+        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
+        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
+        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
         internal static EosApiKey GetAPIKey()
         {
             var key = ScriptableObject.CreateInstance<EosApiKey>();
