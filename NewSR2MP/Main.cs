@@ -320,7 +320,6 @@ namespace NewSR2MP
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
             if (sceneName == "SystemCore")
-            if (sceneName == "SystemCore")
             {
                 Initialize();
             }
@@ -334,7 +333,7 @@ namespace NewSR2MP
             obj.name = "MultiplayerContext";
             obj.AddComponent<MultiplayerManager>();
             UnityEngine.Object.DontDestroyOnLoad(obj);
-
+            
             UnityEngine.Object.Instantiate(ui.LoadAsset<GameObject>("LobbyUI")).transform.SetParent(obj.transform);
             
             SRMP.Log("Multiplayer Initialized!");

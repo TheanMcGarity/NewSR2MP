@@ -22,7 +22,7 @@ namespace EpicTransport {
 
             s.OnConnected += (id) => transport.OnServerConnected.Invoke(id);
             s.OnDisconnected += (id) => transport.OnServerDisconnected.Invoke(id);
-            s.OnReceivedData += (id, data, channel) => transport.OnServerDataReceived.Invoke(id, new ArraySegment<byte>(data), channel);
+            s.OnReceivedData += (id, data, channel) => server.OnTransportData(id, new ArraySegment<byte>(data), channel);
             s.OnReceivedError += (id, exception) => transport.OnServerError.Invoke(id, exception, "");
 
             if (!EOSSDKComponent.Initialized) {
@@ -105,6 +105,8 @@ namespace EpicTransport {
                 return;
             }
 
+            
+            
             if (epicToMirrorIds.TryGetValue(clientUserId, out int connectionId)) {
                 OnReceivedData.Invoke(connectionId, data, channel);
             } else {
@@ -128,7 +130,6 @@ namespace EpicTransport {
                 epicToMirrorIds.Remove(userId);
                 epicToSocketIds.Remove(userId);
             } else {
-                Debug.LogWarning("Trying to disconnect unknown connection id: " + connectionId);
             }
         }
 
@@ -147,13 +148,17 @@ namespace EpicTransport {
         }
 
         public void SendAll(int connectionId, byte[] data, int channelId) {
-            if (epicToMirrorIds.TryGetValue(connectionId, out ProductUserId userId)) {
-                SocketId socketId;
-                epicToSocketIds.TryGetValue(userId, out socketId);
-                Send(userId, socketId, data, (byte)channelId);
-            } else {
-                Debug.LogError("Trying to send on unknown connection: " + connectionId);
-                OnReceivedError.Invoke(connectionId, TransportError.ConnectionClosed);
+            if (connectionId != 0)
+            {
+                
+                if (epicToMirrorIds.TryGetValue(connectionId, out ProductUserId userId)) {
+                    SocketId socketId;
+                    epicToSocketIds.TryGetValue(userId, out socketId);
+                    Send(userId, socketId, data, (byte)channelId);
+                } else {
+                    Debug.LogError("Trying to send on unknown connection: " + connectionId);
+                    OnReceivedError.Invoke(connectionId, TransportError.ConnectionClosed);
+                }
             }
 
         }
@@ -170,7 +175,7 @@ namespace EpicTransport {
             }
         }
 
-        protected override void OnConnectionFailed(ProductUserId remoteId) {
+        internal override void OnConnectionFailed(ProductUserId remoteId) {
             if (ignoreAllMessages) {
                 return;
             }

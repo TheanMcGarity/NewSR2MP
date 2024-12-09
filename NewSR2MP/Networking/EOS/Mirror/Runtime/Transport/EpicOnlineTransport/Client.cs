@@ -23,8 +23,8 @@ namespace EpicTransport {
 
         public bool isConnecting = false;
         public string hostAddress = "";
-        private ProductUserId hostProductId = null;
-        private TaskCompletionSource<Task> connectedComplete;
+        internal ProductUserId hostProductId = null;
+        // private TaskCompletionSource<Task> connectedComplete; Do not use; will not work in il2cpp!
         private CancellationTokenSource cancelToken;
 
         private Client(EosTransport transport) : base(transport) {
@@ -39,32 +39,24 @@ namespace EpicTransport {
 
             c.OnConnected += () => transport.OnClientConnected.Invoke();
             c.OnDisconnected += () => transport.OnClientDisconnected.Invoke();
-            c.OnReceivedData += (data, channel) => transport.OnClientDataReceived.Invoke(new ArraySegment<byte>(data), channel);
+            c.OnReceivedData += (data, channel) => client.OnTransportData(new ArraySegment<byte>(data), channel);
+
+            c.OnReceivedData += (_, _) => transport.lastPacketSentTime = 0f;
 
             return c;
         }
 
-        public async void Connect(string host) {
+        public void Connect(string host) {
             cancelToken = new CancellationTokenSource();
 
             try {
                 hostProductId = ProductUserId.FromString(host);
                 serverId = hostProductId;
-                connectedComplete = new TaskCompletionSource<Task>();
 
-                OnConnected += SetConnectedComplete;
 
                 SendInternal(hostProductId, socketId, InternalMessages.CONNECT);
 
-                Task connectedCompleteTask = connectedComplete.Task;
-
-                if (await Task.WhenAny(connectedCompleteTask, Task.Delay(ConnectionTimeout/*, cancelToken.Token*/)) != connectedCompleteTask) {
-                    SRMP.Error($"Connection to {host} timed out.");
-                    OnConnected -= SetConnectedComplete;
-                    OnConnectionFailed(hostProductId);
-                }
-
-                OnConnected -= SetConnectedComplete;
+                MelonCoroutines.Start(transport.InitialTimeoutCoroutine(this));
             } catch (FormatException) {
                 SRMP.Error($"Connection string was not in the right format. Did you enter a ProductId?");
                 Error = true;
@@ -98,7 +90,6 @@ namespace EpicTransport {
             WaitForClose(hostProductId, socketId);
         }
 
-        private void SetConnectedComplete() => connectedComplete.SetResult(connectedComplete.Task);
 
         protected override void OnReceiveData(byte[] data, ProductUserId clientUserId, int channel) {
             if (ignoreAllMessages) {
@@ -160,7 +151,7 @@ namespace EpicTransport {
 
         public void Send(byte[] data, int channelId) => Send(hostProductId, socketId, data, (byte) channelId);
 
-        protected override void OnConnectionFailed(ProductUserId remoteId) => OnDisconnected.Invoke();
+        internal override void OnConnectionFailed(ProductUserId remoteId) => OnDisconnected.Invoke();
         public void EosNotInitialized() => OnDisconnected.Invoke();
     }
 }

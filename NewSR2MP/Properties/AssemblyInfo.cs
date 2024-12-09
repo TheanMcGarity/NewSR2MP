@@ -15,9 +15,9 @@ using System.Resources;
 [assembly: AssemblyCulture("")]
 
 // Version informationr(
-[assembly: AssemblyVersion("0.0.0.21")]
-[assembly: AssemblyFileVersion("0.0.0.21")]
+[assembly: AssemblyVersion("0.0.0.27")]
+[assembly: AssemblyFileVersion("0.0.0.27")]
 [assembly: NeutralResourcesLanguageAttribute( "en-US" )]
 
 [assembly: MelonGame("MonomiPark", "SlimeRancher2")]
-[assembly: MelonInfo(typeof(NewSR2MP.Main),"New SR2MP", "21", "PinkTarr")]
+[assembly: MelonInfo(typeof(NewSR2MP.Main),"New SR2MP", "27", "PinkTarr")]

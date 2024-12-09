@@ -15,7 +15,28 @@ namespace EpicTransport {
     /// EOS Transport following the Mirror transport standard
     /// </summary>
     [RegisterTypeInIl2Cpp(false)]
-    public class EosTransport : Transport {
+    public class EosTransport : Transport
+    {
+        public float lastPacketSentTime = 0f;
+        
+        
+        // had to replace the 'await' keyword with a new new function because il2cpp hates the keyword.
+        public System.Collections.IEnumerator InitialTimeoutCoroutine(Client client)
+        {
+            while (lastPacketSentTime < timeout)
+            {
+                if (client.Connected) yield break;
+                
+                yield return null;
+            }
+
+            if (!client.Connected)
+            {
+                SRMP.Error($"Connection to {client.hostAddress} timed out.");
+                client.OnConnectionFailed(client.hostProductId);
+            }
+        }
+        
         private const string EPIC_SCHEME = "epic";
 
         private Client client;
@@ -59,7 +80,9 @@ namespace EpicTransport {
 
         public override void ClientEarlyUpdate() {
             EOSSDKComponent.Tick();
-
+            
+            lastPacketSentTime += Time.deltaTime;
+            
             if (activeNode != null) {
                 ignoreCachedMessagesTimer += Time.deltaTime;
 
@@ -154,7 +177,8 @@ namespace EpicTransport {
             ClientConnect(uri.Host);
         }
 
-        public override void ClientSend(ArraySegment<byte> segment, int channelId) {
+        public override void ClientSend(ArraySegment<byte> segment, int channelId)
+        {
             Send(channelId, segment);
         }
 

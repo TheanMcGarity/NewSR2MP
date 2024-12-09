@@ -191,6 +191,7 @@ namespace EpicTransport {
                 {
                     if (internalMessage.Length == 1)
                     {
+                        SRMP.Debug("Recieved data from network!");
                         OnReceiveInternalData((InternalMessages)internalMessage[0], clientUserID, socketId);
                         return; // Wait one frame
                     }
@@ -305,7 +306,6 @@ namespace EpicTransport {
                 }
 
 
-
             }
             catch
             {
@@ -314,6 +314,6 @@ namespace EpicTransport {
 
         protected abstract void OnReceiveInternalData(InternalMessages type, ProductUserId clientUserID, SocketId socketId);
         protected abstract void OnReceiveData(byte[] data, ProductUserId clientUserID, int channel);
-        protected abstract void OnConnectionFailed(ProductUserId remoteId);
+        internal abstract void OnConnectionFailed(ProductUserId remoteId);
     }
 }

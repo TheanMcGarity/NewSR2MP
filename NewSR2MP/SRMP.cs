@@ -1,5 +1,6 @@
 ﻿using Mirror;
 using System.Collections.Generic;
+using System.Drawing;
 using MelonLoader;
 
 namespace NewSR2MP
@@ -22,6 +23,10 @@ namespace NewSR2MP
         public static void Warn(string message)
         {
             MelonLogger.Warning($"[NewSR2MP] {message}");
+        }
+        public static void Debug(string message)
+        {
+            MelonLogger.Msg(Color.Aqua,$"[NewSR2MP] {message}");
         }
     }
 }
