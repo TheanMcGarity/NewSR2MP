@@ -31,7 +31,6 @@
 
     <ItemGroup>
       <Folder Include="Networking\Mirror\Transports\" />
-      <Folder Include="Networking\UI\" />
     </ItemGroup>
 
     <ItemGroup>
@@ -511,9 +510,5 @@
       <None Remove="ui" />
       <EmbeddedResource Include="ui" />
     </ItemGroup>
-
-    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-      <Exec Command="&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)Properties\AssemblyInfo.tt&quot;&#xA;&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)asmver.tt&quot;" />
-    </Target>
 
 </Project>

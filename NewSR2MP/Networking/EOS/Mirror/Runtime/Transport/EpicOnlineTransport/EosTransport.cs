@@ -21,6 +21,10 @@ namespace EpicTransport {
         
         
         // had to replace the 'await' keyword with a new new function because il2cpp hates the keyword.
+        /// <summary>
+        /// Timeout couroutine for client. Used for when the server doesnt respond with a message for too long. Only implemented for when the client is attempting to connect.
+        /// </summary>
+        /// <param name="client">The client to timeout.</param>
         public System.Collections.IEnumerator InitialTimeoutCoroutine(Client client)
         {
             while (lastPacketSentTime < timeout)
@@ -32,7 +36,7 @@ namespace EpicTransport {
 
             if (!client.Connected)
             {
-                SRMP.Error($"Connection to {client.hostAddress} timed out.");
+                SRMP.Error($"Connection to user({client.hostAddress})'s server timed out.");
                 client.OnConnectionFailed(client.hostProductId);
             }
         }
@@ -86,8 +90,9 @@ namespace EpicTransport {
             if (activeNode != null) {
                 ignoreCachedMessagesTimer += Time.deltaTime;
 
-                if (ignoreCachedMessagesTimer <= ignoreCachedMessagesAtStartUpInSeconds) {
-                    activeNode.ignoreAllMessages = true;
+                if (ignoreCachedMessagesTimer <= ignoreCachedMessagesAtStartUpInSeconds)
+                {
+                    activeNode.ignoreAllMessages = false; //true;
                 } else {
                     activeNode.ignoreAllMessages = false;
 
@@ -117,7 +122,7 @@ namespace EpicTransport {
                 ignoreCachedMessagesTimer += Time.deltaTime;
 
                 if (ignoreCachedMessagesTimer <= ignoreCachedMessagesAtStartUpInSeconds) {
-                    activeNode.ignoreAllMessages = true;
+                    activeNode.ignoreAllMessages = false;//true;
                 } else {
                     activeNode.ignoreAllMessages = false;
                 }

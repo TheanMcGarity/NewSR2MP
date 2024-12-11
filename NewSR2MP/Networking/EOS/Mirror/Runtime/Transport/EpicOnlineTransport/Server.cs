@@ -44,6 +44,8 @@ namespace EpicTransport {
                 return;
             }
 
+            SRMP.Debug("Server.OnNewConnection");
+            
             if (deadSockets.Contains(result.SocketId.SocketName)) {
                 Debug.LogError("Received incoming connection request from dead socket");
                 return;

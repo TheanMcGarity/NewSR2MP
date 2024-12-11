@@ -10,23 +10,30 @@ namespace NewSR2MP
         // Not used, but i would like if it wasnt removed, as it helps with debugging.
         internal static ushort MessageId<M>() where M: struct, NetworkMessage => NetworkMessageId<M>.Id;
 
+        private static MelonLogger.Instance logger;
+
+        static SRMP()
+        {
+            logger = new MelonLogger.Instance("New SR2MP");
+        }
+        
         public static void Log(string message)
         {
-            MelonLogger.Msg($"[NewSR2MP] {message}");
+            logger.Msg(message);
         }
         
         public static void Error(string message)
         {
-            MelonLogger.Error($"[NewSR2MP] {message}");
+            logger.Error(message);
         }
         
         public static void Warn(string message)
         {
-            MelonLogger.Warning($"[NewSR2MP] {message}");
+            logger.Warning(message);
         }
         public static void Debug(string message)
         {
-            MelonLogger.Msg(Color.Aqua,$"[NewSR2MP] {message}");
+            logger.Msg(Color.Aqua, message);
         }
     }
 }

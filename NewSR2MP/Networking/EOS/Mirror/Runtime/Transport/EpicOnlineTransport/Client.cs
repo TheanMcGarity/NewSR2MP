@@ -52,7 +52,7 @@ namespace EpicTransport {
             try {
                 hostProductId = ProductUserId.FromString(host);
                 serverId = hostProductId;
-
+                
 
                 SendInternal(hostProductId, socketId, InternalMessages.CONNECT);
 
