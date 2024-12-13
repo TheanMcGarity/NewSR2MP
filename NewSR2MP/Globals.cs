@@ -110,7 +110,20 @@ namespace NewSR2MP
             }
             return allChildren;
         }
-        
+        public static Il2CppSystem.Type il2cppTypeof(this Type type)
+        {
+            string typeName = type.AssemblyQualifiedName;
+
+            if (typeName.ToLower().StartsWith("il2cpp"))
+            {
+                typeName = typeName.Substring("il2cpp".Length);
+            }
+
+            Il2CppSystem.Type il2cppType = Il2CppSystem.Type.GetType(typeName);
+
+            return il2cppType;
+        }
+
     }
     
     public static class Globals

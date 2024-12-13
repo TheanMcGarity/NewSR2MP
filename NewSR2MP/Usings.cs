@@ -14,6 +14,7 @@ global using static Il2CppInterop.Runtime.Injection.ClassInjector;
 global using static Il2Cpp.InstantiationHelpers;
 global using static Il2Cpp.Destroyer;
 global using static NewSR2MP.Globals;
+global using static NewSR2MP.FinnDevExtentions;
 
 global using GameBinaryReader = Il2CppSystem.IO.BinaryReader;
 global using GameBinaryWriter = Il2CppSystem.IO.BinaryWriter;

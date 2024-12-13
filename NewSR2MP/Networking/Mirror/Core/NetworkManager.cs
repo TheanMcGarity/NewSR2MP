@@ -304,7 +304,7 @@ namespace Mirror
 
             ConfigureHeadlessFrameRate();
 
-            // start Il2CppSystem.Collections.Generic.Listening to network connections
+            // start listening to network connections
             NetworkServer.Listen(maxConnections);
 
             // this must be after Il2CppSystem.Collections.Generic.Listen(), since that registers the default message handlers
