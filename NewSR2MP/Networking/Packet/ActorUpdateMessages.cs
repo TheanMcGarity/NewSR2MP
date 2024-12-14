@@ -60,7 +60,7 @@ namespace NewSR2MP.Networking.Packet
         
         public Message Serialize()
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.ActorOwner);
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.ActorHeldOwner);
             return msg;
 
             return msg;

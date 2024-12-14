@@ -639,7 +639,7 @@ namespace NewSR2MP.Networking
                         SRMP.Log($"Exception in transfering actor({packet.id})! Stack Trace:\n{e}");
                 }
             }            
-            [MessageHandler((ushort)PacketType.ActorOwner)]
+            [MessageHandler((ushort)PacketType.ActorDestroy)]
 
             public static void HandleDestroyActor(Message msg)
             {var packet = Deserializer.ReadActorDestroyMessage(msg);
@@ -873,8 +873,24 @@ namespace NewSR2MP.Networking
             public static void HandleMap(Message msg)
             {
                 // SceneContext.Instance.PlayerState._model.unlockedZoneMaps.Add(packet.id);
-
-
+            }
+            [MessageHandler((ushort)PacketType.ActorUpdate)]
+            public static void HandleActor(Message msg)
+            {
+                var packet = Deserializer.ReadActorMessage(msg);
+                
+                try
+                {
+                    var actor = actors[packet.id];
+                    var t = actor.GetComponent<TransformSmoother>();
+                    t.nextPos = packet.position;
+                    t.nextRot = packet.rotation;
+                }
+                catch (Exception e)
+                {
+                    if (SHOW_ERRORS)
+                        SRMP.Log($"Exception in handling actor({packet.id})! Stack Trace:\n{e}");
+                }
             }
             
     }

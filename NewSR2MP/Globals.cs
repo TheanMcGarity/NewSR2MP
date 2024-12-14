@@ -201,6 +201,7 @@ namespace NewSR2MP
             ActorUpdate,
             ActorSpawn,
             ActorDestroy,
+            ActorHeldOwner,
             ActorOwner,
             GordoExplode,
             GordoFeed,

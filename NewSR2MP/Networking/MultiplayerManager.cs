@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.World;
+using Riptide.Utils;
 using SR2E;
 using UnityEngine.Serialization;
 
@@ -26,7 +27,12 @@ namespace NewSR2MP.Networking
 
         public void Awake()
         {
+            // Dont make that mistake again
+            // i submitted a incorrect bug report :sob:
+            RiptideLogger.Initialize(SRMP.Debug,SRMP.Log,SRMP.Warn,SRMP.Error,false);
             Instance = this;
+            
+            
         }
 
 
@@ -354,7 +360,7 @@ namespace NewSR2MP.Networking
         public void Connect(string ip, ushort port)
         {
             client = new Client();
-            client.Connect(ip, port);
+            client.Connect($"{ip}:{port}");
         }
         public void Host(ushort port)
         {
@@ -362,16 +368,26 @@ namespace NewSR2MP.Networking
             server.Start(port,10); 
         }
 
+        System.Collections.IEnumerator UpdateNetwork()
+        {
+            while (true)
+            {
+                if (ServerActive()) server.Update();
+                if (ClientActive()) client.Update();
+                yield return null;
+            }
+        }
 
         private void FixedUpdate()
-        {
-            client?.Update();
-            server?.Update();
+        {            
         }
 
         public static void Shutdown()
         {
             // How do i shut them down?????
+            if (ServerActive()) server.Stop();
+            if (ClientActive()) client.Disconnect();
+            
             server = null;
             client = null;
         }
