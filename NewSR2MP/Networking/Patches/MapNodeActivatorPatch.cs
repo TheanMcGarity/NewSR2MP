@@ -6,13 +6,13 @@ internal class MapNodeActivatorActivate
 {
     public static void Postfix(MapNodeActivator __instance)
     {
-        if (NetworkClient.active || NetworkServer.active)
+        if (ClientActive() || ServerActive())
         {
             MapUnlockMessage message = new MapUnlockMessage()
             {
                 id = __instance._fogRevealEvent._dataKey
             };
-            SRNetworkManager.NetworkSend(message);
+            MultiplayerManager.NetworkSend(message);
         }
     }
 }

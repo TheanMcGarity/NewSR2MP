@@ -1,4 +1,4 @@
-﻿using Mirror;
+﻿
 using NewSR2MP.Networking.Packet;
 using System;
 using System.Collections.Generic;
@@ -29,7 +29,7 @@ namespace NewSR2MP.Networking.Component
                     velocity = GetComponent<Rigidbody>().velocity,
                     player = currentPlayerID
                 };
-                NetworkClient.SRMPSend(packet);
+                MultiplayerManager.NetworkSend(packet);
                 Destroyer.DestroyActor(gameObject, "SRMP.CancelActor");
             }
             frame++;

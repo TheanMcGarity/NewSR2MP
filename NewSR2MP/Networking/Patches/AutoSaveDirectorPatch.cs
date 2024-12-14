@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-using Mirror;
+
 
 using Il2CppMonomiPark.SlimeRancher.Persist;
 using NewSR2MP.Networking.Component;
@@ -13,13 +13,13 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(AutoSaveDirector), nameof(AutoSaveDirector.LoadSave))]
+    [HarmonyPatch(typeof(AutoSaveDirector), nameof(AutoSaveDirector.Load),typeof(Il2CppSystem.IO.Stream),typeof(string),typeof(string),typeof(bool))]
     public class AutoSaveDirectorLoadSave
     {
-        public static void Postfix(AutoSaveDirector __instance, string gameName, string saveName, Il2CppSystem.Action onError, bool reloadAllCoreScenes = false)
+        public static void Postfix(AutoSaveDirector __instance, Il2CppSystem.IO.Stream gameData, string gameName, string saveName, bool reloadAllCoreScenes)
         {
-            if (NetworkClient.active) return;
-            SRNetworkManager.CheckForMPSavePath();
+            if (ClientActive()) return;
+            MultiplayerManager.CheckForMPSavePath();
             var path = Path.Combine(GameContext.Instance.AutoSaveDirector.StorageProvider.Cast<FileStorageProvider>().savePath, "MultiplayerSaves", $"{gameName}.srmp");
             var networkGame = new NetworkV01();
 
@@ -36,7 +36,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(AutoSaveDirector __instance, AutoSaveDirector.LoadNewGameMetadata metadata, Il2CppSystem.Action onError)
         {
-            SRNetworkManager.CheckForMPSavePath();
+            MultiplayerManager.CheckForMPSavePath();
             var path = Path.Combine(GameContext.Instance.AutoSaveDirector.StorageProvider.TryCast<FileStorageProvider>().savePath, "MultiplayerSaves", $"{__instance._currentGameName}.srmp");
             var networkGame = new NetworkV01();
             
@@ -56,8 +56,8 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(AutoSaveDirector __instance)
         {
-            if (NetworkClient.active && !NetworkServer.activeHost) return;
-            SRNetworkManager.DoNetworkSave();
+            if (ClientActive() && !ServerActive()) return;
+            MultiplayerManager.DoNetworkSave();
         }
     }
 }

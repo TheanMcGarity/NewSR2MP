@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
-using Mirror;
+
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using NewSR2MP.Networking.Component;
 using NewSR2MP.Networking.Packet;
@@ -17,7 +17,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static bool Prefix(GameObject actorObj, string source, bool okIfNonActor)
         {
-            if (NetworkServer.active || NetworkClient.active)
+            if (ServerActive() || ClientActive())
             {
                 if (source.Equals("ResourceCycle.RegistryUpdate#1"))
                 {

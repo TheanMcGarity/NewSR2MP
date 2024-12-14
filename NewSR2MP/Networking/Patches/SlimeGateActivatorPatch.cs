@@ -12,7 +12,7 @@ namespace NewSR2MP.Networking.Patches
             {
                 id = __instance.GateDoor._id
             };
-            SRNetworkManager.NetworkSend(message);
+            MultiplayerManager.NetworkSend(message);
         }
     }
 }

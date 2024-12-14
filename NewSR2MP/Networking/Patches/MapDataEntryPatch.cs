@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-using Mirror;
+
 using NewSR2MP;
 using NewSR2MP.Networking;
 using NewSR2MP.Networking.Component;

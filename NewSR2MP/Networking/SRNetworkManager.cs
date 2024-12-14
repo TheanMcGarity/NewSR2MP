@@ -1,4 +1,4 @@
-﻿using Mirror;
+﻿
 using Il2CppMonomiPark.SlimeRancher.Persist;
 using NewSR2MP.Networking.Component;
 using NewSR2MP.Networking.Packet;
@@ -11,6 +11,8 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Il2CppMono.Security.Protocol.Ntlm;
+using Riptide;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -31,9 +33,18 @@ namespace NewSR2MP.Networking
         public bool shareKeys;
         public bool shareUpgrades;
     }
-    [RegisterTypeInIl2Cpp(false)]
-    public class SRNetworkManager : NetworkManager
+    public partial class MultiplayerManager
     {
+        void InitializeMessages()
+        {
+            
+        }
+        
+        
+        public static Server server;
+        
+        public static Client client;
+        
         public static NetGameInitialSettings initialWorldSettings = new NetGameInitialSettings();
 
         internal static void CheckForMPSavePath()
@@ -44,19 +55,8 @@ namespace NewSR2MP.Networking
             }
         }
 
-
-        public static Dictionary<long, long> actorIDLocals = new Dictionary<long, long>();
-
-
-        public override void OnStartClient()
+        public void StartHosting()
         {
-            NetworkHandler.Client.Start(false);
-        }
-        public override void OnStartHost()
-        {
-            NetworkHandler.Client.Start(true);
-
-
             var localPlayer = SceneContext.Instance.player.AddComponent<NetworkPlayer>();
             localPlayer.id = 0;
 
@@ -82,31 +82,27 @@ namespace NewSR2MP.Networking
             SceneContext.Instance.gameObject.AddComponent<TimeSyncer>();
 
         }
-        public override void OnStopHost()
+        public void StopHosting()
         {
             NetworkAmmo.all.Clear();
 
         }
-        public override void OnStartServer()
-        {
-            NetworkHandler.Server.Start();
-        }
 
-        public override void OnServerDisconnect(NetworkConnectionToClient conn)
+        public void OnServerDisconnect(ushort player)
         {
             DoNetworkSave();
 
             try
             {
-                players[conn.connectionId].enabled = true;
-                Destroy(players[conn.connectionId].gameObject);
-                players.Remove(conn.connectionId);
-                clientToGuid.Remove(conn.connectionId);
+                players[player].enabled = true;
+                Destroy(players[player].gameObject);
+                players.Remove(player);
+                clientToGuid.Remove(player);
             }
             catch { }
 
         }
-        public override void OnClientDisconnect()
+        public void Leave()
         {
             NetworkAmmo.all.Clear();
             try
@@ -115,22 +111,18 @@ namespace NewSR2MP.Networking
             }
             catch { }
         }
-        public override void OnStopClient()
+        public void ClientDisconnect()
         {
             SystemContext.Instance.SceneLoader.LoadMainMenuSceneGroup();
         }
-        public override void OnServerConnect(NetworkConnectionToClient conn)
-        {
-        }
-
-        public override void OnClientConnect()
+        public void InitializeClient()
         {
             var joinMsg = new ClientUserMessage()
             {
                 guid = Main.data.Player,
                 name = Main.data.Username,
             };
-            NetworkClient.SRMPSend(joinMsg);
+            NetworkSend(joinMsg, ServerSendOptions.SendToAllDefault());
         }
 
         /// <summary>
@@ -138,26 +130,65 @@ namespace NewSR2MP.Networking
         /// </summary>
         /// <typeparam name="M">Message struct type. Ex: 'PlayerJoinMessage'</typeparam>
         /// <param name="message">The actual message itself. Should automatically set the M type paramater.</param>
-        public static void NetworkSend<M>(M message) where M : struct, NetworkMessage
+        
+        
+        public static void NetworkSend<M>(M msg, ServerSendOptions serverOptions) where M : ICustomMessage
         {
-            if (NetworkServer.activeHost)
+            Message message = msg.Serialize();
+            
+            if (client != null)
             {
-                NetworkServer.SRMPSendToAll(message);
+                client.Send(message);
             }
-            else if (NetworkClient.active)
+            else if (server != null)
             {
-                NetworkClient.SRMPSend(message);
+                if (serverOptions.ignoreSpecificPlayer)
+                    server.SendToAll(message, serverOptions.player);
+                else if (serverOptions.onlySendToPlayer)          
+                    server.Send(message, serverOptions.player);
+                else
+                    server.SendToAll(message);
+
             }
         }
 
-        internal static (bool, ArraySegment<byte>) SRDataTransport(ArraySegment<byte> buffer)
+        public static void NetworkSend<M>(M msg) where M : ICustomMessage
         {
-            using (NetworkReaderPooled reader = NetworkReaderPool.Get(buffer))
+            NetworkSend(msg, ServerSendOptions.SendToAllDefault());
+        }
+
+        public struct ServerSendOptions
+        {
+            public ushort player;
+            public bool ignoreSpecificPlayer;
+            public bool onlySendToPlayer;
+
+            public static ServerSendOptions SendToAllDefault()
             {
-                if (reader.ReadBool())
-                    return (true, reader.ReadBytesSegment(reader.Remaining));
-                else
-                    return (false, reader.ReadBytesSegment(reader.Remaining));
+                return new ServerSendOptions()
+                {
+                    ignoreSpecificPlayer = false,
+                    onlySendToPlayer = false,
+                    player = UInt16.MinValue
+                };
+            }
+            public static ServerSendOptions SendToPlayer(ushort player)
+            {
+                return new ServerSendOptions()
+                {
+                    ignoreSpecificPlayer = false,
+                    onlySendToPlayer = true,
+                    player = player
+                };
+            }
+            public static ServerSendOptions SendToAllExcept(ushort player)
+            {
+                return new ServerSendOptions()
+                {
+                    ignoreSpecificPlayer = true,
+                    onlySendToPlayer = false,
+                    player = player
+                };
             }
         }
 

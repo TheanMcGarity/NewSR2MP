@@ -1,6 +1,6 @@
-﻿using Mirror;
+﻿
 using Il2CppMonomiPark.SlimeRancher.Regions;
-using System;
+using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,29 +9,74 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public struct ActorUpdateMessage : NetworkMessage
+    public class ActorUpdateMessage : ICustomMessage
     {
         public long id;
         public Vector3 position;
         public Vector3 rotation;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.ActorUpdate);
+
+            return msg;
+
+            return msg;
+        }
     }
-    public struct ActorUpdateClientMessage : NetworkMessage // Client Message is just a copy, but it has a different handler.
+    public class ActorUpdateClientMessage : ICustomMessage // Client Message is just a copy, but it has a different handler.
     {
         public long id;
         public Vector3 position;
         public Vector3 rotation;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.TempClientActorUpdate);
+            msg.AddLong(id);
+            msg.AddVector3(position);
+            msg.AddVector3(rotation);
+
+            return msg;
+        }
     }
-    public struct ActorUpdateOwnerMessage : NetworkMessage // Owner update message.
+    public class ActorUpdateOwnerMessage : ICustomMessage // Owner update message.
     {
         public long id;
         public int player;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorOwner);
+            msg.AddLong(id);
+            msg.AddInt(player);
+
+            return msg;
+        }
     }
-    public struct ActorChangeHeldOwnerMessage : NetworkMessage // Largo holder change message.
+    public class ActorChangeHeldOwnerMessage : ICustomMessage // Largo holder change message.
     {
         public long id;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.ActorOwner);
+            return msg;
+
+            return msg;
+        }
     }
-    public struct ActorDestroyGlobalMessage : NetworkMessage // Destroy message. Runs on both client and server (Global)
+    public class ActorDestroyGlobalMessage : ICustomMessage // Destroy message. Runs on both client and server (Global)
     {
         public long id;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorDestroy);
+            
+            msg.AddLong(id);
+
+            return msg;
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Mirror;
+﻿
 using NewSR2MP.Networking.Packet;
 using System;
 using System.Collections.Generic;
@@ -52,13 +52,13 @@ namespace NewSR2MP.Networking.Component
                             state = resource._model.state,
                             id = identComp.GetActorId().Value
                         };
-                        SRNetworkManager.NetworkSend(message);
+                        MultiplayerManager.NetworkSend(message);
                     }
                 }
                 updateTimer = .275f;
             }
 
-            if (NetworkClient.active && !NetworkServer.active)
+            if (MultiplayerManager.server == null && MultiplayerManager.client != null)
             {
                 resource._model.progressTime = double.MaxValue;
             }

@@ -6,6 +6,8 @@ using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.World;
 using Newtonsoft.Json;
+using SR2E;
+using SR2E.Commands;
 using UnityEngine;
 using Exception = System.Exception;
 using Guid = System.Guid;
@@ -13,6 +15,31 @@ using Guid = System.Guid;
 
 namespace NewSR2MP
 {
+    public class HostCommand : SR2Command
+    {
+        public override bool Execute(string[] args)
+        {
+            MultiplayerManager.Instance.Host(ushort.Parse(args[0]));
+            return true;
+        }
+
+        public override string ID => "host";
+        public override string Usage => "host <port>";
+    }
+    public class JoinCommand : SR2Command
+    {
+        public override bool Execute(string[] args)
+        {
+            
+            ushort port = ushort.Parse(args[1]);
+            MultiplayerManager.Instance.Connect(args[0], port);
+            return true;
+        }
+
+        public override string ID => "join";
+        public override string Usage => "join <ip> <port>";
+    }
+    
     public static class Extentions
     {
         public static void RemoveComponent<T>(this GameObject go) where T : Component => UnityEngine.Object.Destroy(go.GetComponent<T>());
@@ -142,7 +169,7 @@ namespace NewSR2MP
 
         public static void OnSceneContextLoaded(SceneContext s)
         {
-            if (NetworkClient.active && !NetworkServer.activeHost)
+            if (ClientActive() && !ServerActive())
             {
 
                 LoadMessage save = latestSaveJoined;
@@ -181,11 +208,11 @@ namespace NewSR2MP
                             if (obj.GetComponent<TransformSmoother>() == null)
                                 obj.AddComponent<TransformSmoother>();
                             var obj2 = InstantiateActor(obj, SystemContext.Instance.SceneLoader._currentSceneGroup, Vector3.zero, Quaternion.identity);
-                            var obj2ID = obj2.GetComponent<IdentifiableActor>().model.actorId;
-                            obj2.GetComponent<IdentifiableActor>().model.actorId = new ActorId(newActor.id);
+                            var obj2ID = obj2.GetComponent<IdentifiableActor>()._model.actorId;
+                            obj2.GetComponent<IdentifiableActor>()._model.actorId = new ActorId(newActor.id);
                             SceneContext.Instance.GameModel.identifiables.Remove(obj2ID);
-                            SceneContext.Instance.GameModel._actorIdProvider._nextActorId = obj2.GetComponent<IdentifiableActor>().model.actorId.Value + 1;
-                            SceneContext.Instance.GameModel.identifiables.Add(obj2.GetComponent<IdentifiableActor>().model.actorId, obj2.GetComponent<IdentifiableActor>().model);
+                            SceneContext.Instance.GameModel._actorIdProvider._nextActorId = obj2.GetComponent<IdentifiableActor>()._model.actorId.Value + 1;
+                            SceneContext.Instance.GameModel.identifiables.Add(obj2.GetComponent<IdentifiableActor>()._model.actorId, obj2.GetComponent<IdentifiableActor>()._model);
                             UnityEngine.Object.Destroy(obj.GetComponent<NetworkActor>());
                             UnityEngine.Object.Destroy(obj.GetComponent<TransformSmoother>());
 
@@ -334,7 +361,7 @@ namespace NewSR2MP
             obj.AddComponent<MultiplayerManager>();
             UnityEngine.Object.DontDestroyOnLoad(obj);
             
-            UnityEngine.Object.Instantiate(ui.LoadAsset<GameObject>("LobbyUI")).transform.SetParent(obj.transform);
+            UnityEngine.Object.Instantiate(ui.LoadAsset("LobbyUI")).Cast<GameObject>().transform.SetParent(obj.transform);
             
             SRMP.Log("Multiplayer Initialized!");
         }

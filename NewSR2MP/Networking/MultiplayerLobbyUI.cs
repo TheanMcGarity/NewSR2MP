@@ -1,6 +1,4 @@
-using Epic.OnlineServices;
-using Epic.OnlineServices.Lobby;
-using EpicTransport;
+
 using Il2CppTMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -14,52 +12,8 @@ using UnityEngine.UI;
 /// SR2MP uses one class for all UI unlike SRMP.
 /// </summary>
 [RegisterTypeInIl2Cpp(false)]
-public class MultiplayerLobbyUI : EOSLobby
+public class MultiplayerLobbyUI : MonoBehaviour
 {
-    
-    // EOS Premade
-    private List<Epic.OnlineServices.Lobby.Attribute> lobbyData = new List<Epic.OnlineServices.Lobby.Attribute>();
-
-    private void OnEnable() {
-        //subscribe to events
-        CreateLobbySucceeded += OnCreateLobbySuccess;
-        JoinLobbySucceeded += OnJoinLobbySuccess;
-        LeaveLobbySucceeded += OnLeaveLobbySuccess;
-    }
-
-    //deregister events
-    private void OnDisable() {
-        //unsubscribe from events
-        CreateLobbySucceeded -= OnCreateLobbySuccess;
-        JoinLobbySucceeded -= OnJoinLobbySuccess;
-        LeaveLobbySucceeded -= OnLeaveLobbySuccess;
-    }
-
-    //when the lobby is successfully created, start the host
-    private void OnCreateLobbySuccess(List<Epic.OnlineServices.Lobby.Attribute> attributes) {
-        lobbyData = attributes;
-
-        SRNetworkManager.singleton.StartHost();
-    }
-
-    //when the user joined the lobby successfully, set network address and connect
-    private void OnJoinLobbySuccess(List<Epic.OnlineServices.Lobby.Attribute> attributes) {
-        lobbyData = attributes;
-
-        NetworkManager netManager = SRNetworkManager.singleton;
-        netManager.networkAddress = attributes.Find((x) => x.Data.Key == hostAddressKey).Data.Value.AsUtf8;
-        netManager.StartClient();
-    }
-
-    //when the lobby was left successfully, stop the host/client
-    private void OnLeaveLobbySuccess() {
-        NetworkManager netManager = SRNetworkManager.singleton;
-        netManager.StopHost();
-        netManager.StopClient();
-    }
-    
-    // SRMP Stuff
-    
     void Start()
     {
         rootObject = gameObject.getObjRec<GameObject>("Root"); 
@@ -79,14 +33,13 @@ public class MultiplayerLobbyUI : EOSLobby
         // Button Functions
         hostButton.onClick.AddListener(new System.Action(() =>
         {
-            lobbyCode = GenerateServerCode();
-            CreateLobby(10, LobbyPermissionLevel.Publicadvertised, false, new AttributeData[] { new AttributeData { Key = "code", Value = lobbyCode }, });
+            MultiplayerManager.Instance.Host(7777);
             isHost = true;
         }));
         
         joinViaCodeButton.onClick.AddListener(new System.Action(() =>
         {
-            FindLobbyByCode(lobbyCodeInput.m_Text);
+            MultiplayerManager.Instance.Connect("127.0.0.1",7777);
         }));
         
         lobbyCodePaste.onClick.AddListener(new System.Action(() =>
@@ -96,28 +49,6 @@ public class MultiplayerLobbyUI : EOSLobby
         
         // Temp
         lobbyCodeInput.interactable = false;
-    }
-    public void FindLobbyByCode(string lobbyCode) {
-        LobbySearch search = new LobbySearch();
-
-        EOSSDKComponent.GetLobbyInterface().CreateLobbySearch(new CreateLobbySearchOptions { MaxResults = 1 }, out search);
-
-        search.SetParameter(new LobbySearchSetParameterOptions {
-            ComparisonOp = ComparisonOp.Equal,
-            Parameter = new AttributeData { Key = "code", Value = lobbyCode }
-        });
-        
-        search.Find(new LobbySearchFindOptions { LocalUserId = EOSSDKComponent.LocalUserProductId }, null, (LobbySearchFindCallbackInfo callback) => {
-            if (callback.ResultCode != Result.Success) {
-                SRMP.Log($"There was an error while finding lobbies. Error code: {callback.ResultCode}");
-                return;
-            }
-
-            LobbyDetails lobbyInformation;
-            search.CopySearchResultByIndex(new LobbySearchCopySearchResultByIndexOptions { LobbyIndex = 0}, out lobbyInformation);
-            
-            JoinLobby(lobbyInformation);
-        });
     }
     
     public static MultiplayerLobbyUI instance;
@@ -186,7 +117,8 @@ public class MultiplayerLobbyUI : EOSLobby
     {
         isPaused = Time.timeScale == 0;
         isInMainMenu = SystemContext.Instance.SceneLoader._currentSceneGroup.name.Contains("MainMenu"); // Using name because there are 2 main menu scene groups for some reason.
-        isConnected = ConnectedToLobby;
+        isConnected = ClientActive();
+        isHost = ServerActive();
     }
 
     internal bool isCodeInputSelected = false;

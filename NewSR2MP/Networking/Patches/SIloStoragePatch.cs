@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
-using Mirror;
+
 using NewSR2MP.Networking.Component;
 using UnityEngine;
 namespace NewSR2MP.Networking.Patches

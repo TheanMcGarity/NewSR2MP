@@ -1,6 +1,6 @@
-﻿using Mirror;
+﻿
 using Il2CppMonomiPark.SlimeRancher.Regions;
-using System;
+using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,22 +9,52 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public struct AmmoEditSlotMessage : NetworkMessage
+    public class AmmoEditSlotMessage : ICustomMessage
     {
         public string ident;
         public int slot;
         public int count;
         public string id;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.AmmoEdit);
+            msg.AddString(ident);
+            msg.AddInt(slot);
+            msg.AddInt(count);
+            msg.AddString(id);
+
+            return msg;
+        }
     }
-    public struct AmmoAddMessage : NetworkMessage
+    public class AmmoAddMessage : ICustomMessage
     {
         public string ident;
         public string id;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.AmmoAdd);
+            msg.AddString(ident);
+            msg.AddString(id);
+
+            return msg;
+        }
     }
-    public struct AmmoRemoveMessage : NetworkMessage
+    public class AmmoRemoveMessage : ICustomMessage
     {
         public int index;
         public int count;
         public string id;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.AmmoRemove);
+            msg.AddInt(index);
+            msg.AddString(id);
+            msg.AddInt(count);
+
+            return msg;
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Mirror;
+﻿
 using NewSR2MP.Networking.Packet;
 using System;
 using System.Collections.Generic;
@@ -77,7 +77,7 @@ namespace NewSR2MP.Networking.Component
             {
                 if (frame > 3 && !appliedLaunch)
                 {
-                    GetComponent<Vacuumable>().launched = true;
+                    GetComponent<Vacuumable>()._launched = true;
                     appliedLaunch = true;
                 }
             }
@@ -95,7 +95,7 @@ namespace NewSR2MP.Networking.Component
             {
                 transformTimer = .15f;
 
-                if (NetworkClient.active && !NetworkServer.activeHost)
+                if (MultiplayerManager.server == null && MultiplayerManager.client != null)
                 {
                     var packet = new ActorUpdateClientMessage()
                     {
@@ -103,9 +103,9 @@ namespace NewSR2MP.Networking.Component
                         position = transform.position,
                         rotation = transform.eulerAngles,
                     };
-                    SRNetworkManager.NetworkSend(packet);
+                    MultiplayerManager.NetworkSend(packet);
                 }
-                else if (NetworkServer.activeHost)
+                else if (MultiplayerManager.server != null)
                 {
 
                     var packet = new ActorUpdateMessage()
@@ -114,7 +114,7 @@ namespace NewSR2MP.Networking.Component
                         position = transform.position,
                         rotation = transform.eulerAngles,
                     };
-                    SRNetworkManager.NetworkSend(packet);
+                    MultiplayerManager.NetworkSend(packet);
                 }
 
 

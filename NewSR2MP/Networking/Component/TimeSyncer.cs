@@ -1,4 +1,4 @@
-﻿using Mirror;
+﻿
 using NewSR2MP.Networking.Packet;
 using System;
 using System.Collections.Generic;
@@ -31,7 +31,7 @@ namespace NewSR2MP.Networking.Component
                 {
                     time = dir._worldModel.worldTime
                 };
-                SRNetworkManager.NetworkSend(msg);
+                MultiplayerManager.NetworkSend(msg);
             }
         }
     }

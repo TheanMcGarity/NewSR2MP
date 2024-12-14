@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
-using Mirror;
+
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using NewSR2MP.Networking;
 using NewSR2MP.Networking.Component;
@@ -21,7 +21,7 @@ namespace NewSR2MP.Networking.Patches
         public static void Postfix(IdentifiableActor __instance)
         {
 
-            if (NetworkClient.active && !NetworkServer.activeHost && !__instance.identType.IsPlayer && __instance.GetComponent<NetworkActor>() == null)
+            if (ClientActive() && !ServerActive() && !__instance.identType.IsPlayer && __instance.GetComponent<NetworkActor>() == null)
             {
                 if (__instance.GetComponent<NetworkActor>() == null)
                 {
@@ -36,7 +36,7 @@ namespace NewSR2MP.Networking.Patches
                     catch { }
                 }
             }
-            else if (NetworkServer.activeHost)
+            else if (ServerActive())
             {
                 if (!__instance.identType.IsPlayer)
                 {
@@ -62,7 +62,7 @@ namespace NewSR2MP.Networking.Patches
                         rotation = __instance.transform.eulerAngles
 
                     };
-                    SRNetworkManager.NetworkSend(packet);
+                    MultiplayerManager.NetworkSend(packet);
 
                 }
             }
@@ -75,7 +75,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(Identifiable __instance)
         {
-            if (NetworkServer.active || NetworkClient.active)
+            if (ServerActive() || ClientActive())
             {
                 if (!__instance.identType.IsPlayer)
                 {
@@ -84,7 +84,7 @@ namespace NewSR2MP.Networking.Patches
                     {
                         id = id
                     };
-                    SRNetworkManager.NetworkSend(packet);
+                    MultiplayerManager.NetworkSend(packet);
 
                     actors.Remove(id);
 

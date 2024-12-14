@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
+using Il2CppMonomiPark.SlimeRancher.Slime;
+using Unity.Mathematics;
 
 namespace NewSR2MP.Networking.Component
 {
@@ -53,11 +55,7 @@ namespace NewSR2MP.Networking.Component
 
                 array[i]._count = ammo._items[i].Count;
                 array[i]._id = GameContext.Instance.AutoSaveDirector.SavedGame.persistenceIdToIdentifiableType.GetIdentifiableType(ammo._items[i].ID);
-                array[i].Emotions = new SlimeEmotionData();
-                foreach (Il2CppSystem.Collections.Generic.KeyValuePair<SlimeEmotions.Emotion, float> emotionDatum in ammo._items[i].EmotionData.EmotionData)
-                {
-                    array[i].Emotions[emotionDatum.Key] = emotionDatum.Value;
-                }
+                array[i].Emotions = new float4(0,0,0,0);
             }
 
             return array;

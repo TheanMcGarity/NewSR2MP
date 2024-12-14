@@ -2,7 +2,7 @@
 
 namespace NewSR2MP.Networking.Packet
 {
-    public struct LoadMessage : NetworkMessage
+    public class LoadMessage : ICustomMessage
     {
         public List<InitActorData> initActors;
         public List<InitPlayerData> initPlayers;
@@ -21,20 +21,110 @@ namespace NewSR2MP.Networking.Packet
         public int money;
         public Il2CppSystem.Collections.Generic.Dictionary<int, int> upgrades; // Needs to be Il2Cpp so it can be moved right into the player upgrades model.
         public double time;
+    
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.JoinSave);
+            
+            
+            msg.AddInt(initActors.Count);
+            foreach (var actor in initActors)
+            {
+                msg.AddLong(actor.id);
+                msg.AddString(actor.ident);
+                msg.AddVector3(actor.pos);
+            }
+            msg.AddInt(initPlayers.Count);
+            foreach (var player in initPlayers)
+            {
+                msg.AddInt(player.id);
+            }
+            msg.AddInt(initPlots.Count);
+            foreach (var plot in initPlots)
+            {
+                msg.AddString(plot.id);
+                msg.AddInt((int)plot.type); 
+                msg.AddInt(plot.upgrades.Count);
+
+                foreach (var upg in plot.upgrades)
+                {
+                    msg.AddInt((int)upg);
+                }
+                msg.AddInt(plot.siloData.slots);
+
+                msg.AddInt(plot.siloData.ammo.Count);
+                foreach (var ammo in plot.siloData.ammo)
+                {
+                    msg.AddAmmoData(ammo);
+                }
+                msg.AddString(plot.cropIdent);
+            }
+            msg.AddInt(initGordos.Count);
+            foreach (var gordo in initGordos)
+            {
+                msg.AddString(gordo.id);
+                msg.AddInt(gordo.eaten);
+            }
+            msg.AddInt(initPedias.Count);
+            foreach (var pedia in initPedias)
+            {
+                msg.AddString(pedia);
+            }
+            msg.AddInt(initMaps.Count);
+            foreach (var map in initMaps)
+            {
+                msg.AddString(map);
+            }
+            msg.AddInt(initAccess.Count);
+            foreach (var access in initAccess)
+            {
+                msg.AddString(access.id);
+                msg.AddBool(access.open);
+            }
+
+            msg.AddInt(playerID);
+            msg.AddVector3(localPlayerSave.pos);
+            msg.AddVector3(localPlayerSave.rot);
+            msg.AddInt(localPlayerSave.ammo.Count);
+
+            foreach (var amm in localPlayerSave.ammo)
+            {
+                msg.AddAmmoData(amm);
+            }
+            msg.AddInt(localPlayerSave.sceneGroup);
+            
+            
+            
+            
+            msg.AddInt(money);
+
+
+            msg.AddInt(upgrades.Count);
+            foreach (var upg in upgrades)
+            {
+                msg.AddInt(upg.key);
+                msg.AddInt(upg.value);
+            }
+
+            msg.AddDouble(time);
+
+            return msg;
+        }
+        
     }
 
-    public struct InitActorData
+    public class InitActorData
     {
         public long id;
         public string ident;
         public Vector3 pos;
     }
-    public struct InitGordoData
+    public class InitGordoData
     {
         public string id;
         public int eaten;
     }
-    /*public struct InitGadgetData
+    /*public class InitGadgetData
     {
         public thingy gadgetData;
 
@@ -42,12 +132,12 @@ namespace NewSR2MP.Networking.Packet
         public string gadget;
     }*/
 
-    public struct InitAccessData
+    public class InitAccessData
     {
         public string id;
         public bool open;
     }
-    public struct InitPlotData
+    public class InitPlotData
     {
         public string id;
         public LandPlot.Id type;
@@ -57,25 +147,25 @@ namespace NewSR2MP.Networking.Packet
         public InitSiloData siloData;
     }
 
-    public struct InitSiloData
+    public class InitSiloData
     {
         public int slots;
 
         public HashSet<AmmoData> ammo;
     }
 
-    public struct AmmoData
+    public class AmmoData
     {
         public string id;
         public int count;
         public int slot;
     }
 
-    public struct InitPlayerData
+    public class InitPlayerData
     {
         public int id;
     }
-    public struct LocalPlayerData
+    public class LocalPlayerData
     {
         public Vector3 pos;
         public Vector3 rot;

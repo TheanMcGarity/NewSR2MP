@@ -1,9 +1,17 @@
-﻿using Mirror;
+﻿
 
 namespace NewSR2MP.Networking.Packet
 {
-    public struct DoorOpenMessage : NetworkMessage
+    public class DoorOpenMessage : ICustomMessage
     {
         public string id;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.OpenDoor);
+            msg.AddString(id);
+
+            return msg;
+        }
     }
 }

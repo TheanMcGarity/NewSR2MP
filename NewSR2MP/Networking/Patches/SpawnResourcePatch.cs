@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-using Mirror;
+
 
 namespace NewSR2MP.Networking.Patches
 {
@@ -8,7 +8,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(SpawnResource __instance)
         {
-            if (NetworkClient.active && !NetworkServer.activeHost)
+            if (ClientActive() && !ServerActive())
                 __instance._model.nextSpawnTime = double.MaxValue;
         }
     }

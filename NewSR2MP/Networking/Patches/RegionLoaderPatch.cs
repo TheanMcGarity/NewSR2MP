@@ -1,11 +1,11 @@
-﻿using System;
+﻿/*using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
-using Mirror;
+
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Regions;
 using NewSR2MP.Networking.Component;
@@ -47,7 +47,7 @@ namespace NewSR2MP.Networking.Patches
 
             foreach (var player in players.Values)
             {
-                if (player.id == 0 && NetworkServer.activeHost) continue;
+                if (player.id == 0 && ServerActive()) continue;
 
                 Vector3 networkPos = player.transform.position;
 
@@ -145,7 +145,7 @@ namespace NewSR2MP.Networking.Patches
 
         public static bool Prefix(RegionLoader __instance)
         {
-            if (NetworkServer.active || NetworkClient.active)
+            if (ServerActive() || ClientActive())
             {
 
                 if (CheckPlayerPositions(__instance))
@@ -203,7 +203,7 @@ namespace NewSR2MP.Networking.Patches
             RegionLoader._unloadRegions.Clear();
             foreach (var player in players.Values)
             {
-                if (player.id == 0 && NetworkServer.activeHost) continue;
+                if (player.id == 0 && ServerActive()) continue;
 
                 Vector3 networkPos = player.transform.position;
 
@@ -277,4 +277,4 @@ namespace NewSR2MP.Networking.Patches
             return false;
         }
     }
-}
+}*/

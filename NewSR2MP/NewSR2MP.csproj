@@ -22,16 +22,13 @@
       <DefineConstants>TRACE;EOS_PLATFORM_WINDOWS_64;EOS_UNITY</DefineConstants>
       <DocumentationFile>bin\Debug\NewSR2MP.xml</DocumentationFile>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <DefineConstants>TRACE;EOS_PLATFORM_WINDOWS_64;EOS_UNITY</DefineConstants>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
-
-    <ItemGroup>
-      <Folder Include="Networking\Mirror\Transports\" />
-    </ItemGroup>
 
     <ItemGroup>
       <Reference Include="0Harmony">
@@ -144,6 +141,12 @@
       <Reference Include="Newtonsoft.Json">
         <HintPath>Libs\Newtonsoft.Json.dll</HintPath>
         <Private>False</Private>
+      </Reference>
+      <Reference Include="RiptideNetworking">
+        <HintPath>RiptideNetworking.dll</HintPath>
+      </Reference>
+      <Reference Include="SR2E">
+        <HintPath>Libs\SR2E.dll</HintPath>
       </Reference>
       <Reference Include="Unity.2D.Animation.Runtime">
         <HintPath>Libs\Unity.2D.Animation.Runtime.dll</HintPath>
@@ -501,14 +504,26 @@
 
     <ItemGroup>
       <None Remove="Networking\EOS\Mirror\Runtime\Transport\EpicOnlineTransport\EOSSDK\EOSSDK-Win64-Shipping.dll" />
-      <Content Include="Networking\EOS\Mirror\Runtime\Transport\EpicOnlineTransport\EOSSDK\EOSSDK-Win64-Shipping.dll">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
     </ItemGroup>
 
     <ItemGroup>
       <None Remove="ui" />
       <EmbeddedResource Include="ui" />
     </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="RiptideNetworking.dll" />
+      <Content Include="RiptideNetworking.dll">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+      <Exec Command="&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)Properties\AssemblyInfo.tt&quot;&#xA;&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)asmver.tt&quot;" />
+    </Target>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="copy &quot;$(OutDir)$(TargetFileName)&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\Slime Rancher 2\Mods&quot;&#xA;copy &quot;$(OutDir)$(TargetFileName)&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\Slime Rancher 2 - Copy\Mods&quot;&#xA;" />
+    </Target>
 
 </Project>

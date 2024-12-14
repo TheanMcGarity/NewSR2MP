@@ -3,124 +3,37 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-using EpicTransport;
 using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.World;
+using SR2E;
 using UnityEngine.Serialization;
 
 namespace NewSR2MP.Networking
 {
     [RegisterTypeInIl2Cpp(false)]
-    public class MultiplayerManager : SRBehaviour
+    public partial class MultiplayerManager : SRBehaviour
     {
-        /// <summary>
-        /// The delegate for the 'OnPlayerConnecting' event.
-        /// </summary>
-        /// <param name="connection">Connection ID for the player. This should be on its way to the clients when this event is called.</param>
-        public delegate void OnPlayerConnect(NetworkConnectionToClient connection);
-
-        /// <summary>
-        /// The delegate for the 'OnJoinAttempt' event.
-        /// </summary>
-        /// <param name="connection">Connection ID for the player. this gets sent to all clients on join.</param>
-        /// <param name="errorIfOccurred">If an error occurred, this is what the exception ToString() is.</param>
-        public delegate void OnPlayerAttemptedJoin(NetworkConnectionToClient connection, string errorIfOccurred = null);
-        
-        /// <summary>
-        /// The delegate for the 'OnPlayerLeave...' events.
-        /// </summary>
-        /// <param name="id">The player id of the disconnecting player. This is actually the server side connection id.</param>
-        public delegate void OnPlayerLeft(int id);
-
-
-        /// <summary>
-        /// This event occurrs after a player connects into the server, right before the save data is sent over.
-        /// The parameters for this event are a client.
-        /// </summary>
-        public static event OnPlayerConnect OnPlayerConnecting;
-
-        /// <summary>
-        /// This event occurrs after a player leaves the server.
-        /// The parameters for this event are the player id.
-        /// This runs on both client and server.
-        /// </summary>
-        public static event OnPlayerLeft OnPlayerLeaveCommon;
-
-        /// <summary>
-        /// This event occurrs after a player leaves the server.
-        /// The parameters for this event are the player id.
-        /// This runs only on the client.
-        /// </summary>
-        public static event OnPlayerLeft OnPlayerLeaveClient;
-
-        /// <summary>
-        /// This event occurrs after a player leaves the server.
-        /// The parameters for this event are the player id.
-        /// This runs only on the server.
-        /// </summary>
-        public static event OnPlayerLeft OnPlayerLeaveServer;
-
-        /// <summary>
-        /// This event occurrs after a player attempts to join, when the code for sending a save errors or finishes.
-        /// The parameters for this event are a client and an error if occurred.
-        /// </summary>
-        public static event OnPlayerAttemptedJoin OnJoinAttempt;
-
-
-        private NetworkManager networkManager;
-
         //public EOSLobbyGUI prototypeLobbyGUI;
 
 
         public GameObject onlinePlayerPrefab;
 
-        public Transport transport;
 
         GUIStyle guiStyle;
-
-        public static NetworkManager NetworkManager
-        {
-            get
-            {
-                return Instance.networkManager;
-            }
-        }
 
         public static MultiplayerManager Instance;
 
         public void Awake()
         {
             Instance = this;
-            gameObject.AddComponent<EOSSDKComponent>();
         }
 
 
         private void Start()
         {
-            transport = gameObject.AddComponent<EosTransport>();
-            
-
-            WriterBugfix.FixWriters();
-            ReaderBugfix.FixReaders();
-            
-            networkManager = gameObject.AddComponent<SRNetworkManager>();
-
-            networkManager.maxConnections = 100;
-            // networkManager.playerPrefab = onlinePlayerPrefab; need to use asset bundles to fix error
-            networkManager.autoCreatePlayer = false;
-
-
-            networkManager.transport = transport;
-            Transport.active = transport;
-
-            //prototypeLobbyGUI = gameObject.AddComponent<EOSLobbyGUI>();
-            
-            NetworkManager.dontDestroyOnLoad = true;
-
-
-
-            NetworkClient.OnDisconnectedEvent += ClientLeave;
+            SR2EConsole.RegisterCommand(new HostCommand());
+            SR2EConsole.RegisterCommand(new JoinCommand());
         }
 
         void GeneratePlayerBean()
@@ -182,17 +95,16 @@ namespace NewSR2MP.Networking
         }
         
         // Hefty code
-        public static void PlayerJoin(NetworkConnectionToClient nctc, Guid savingID, string username)
+        public static void PlayerJoin(Connection nctc, Guid savingID, string username)
         {
             SRMP.Log("connecting client.");
 
-            OnPlayerConnecting?.Invoke(nctc);
 
 
 
             try
             {
-                clientToGuid.Add(nctc.connectionId, savingID);
+                clientToGuid.Add(nctc.Id, savingID);
                 // Variables
                 double time = SceneContext.Instance.TimeDirector.CurrTime();
                 List<InitActorData> actors = new List<InitActorData>();
@@ -393,13 +305,13 @@ namespace NewSR2MP.Networking
                     initPedias = pedias,
                     initAccess = access,
                     initMaps = GetListFromFogEvents(SceneContext.Instance.eventDirector._model.table["fogRevealed"]._keys),
-                    playerID = nctc.connectionId,
+                    playerID = nctc.Id,
                     money = money,
                     time = time,
                     localPlayerSave = localPlayerData,
                     upgrades = upgrades,
                 };
-                NetworkServer.SRMPSend(saveMessage, nctc);
+                NetworkSend(saveMessage, ServerSendOptions.SendToPlayer(nctc.Id));
                 SRMP.Log("sent world");
 
                 Ammo currentHostAmmo = SceneContext.Instance.PlayerState.Ammo;
@@ -411,28 +323,25 @@ namespace NewSR2MP.Networking
                 try
                 {
                     var player = Instantiate(Instance.onlinePlayerPrefab);
-                    player.name = $"Player{nctc.connectionId}";
+                    player.name = $"Player{nctc.Id}";
                     var netPlayer = player.GetComponent<NetworkPlayer>();
-                    players.Add(nctc.connectionId, netPlayer);
-                    netPlayer.id = nctc.connectionId;
+                    players.Add(nctc.Id, netPlayer);
+                    netPlayer.id = nctc.Id;
                     player.SetActive(true);
                     var packet = new PlayerJoinMessage()
                     {
-                        id = nctc.connectionId,
+                        id = nctc.Id,
                         local = false
                     };
-                    NetworkServer.SRMPSendToConnections(packet, NetworkServer.NetworkConnectionListExcept(nctc));
-
+                    NetworkSend(packet, ServerSendOptions.SendToAllExcept(nctc.Id));
                 }
                 catch
                 { }
-                OnJoinAttempt?.Invoke(nctc);
             }
             catch (Exception ex)
             {
-                clientToGuid.Remove(nctc.connectionId);
-                OnJoinAttempt?.Invoke(nctc,ex.ToString());
-                SRMP.Log(ex.ToString());
+                clientToGuid.Remove(nctc.Id);
+                SRMP.Error(ex.ToString());
             }
         }
 
@@ -444,28 +353,27 @@ namespace NewSR2MP.Networking
 
         public void Connect(string ip, ushort port)
         {
-            // Please use EOS
+            client = new Client();
+            client.Connect(ip, port);
         }
-        public void Host()
+        public void Host(ushort port)
         {
-            // Please use EOS
+            server = new Server();
+            server.Start(port,10); 
         }
 
 
-        private void Update()
+        private void FixedUpdate()
         {
-            // Ticks
-            if (NetworkServer.activeHost)
-            {
-                transport.ServerEarlyUpdate();
-                transport.ServerLateUpdate();
-            }
-            else if (NetworkClient.active || NetworkClient.isConnecting)
-            {
-                transport.ClientEarlyUpdate();
-                transport.ClientLateUpdate();
-            }
-            
+            client?.Update();
+            server?.Update();
+        }
+
+        public static void Shutdown()
+        {
+            // How do i shut them down?????
+            server = null;
+            client = null;
         }
     }
 }

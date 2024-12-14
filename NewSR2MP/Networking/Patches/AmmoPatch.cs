@@ -7,7 +7,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(Ammo __instance, ref bool __result,IdentifiableType id, Identifiable identifiable, int slotIdx, int count, bool overflow)
         {
-            if (!(NetworkClient.active || NetworkServer.active))
+            if (!(ClientActive() || ServerActive()))
                 return;
             
             if (__result)
@@ -21,7 +21,7 @@ namespace NewSR2MP.Networking.Patches
                         count = count,
                         id = netAmmo.ammoId
                     };
-                    SRNetworkManager.NetworkSend(packet);
+                    MultiplayerManager.NetworkSend(packet);
                 }
             }
         }
@@ -33,7 +33,7 @@ namespace NewSR2MP.Networking.Patches
 
         public static bool Prefix(Ammo __instance, ref bool __result, IdentifiableType id, Identifiable identifiable, SlimeAppearance.AppearanceSaveSet appearance)
         {
-            if (!(NetworkClient.active || NetworkServer.active))
+            if (!(ClientActive() || ServerActive()))
                 return true;
 
             if (!(__instance is NetworkAmmo)) return true;
@@ -52,7 +52,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(Ammo __instance, int index, int count)
         {
-            if (!(NetworkClient.active || NetworkServer.active))
+            if (!(ClientActive() || ServerActive()))
                 return;
             if (__instance is NetworkAmmo netAmmo)
             {
@@ -64,7 +64,7 @@ namespace NewSR2MP.Networking.Patches
                     count = count,
                     id = netAmmo.ammoId
                 };
-                SRNetworkManager.NetworkSend(packet);
+                MultiplayerManager.NetworkSend(packet);
             }
         }
     }
@@ -74,7 +74,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(Ammo __instance, int amount)
         {
-            if (!(NetworkClient.active || NetworkServer.active))
+            if (!(ClientActive() || ServerActive()))
                 return;
 
             if (__instance is NetworkAmmo netAmmo)
@@ -88,7 +88,7 @@ namespace NewSR2MP.Networking.Patches
                     count = amount,
                     id = netAmmo.ammoId
                 };
-                SRNetworkManager.NetworkSend(packet);
+                MultiplayerManager.NetworkSend(packet);
             }
         }
     }

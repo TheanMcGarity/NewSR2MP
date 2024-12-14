@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-using Mirror;
+
 using NewSR2MP.Networking.Component;
 using NewSR2MP.Networking.Packet;
 using System;
@@ -15,13 +15,13 @@ namespace NewSR2MP.Networking.Patches
     {
         public static bool Prefix (TimeDirector __instance, double fastForwardUntil)
         {
-            if (NetworkClient.active && !NetworkServer.activeHost)
+            if (ClientActive() && !ServerActive())
             {
                 var packet = new SleepMessage()
                 {
                     time = fastForwardUntil
                 };
-                NetworkClient.SRMPSend(packet);
+                MultiplayerManager.NetworkSend(packet);
                 return false;
             }
             return true;

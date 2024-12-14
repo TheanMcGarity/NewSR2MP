@@ -1,4 +1,4 @@
-﻿using Mirror;
+﻿
 using NewSR2MP.Networking.Packet;
 using System;
 using System.Collections.Generic;
@@ -29,7 +29,7 @@ namespace NewSR2MP.Networking.Component
 
                 if (vacuumable != null)
                 {
-                    vacuumable.release();
+                    vacuumable.Release();
                 }
 
                 vac.LockJoint.connectedBody = null;
@@ -55,7 +55,7 @@ namespace NewSR2MP.Networking.Component
                 id = GetComponent<IdentifiableActor>().GetActorId().Value,
                 player = currentPlayerID
             };
-            SRNetworkManager.NetworkSend(packet);
+            MultiplayerManager.NetworkSend(packet);
         }
     }
 }

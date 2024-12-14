@@ -11,6 +11,69 @@ using UnityEngine;
 
 namespace NewSR2MP
 {
+    public static class MessageExtensions
+    {
+        public static void AddVector3(this Message msg, Vector3 vector)
+        {
+            msg.AddFloat(vector.x);
+            msg.AddFloat(vector.y);
+            msg.AddFloat(vector.z);
+        }
+        public static Vector3 GetVector3(this Message msg)
+        {
+            var x = msg.GetFloat();
+            var y = msg.GetFloat();
+            var z = msg.GetFloat();
+            
+            return new Vector3(x, y, z);
+        }
+        public static void AddQuaternion(this Message msg, Quaternion quaternion)
+        {
+            msg.AddFloat(quaternion.x);
+            msg.AddFloat(quaternion.y);
+            msg.AddFloat(quaternion.z);
+            msg.AddFloat(quaternion.w);
+        }
+        public static Quaternion GetQuaternion(this Message msg)
+        {
+            var x = msg.GetFloat();
+            var y = msg.GetFloat();
+            var z = msg.GetFloat();
+            var w = msg.GetFloat();
+            
+            return new Quaternion(x, y, z, w);
+        }
+        public static void AddGuid(this Message msg, Guid guid)
+        {
+            msg.AddString(guid.ToString());
+        }
+        public static Guid GetGuid(this Message msg)
+        {
+            var str = msg.GetString();
+
+            return new Guid(str);
+        }
+        public static void AddAmmoData(this Message msg, AmmoData data)
+        {
+            msg.AddInt(data.count);
+            msg.AddInt(data.slot);
+            msg.AddString(data.id);
+        }
+        public static AmmoData GetAmmoData(this Message msg)
+        {
+            var count = msg.GetInt();
+            var slot = msg.GetInt();
+            var id = msg.GetString();
+
+            return new AmmoData()
+            {
+                count = count,
+                slot = slot,
+                id = id
+            };
+        }
+    }
+    
     public static class FinnDevExtentions
     {
         //
@@ -128,6 +191,38 @@ namespace NewSR2MP
     
     public static class Globals
     {
+        public enum PacketType : ushort
+        {
+            PlayerUpdate,
+            PlayerJoin,
+            PlayerLeave,
+            TempClientActorUpdate,
+            TempClientActorSpawn,
+            ActorUpdate,
+            ActorSpawn,
+            ActorDestroy,
+            ActorOwner,
+            GordoExplode,
+            GordoFeed,
+            PediaUnlock,
+            MapUnlock,
+            ResourceState,
+            FastForward,
+            TimeUpdate,
+            SetCurrency,
+            OpenDoor,
+            AmmoAdd,
+            AmmoEdit,
+            AmmoRemove,
+            JoinSave,
+            RequestJoin,
+            LandPlot,
+            GardenPlant,
+        }
+
+        public static bool ServerActive() => MultiplayerManager.server != null;
+        public static bool ClientActive() => MultiplayerManager.client != null;
+        
         
         public static AssetBundle InitializeAssetBundle(string bundleName)
         {
@@ -156,30 +251,6 @@ namespace NewSR2MP
             }
 
             return new string(result);
-        }
-        
-        /// <summary>
-        /// Do not use this in your own programs!
-        /// </summary>
-        /// <returns>The mod's very own API key. DO NOT USE THIS FOR YOUR OWN PROJECTS</returns>
-        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
-        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
-        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
-        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
-        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
-        /// DO NOT USE THIS FOR YOUR OWN PROJECTS
-        internal static EosApiKey GetAPIKey()
-        {
-            var key = ScriptableObject.CreateInstance<EosApiKey>();
-
-            key.epicDeploymentId = "85657bc0947f45b8976082409f60b3ad";
-            key.epicSandboxId = "dfcf7f2faa004223b14b04d7f5aaeac1";
-            key.epicClientId = "xyza7891vEIt18NTG5woeNE6E7eKG7Yr";
-            key.epicClientSecret = "AaAXPKUogRkC6C0J4N5512Ye81vzr+jJ2zV7nytjptU";
-            key.epicProductId = "5cabbf45e03042e9b93f40449849c50d";
-            key.epicProductName = "SRMP";
-
-            return key;
         }
         
         public static string GetStringFromPersistentID_IdentifiableType(int persistentID)

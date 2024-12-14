@@ -1,4 +1,4 @@
-﻿using Mirror;
+﻿
 using NewSR2MP.Networking.Packet;
 using System;
 using System.Collections.Generic;
@@ -36,7 +36,7 @@ namespace NewSR2MP.Networking.Component
             {
                 id = id,
             };
-            SRNetworkManager.NetworkSend(msg);
+            MultiplayerManager.NetworkSend(msg);
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace NewSR2MP.Networking.Component
                     pos = transform.position,
                     rot = transform.rotation
                 };
-                SRNetworkManager.NetworkSend(packet);
+                MultiplayerManager.NetworkSend(packet);
             }
             
         }

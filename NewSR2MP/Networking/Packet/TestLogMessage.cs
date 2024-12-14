@@ -1,5 +1,5 @@
-﻿using Mirror;
-using System;
+﻿
+using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public struct TestLogMessage : NetworkMessage
+    public class TestLogMessage
     {
         public string MessageToLog;
     }

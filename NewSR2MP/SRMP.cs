@@ -1,4 +1,4 @@
-﻿using Mirror;
+﻿
 using System.Collections.Generic;
 using System.Drawing;
 using MelonLoader;
@@ -7,8 +7,6 @@ namespace NewSR2MP
 {
     public class SRMP
     {
-        // Not used, but i would like if it wasnt removed, as it helps with debugging.
-        internal static ushort MessageId<M>() where M: struct, NetworkMessage => NetworkMessageId<M>.Id;
 
         private static MelonLogger.Instance logger;
 

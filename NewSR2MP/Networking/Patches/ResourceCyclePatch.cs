@@ -1,5 +1,5 @@
 ﻿/*using HarmonyLib;
-using Mirror;
+
 using NewSR2MP.Networking.Component;
 using NewSR2MP.Networking.Packet;
 
@@ -10,14 +10,14 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(ResourceCycle __instance)
         {
-            if (!NetworkServer.active) return;
+            if (!ServerActive()) return;
             if (__instance.GetComponent<HandledDummy>()) return;
             var message = new ResourceStateMessage()
             {
                 state = ResourceCycle.State.RIPE,
                 id = __instance.ident.GetActorId()
             };
-            SRNetworkManager.NetworkSend(message);
+            MultiplayerManager.NetworkSend(message);
         }
     }
     [HarmonyPatch(typeof(ResourceCycle), nameof(ResourceCycle.SetInitState))]
@@ -25,13 +25,13 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(ResourceCycle __instance, ResourceCycle.State state, double progressTime)
         {
-            if (!NetworkServer.active) return;
+            if (!ServerActive()) return;
             var message = new ResourceStateMessage()
             {
                 state = state,
                 id = __instance.ident.GetActorId()
             };
-            SRNetworkManager.NetworkSend(message);
+            MultiplayerManager.NetworkSend(message);
         }
     }
     [HarmonyPatch(typeof(ResourceCycle), nameof(ResourceCycle.Rot))]
@@ -40,14 +40,14 @@ namespace NewSR2MP.Networking.Patches
         public static void Postfix(ResourceCycle __instance)
         {
 
-            if (!NetworkServer.active) return;
+            if (!ServerActive()) return;
             if (__instance.GetComponent<HandledDummy>()) return;
             var message = new ResourceStateMessage()
             {
                 state = ResourceCycle.State.ROTTEN,
                 id = __instance.ident.GetActorId()
             };
-            SRNetworkManager.NetworkSend(message);
+            MultiplayerManager.NetworkSend(message);
 
         }
     }
@@ -57,14 +57,14 @@ namespace NewSR2MP.Networking.Patches
         public static void Postfix(ResourceCycle __instance)
         {
 
-            if (!NetworkServer.active) return;
+            if (!ServerActive()) return;
             if (__instance.GetComponent<HandledDummy>()) return;
             var message = new ResourceStateMessage()
             {
                 state = ResourceCycle.State.EDIBLE,
                 id = __instance.ident.GetActorId()
             };
-            SRNetworkManager.NetworkSend(message);
+            MultiplayerManager.NetworkSend(message);
 
         }
     }

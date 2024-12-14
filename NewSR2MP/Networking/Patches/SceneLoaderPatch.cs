@@ -1,6 +1,6 @@
 ﻿using HarmonyLib;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
-using Mirror;
+
 using NewSR2MP.Networking;
 using NewSR2MP.Networking.Component;
 using NewSR2MP.Networking.Packet;
@@ -14,7 +14,7 @@ namespace NewSR2MP.Networking.Patches
         private static bool isLoadedAlready = false;
         public static void Postfix(SceneLoader __instance,SceneGroup sceneGroup, AssetReference loadingScene, SceneLoadingParameters parameters)
         {
-            if (!NetworkServer.active && NetworkClient.active)
+            if (!ServerActive() && ClientActive())
             {
                 if (__instance._defaultGameplaySceneGroup == sceneGroup)
                 {

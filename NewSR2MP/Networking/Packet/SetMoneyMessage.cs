@@ -1,5 +1,5 @@
-﻿using Mirror;
-using System;
+﻿
+using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,14 +7,17 @@ using System.Threading.Tasks;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public struct SetMoneyMessage : NetworkMessage
+    public class SetMoneyMessage : ICustomMessage
     {
         public int newMoney;
         // public PlayerState.CoinsType type;
-    }
-    public struct SetKeysMessage : NetworkMessage
-    {
-        public int newMoney;
-        // public PlayerState.CoinsType type;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.SetCurrency);
+            msg.AddInt(newMoney);
+
+            return msg;
+        }
     }
 }

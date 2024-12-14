@@ -1,5 +1,6 @@
 global using Il2Cpp;
-global using Mirror;
+
+global using Riptide;
 global using NewSR2MP;
 global using NewSR2MP.Networking;
 global using NewSR2MP.Networking.Component;
@@ -21,7 +22,4 @@ global using GameBinaryWriter = Il2CppSystem.IO.BinaryWriter;
 global using GameStream = Il2CppSystem.IO.FileStream;
 global using CppFile = Il2CppSystem.IO.File;
 
-global using network = NewSR2MP.Networking.SRNetworkManager;
-global using server = Mirror.NetworkServer;
-global using client = Mirror.NetworkClient;
 global using handler = NewSR2MP.Networking.NetworkHandler;

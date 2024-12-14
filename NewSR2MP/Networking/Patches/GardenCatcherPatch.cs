@@ -22,7 +22,7 @@ namespace NewSR2MP.Networking.Patches
                     replace = isReplacement,
                     id = id,
                 };
-                SRNetworkManager.NetworkSend(msg);
+                MultiplayerManager.NetworkSend(msg);
             }
         }
     }

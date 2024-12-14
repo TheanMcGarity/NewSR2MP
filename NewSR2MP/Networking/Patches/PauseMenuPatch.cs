@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using Il2CppMonomiPark.SlimeRancher.UI;
 using Il2CppMonomiPark.SlimeRancher.UI.Pause;
-using Mirror;
+
 using NewSR2MP.Networking;
 using NewSR2MP.Networking.Packet;
 
@@ -12,12 +12,12 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(QuitPauseItemModel __instance)
         {
-            if (NetworkServer.active || NetworkClient.active)
+            if (ServerActive() || ClientActive())
             {
-                NetworkServer.Shutdown();
-                NetworkClient.Shutdown();
+                MultiplayerManager.Shutdown();
+                
 
-                SRNetworkManager.EraseValues();
+                MultiplayerManager.EraseValues();
             }
         }
     }
