@@ -9,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices.ComTypes;
+using Il2CppMonomiPark.SlimeRancher.Pedia;
+using UnityEngine;
 
 
 namespace NewSR2MP.Networking.Patches
@@ -58,6 +60,32 @@ namespace NewSR2MP.Networking.Patches
         {
             if (ClientActive() && !ServerActive()) return;
             MultiplayerManager.DoNetworkSave();
+        }
+    }
+    
+    
+    [HarmonyPatch(typeof(AutoSaveDirector), nameof(AutoSaveDirector.Awake))]
+    public class AutoSaveDirectorAwake
+    {
+        public static void Postfix(AutoSaveDirector __instance)
+        {
+            MultiplayerManager.Instance.GeneratePlayerBean();
+            
+            foreach (var ident in __instance.identifiableTypes._memberTypes)
+            {
+                identifiableTypes.Add(ident.name, ident);
+            }
+            foreach (var pedia in Resources.FindObjectsOfTypeAll<PediaEntry>())
+            {
+                pediaEntries.Add(pedia.name, pedia);
+            }
+
+            foreach (var scene in __instance.SavedGame._sceneGroupTranslation.RawLookupDictionary)
+            {
+                sceneGroups.Add(__instance._savedGame._sceneGroupTranslation.InstanceLookupTable._reverseIndex[scene.key], scene.value);
+            }
+            
+            // Do player upgrades next
         }
     }
 }

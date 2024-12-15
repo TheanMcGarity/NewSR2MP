@@ -31,8 +31,8 @@ namespace NewSR2MP.Networking
             // i submitted a incorrect bug report :sob:
             RiptideLogger.Initialize(SRMP.Debug,SRMP.Log,SRMP.Warn,SRMP.Error,false);
             Instance = this;
-            
-            
+
+            MelonCoroutines.Start(UpdateNetwork());
         }
 
 
@@ -40,9 +40,10 @@ namespace NewSR2MP.Networking
         {
             SR2EConsole.RegisterCommand(new HostCommand());
             SR2EConsole.RegisterCommand(new JoinCommand());
+            SR2EConsole.RegisterCommand(new ShowSRMPErrorsCommand());
         }
 
-        void GeneratePlayerBean()
+        public void GeneratePlayerBean()
         {
             onlinePlayerPrefab = new GameObject("PlayerDefault");
             var playerModel = GameObject.CreatePrimitive(PrimitiveType.Capsule); // Prototype player.
@@ -72,7 +73,6 @@ namespace NewSR2MP.Networking
             viewcam.enabled = false;
 
             onlinePlayerPrefab.GetComponent<NetworkPlayer>().InitCamera();
-
         }
 
         public RenderTexture playerCameraPreviewImage = new RenderTexture(250, 250, 24);
@@ -352,6 +352,14 @@ namespace NewSR2MP.Networking
         }
 
 
+        /// <summary>
+        /// Shows SRMP errors on networking related stuff.
+        /// </summary>
+        public void ShowSRMPErrors()
+        {
+            ShowErrors = true;
+        }
+        
         public static void ClientLeave()
         {
             SystemContext.Instance.SceneLoader.LoadSceneGroup(SystemContext.Instance.SceneLoader._mainMenuSceneGroup);
@@ -366,6 +374,7 @@ namespace NewSR2MP.Networking
         {
             server = new Server();
             server.Start(port,10); 
+            StartHosting();
         }
 
         System.Collections.IEnumerator UpdateNetwork()

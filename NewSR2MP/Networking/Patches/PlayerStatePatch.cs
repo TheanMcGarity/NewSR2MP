@@ -18,10 +18,6 @@ namespace NewSR2MP.Networking.Patches
 
             if (ClientActive() || ServerActive())
             {
-                if (ServerActive() && savedGame.sharedMoney)
-                {
-                    return;
-                }
                 SetMoneyMessage message = new SetMoneyMessage()
                 {
                     newMoney = __instance.GetCurrency()
@@ -38,10 +34,6 @@ namespace NewSR2MP.Networking.Patches
 
             if (ClientActive() || ServerActive())
             {
-                if (ServerActive() && savedGame.sharedMoney)
-                {
-                    return;
-                }
                 SetMoneyMessage message = new SetMoneyMessage()
                 {
                     newMoney = __instance.GetCurrency()

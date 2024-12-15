@@ -8,10 +8,10 @@ using NewSR2MP.Networking.Packet;
 
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(PediaDirector), nameof(PediaDirector.ShowPedia), typeof(PediaEntry), typeof(PediaOpenedAnalyticsEvent.Opener), typeof(Il2CppSystem.Action))]
+    [HarmonyPatch(typeof(PediaDirector), nameof(PediaDirector.ShowPopupIfUnlocked))]
     internal class PediaDirectorMaybeShowPopup
     {
-        public static void Postfix(PediaDirector __instance,  PediaEntry entry, PediaOpenedAnalyticsEvent.Opener opener, Il2CppSystem.Action onClosed)
+        public static void Postfix(PediaDirector __instance,  PediaEntry entry)
         {
             if ((ClientActive() || ServerActive()) && !__instance.GetComponent<HandledDummy>())
             {

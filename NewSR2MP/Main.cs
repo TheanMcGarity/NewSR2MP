@@ -26,6 +26,17 @@ namespace NewSR2MP
         public override string ID => "host";
         public override string Usage => "host <port>";
     }
+    public class ShowSRMPErrorsCommand : SR2Command
+    {
+        public override bool Execute(string[] args)
+        {
+            ShowErrors = true;
+            return true;
+        }
+
+        public override string ID => "showsrmperrors";
+        public override string Usage => "showsrmperrors";
+    }
     public class JoinCommand : SR2Command
     {
         public override bool Execute(string[] args)
@@ -361,7 +372,7 @@ namespace NewSR2MP
             obj.AddComponent<MultiplayerManager>();
             UnityEngine.Object.DontDestroyOnLoad(obj);
             
-            UnityEngine.Object.Instantiate(ui.LoadAsset("LobbyUI")).Cast<GameObject>().transform.SetParent(obj.transform);
+            //UnityEngine.Object.Instantiate(ui.LoadAsset("LobbyUI")).Cast<GameObject>().transform.SetParent(obj.transform);
             
             SRMP.Log("Multiplayer Initialized!");
         }

@@ -15,7 +15,7 @@ using Il2CppMono.Security.Protocol.Ntlm;
 using Riptide;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
+using Object = UnityEngine.Object;
 
 
 namespace NewSR2MP.Networking
@@ -57,9 +57,6 @@ namespace NewSR2MP.Networking
 
         public void StartHosting()
         {
-            var localPlayer = SceneContext.Instance.player.AddComponent<NetworkPlayer>();
-            localPlayer.id = 0;
-
             foreach (var a in Resources.FindObjectsOfTypeAll<Identifiable>())
             {
                 try
@@ -79,9 +76,69 @@ namespace NewSR2MP.Networking
                 }
                 catch { }
             }
-            SceneContext.Instance.gameObject.AddComponent<TimeSyncer>();
 
+            
+            
+            server.ClientConnected += OnPlayerJoined;
+            server.ClientDisconnected += OnPlayerLeft;
+
+            SceneContext.Instance.gameObject.AddComponent<TimeSyncer>();
+            
+            var hostNetworkPlayer = SceneContext.Instance.player.AddComponent<NetworkPlayer>();
+            hostNetworkPlayer.id = ushort.MaxValue;
+            currentPlayerID = hostNetworkPlayer.id;
+            players.Add(ushort.MaxValue, hostNetworkPlayer);
         }
+
+        public void OnPlayerJoined(object? sender, ServerConnectedEventArgs args)
+        {
+            foreach (var loadedPlayer in players)
+            {
+                var packet3 = new PlayerJoinMessage()
+                {
+                    id = loadedPlayer.Key,
+                    local = false
+                };
+                NetworkSend(packet3, ServerSendOptions.SendToPlayer(args.Client.Id));
+            }
+            var player = Instantiate(onlinePlayerPrefab);
+            player.name = $"Player{args.Client.Id}";
+            var netPlayer = player.GetComponent<NetworkPlayer>();
+            players.Add(args.Client.Id, netPlayer);
+            netPlayer.id = args.Client.Id;
+            player.SetActive(true);
+            var packet = new PlayerJoinMessage()
+            {
+                id = args.Client.Id,
+                local = false
+            };
+            var packet2 = new PlayerJoinMessage()
+            {
+                id = args.Client.Id,
+                local = true
+            };
+            NetworkSend(packet, ServerSendOptions.SendToAllExcept(args.Client.Id));
+            NetworkSend(packet2, ServerSendOptions.SendToPlayer(args.Client.Id));
+
+            // !!!!!!
+            // !!!!!!
+            // !TEMP!
+            // !!!!!!
+            // !!!!!!
+            
+        }
+        public void OnPlayerLeft(object? sender, ServerDisconnectedEventArgs args)
+        {
+            var player = players[args.Client.Id];
+            players.Remove(args.Client.Id);
+            Destroy(player.gameObject);
+            
+            var packet = new PlayerLeaveMessage()
+            {
+                id = args.Client.Id,
+            };
+        }
+        
         public void StopHosting()
         {
             NetworkAmmo.all.Clear();

@@ -19,7 +19,9 @@ namespace NewSR2MP.Networking.Packet
         {
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.ActorUpdate);
 
-            return msg;
+            msg.AddLong(id);
+            msg.AddVector3(position);
+            msg.AddVector3(rotation);
 
             return msg;
         }
@@ -61,8 +63,7 @@ namespace NewSR2MP.Networking.Packet
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.ActorHeldOwner);
-            return msg;
-
+            msg.AddLong(id);
             return msg;
         }
     }

@@ -24,7 +24,7 @@ namespace NewSR2MP.Networking.Patches
             }
             catch
             {
-                if (SHOW_ERRORS)
+                if (ShowErrors)
                 {
                     SRMP.Log($"Error when getting actor position (probably during saving!)\n{StackTraceUtility.ExtractStackTrace()}");
                 }
@@ -45,7 +45,7 @@ namespace NewSR2MP.Networking.Patches
             }
             catch
             {
-                if (SHOW_ERRORS)
+                if (ShowErrors)
                 {
                     SRMP.Log($"Error when getting actor position (probably during saving!)\n{StackTraceUtility.ExtractStackTrace()}");
                 }

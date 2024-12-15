@@ -259,7 +259,7 @@ namespace NewSR2MP
             return GameContext.Instance.AutoSaveDirector._savedGame.persistenceIdToIdentifiableType._referenceIdProviderLookup[GameContext.Instance.AutoSaveDirector._savedGame.persistenceIdToIdentifiableType._indexTable[persistentID]].name;
         }
         
-        public const bool SHOW_ERRORS = false; 
+        public static bool ShowErrors = false; 
         
         public static int Version;
         

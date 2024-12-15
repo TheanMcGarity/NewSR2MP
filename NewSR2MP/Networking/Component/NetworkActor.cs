@@ -15,7 +15,7 @@ namespace NewSR2MP.Networking.Component
     {
 
 
-        private bool m_isOwned = true;
+        private bool isOwned = true;
         
         /// <summary>
         /// Is currently owned by the client. Recommended to use ownership system for this.
@@ -24,11 +24,11 @@ namespace NewSR2MP.Networking.Component
         {
             get
             {
-                return m_isOwned; 
+                return isOwned; 
             }
             internal set
             {
-                m_isOwned = value;
+                isOwned = value;
             }
         }
 
@@ -67,6 +67,9 @@ namespace NewSR2MP.Networking.Component
             if (startingVel != Vector3.zero)
                 GetComponent<Rigidbody>().velocity = startingVel;
             appliedVel = true;
+            
+            if (ClientActive() && !ServerActive())
+                isOwned = false;
         }
         uint frame;
         bool appliedLaunch;

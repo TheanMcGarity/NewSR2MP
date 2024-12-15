@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using HarmonyLib;
 
 using Il2CppMonomiPark.SlimeRancher.DataModel;
+using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using NewSR2MP.Networking;
 using NewSR2MP.Networking.Component;
 using NewSR2MP.Networking.Packet;
@@ -14,23 +15,23 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(IdentifiableActor),nameof(IdentifiableActor.SetModel))]
-    public class IdentifiableSetModel
+    [HarmonyPatch(typeof(InstantiationHelpers),nameof(InstantiationHelpers.InstantiateActor))]
+    public class InstantiationHelpersInstantiateActor
     {
 
-        public static void Postfix(IdentifiableActor __instance)
+        public static void Postfix(GameObject __result, GameObject original, SceneGroup sceneGroup, Vector3 position, Quaternion rotation, bool nonActorOk = false, SlimeAppearance.AppearanceSaveSet appearance = SlimeAppearance.AppearanceSaveSet.NONE, SlimeAppearance.AppearanceSaveSet secondAppearance = SlimeAppearance.AppearanceSaveSet.NONE)
         {
 
-            if (ClientActive() && !ServerActive() && !__instance.identType.IsPlayer && __instance.GetComponent<NetworkActor>() == null)
+            if (ClientActive() && !ServerActive() && !original.GetComponent<IdentifiableActor>().identType.IsPlayer && __result.GetComponent<NetworkActor>() == null)
             {
-                if (__instance.GetComponent<NetworkActor>() == null)
+                if (__result.GetComponent<NetworkActor>() == null)
                 {
                     try
                     {
 
-                        __instance.transform.GetChild(0).gameObject.SetActive(false);
-                        __instance.GetComponent<Collider>().isTrigger = true;
-                        __instance.gameObject.AddComponent<NetworkActorSpawn>();
+                        __result.transform.GetChild(0).gameObject.SetActive(false);
+                        __result.GetComponent<Collider>().isTrigger = true;
+                        __result.gameObject.AddComponent<NetworkActorSpawn>();
                         return;
                     }
                     catch { }
@@ -38,28 +39,27 @@ namespace NewSR2MP.Networking.Patches
             }
             else if (ServerActive())
             {
-                if (!__instance.identType.IsPlayer)
+                if (!__result.GetComponent<IdentifiableActor>().identType.IsPlayer)
                 {
-                    var actor = __instance.gameObject;
-                    if (actor.GetComponent<NetworkActor>() == null)
+                    if (__result.GetComponent<NetworkActor>() == null)
                     {
-                        actor.AddComponent<NetworkActor>();
-                        actor.AddComponent<TransformSmoother>();
-                        actor.AddComponent<NetworkActorOwnerToggle>();
+                        __result.AddComponent<NetworkActor>();
+                        __result.AddComponent<TransformSmoother>();
+                        __result.AddComponent<NetworkActorOwnerToggle>();
                     }
-                    var ts = actor.GetComponent<TransformSmoother>();
-                    actors.Add(__instance.GetActorId().Value, actor.GetComponent<NetworkActor>());
+                    var ts = __result.GetComponent<TransformSmoother>();
+                    actors.Add(__result.GetComponent<IdentifiableActor>().GetActorId().Value, __result.GetComponent<NetworkActor>());
 
 
                     ts.interpolPeriod = 0.15f;
                     ts.enabled = false;
-                    var id = __instance.GetActorId().Value;
+                    var id = __result.GetComponent<IdentifiableActor>().GetActorId().Value;
                     var packet = new ActorSpawnMessage()
                     {
                         id = id,
-                        ident = __instance.identType.name,
-                        position = __instance.transform.position,
-                        rotation = __instance.transform.eulerAngles
+                        ident = __result.GetComponent<IdentifiableActor>().identType.name,
+                        position = __result.transform.position,
+                        rotation = __result.transform.eulerAngles
 
                     };
                     MultiplayerManager.NetworkSend(packet);
@@ -70,25 +70,18 @@ namespace NewSR2MP.Networking.Patches
     }
 
 
-    [HarmonyPatch(typeof(Identifiable),nameof(Identifiable.OnDestroy))]
-    public class IdentifiableDestroy
+    [HarmonyPatch(typeof(Destroyer),nameof(Destroyer.DestroyActor))]
+    public class DestroyerDestroyNetworkActor
     {
-        public static void Postfix(Identifiable __instance)
+        public static void Prefix(GameObject actorObj, string source, bool okIfNonActor)
         {
             if (ServerActive() || ClientActive())
             {
-                if (!__instance.identType.IsPlayer)
+                var packet = new ActorDestroyGlobalMessage()
                 {
-                    var id = __instance.GetActorId().Value;
-                    var packet = new ActorDestroyGlobalMessage()
-                    {
-                        id = id
-                    };
-                    MultiplayerManager.NetworkSend(packet);
-
-                    actors.Remove(id);
-
-                }
+                    id = actorObj.GetComponent<IdentifiableActor>().GetActorId().Value,
+                };
+                MultiplayerManager.NetworkSend(packet);
             }
         }
     }
