@@ -24,7 +24,7 @@ namespace NewSR2MP.Networking.Patches
                 if (sceneGroup._isGameplay && !isLoadedAlready)
                 {
                     isLoadedAlready = true;
-                    Main.OnSceneContextLoaded(SceneContext.Instance);
+                    Main.OnSaveLoaded(SceneContext.Instance);
 
                     
                 }

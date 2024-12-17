@@ -13,7 +13,7 @@ namespace NewSR2MP.Networking.SaveModels
     /// <summary>
     /// TODO: Add health, stamina, and rads.
     /// </summary>
-    public class NetPlayerV01 : PersistedDataSet
+    public class NetPlayerV01 : NetworkPersistedDataSet
     {
         public override string Identifier => "MPPL";
         public override uint Version => 1;
@@ -26,9 +26,9 @@ namespace NewSR2MP.Networking.SaveModels
         public NetPlayerV01()
         {
             position = new Vector3V01();
-            position.Value = new Vector3(89.29f, 14.9064f, -144.46f);
+            position.Value = new Vector3(541.6466f, 18.646f, 349.3299f);
             rotation = new Vector3V01();
-            rotation.Value = Vector3.up * 24.9084f;
+            rotation.Value = Vector3.up * 236.8107f;
 
         }
         public int money = 250;

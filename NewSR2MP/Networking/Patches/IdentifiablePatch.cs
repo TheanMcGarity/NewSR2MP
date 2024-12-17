@@ -57,7 +57,7 @@ namespace NewSR2MP.Networking.Patches
                     var packet = new ActorSpawnMessage()
                     {
                         id = id,
-                        ident = __result.GetComponent<IdentifiableActor>().identType.name,
+                        ident = GetIdentID(__result.GetComponent<IdentifiableActor>().identType),
                         position = __result.transform.position,
                         rotation = __result.transform.eulerAngles
 
@@ -75,7 +75,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Prefix(GameObject actorObj, string source, bool okIfNonActor)
         {
-            if (ServerActive() || ClientActive())
+            if ((ServerActive() || ClientActive()) && !actorObj.GetComponent<HandledDummy>())
             {
                 var packet = new ActorDestroyGlobalMessage()
                 {

@@ -94,6 +94,7 @@ namespace NewSR2MP.Networking
         {
             foreach (var loadedPlayer in players)
             {
+                // !TEMP!
                 var packet3 = new PlayerJoinMessage()
                 {
                     id = loadedPlayer.Key,
@@ -119,13 +120,6 @@ namespace NewSR2MP.Networking
             };
             NetworkSend(packet, ServerSendOptions.SendToAllExcept(args.Client.Id));
             NetworkSend(packet2, ServerSendOptions.SendToPlayer(args.Client.Id));
-
-            // !!!!!!
-            // !!!!!!
-            // !TEMP!
-            // !!!!!!
-            // !!!!!!
-            
         }
         public void OnPlayerLeft(object? sender, ServerDisconnectedEventArgs args)
         {
@@ -265,7 +259,6 @@ namespace NewSR2MP.Networking
                 Destroy(player.gameObject);
             }
             players = new Dictionary<int, NetworkPlayer>();
-            playerRegionCheckValues = new Dictionary<int, Vector3>();
 
             clientToGuid = new Dictionary<int, Guid>();
 
@@ -282,6 +275,10 @@ namespace NewSR2MP.Networking
 
             foreach (var player in players)
             {
+                if (player.Key == ushort.MaxValue)
+                {
+                    continue;
+                }
                 Guid playerID = clientToGuid[player.Key];
                 NetworkAmmo ammo = (NetworkAmmo)ammos[$"player_{playerID}"];
                 Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData =GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots, GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);

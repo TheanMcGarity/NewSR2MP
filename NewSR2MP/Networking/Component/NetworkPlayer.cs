@@ -28,17 +28,6 @@ namespace NewSR2MP.Networking.Component
             cam = gameObject.GetComponentInChildren<Camera>();
         }
 
-        void OnDestroy()
-        {
-            if (GetComponent<HandledDummy>()) return;
-
-            var msg = new PlayerLeaveMessage()
-            {
-                id = id,
-            };
-            MultiplayerManager.NetworkSend(msg);
-        }
-
         /// <summary>
         /// Use this to freeze the preview for this player.
         /// </summary>
@@ -54,13 +43,21 @@ namespace NewSR2MP.Networking.Component
             if (transformTimer < 0)
             {
                 transformTimer = 0.1f;
-
-
+                
+                var anim = GetComponent<Animator>();
+                
                 var packet = new PlayerUpdateMessage()
                 {
                     id = id,
                     pos = transform.position,
-                    rot = transform.rotation
+                    rot = transform.rotation,
+                    horizontalMovement = anim.GetFloat("HorizontalMovement"),
+                    forwardMovement = anim.GetFloat("ForwardMovement"),
+                    yaw = anim.GetFloat("Yaw"),
+                    airborneState = anim.GetInteger("AirborneState"),
+                    moving = anim.GetBool("Moving"),
+                    horizontalSpeed = anim.GetFloat("HorizontalSpeed"),
+                    forwardSpeed = anim.GetFloat("ForwardSpeed"),
                 };
                 MultiplayerManager.NetworkSend(packet);
             }

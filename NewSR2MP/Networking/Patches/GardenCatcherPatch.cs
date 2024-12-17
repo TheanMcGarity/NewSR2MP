@@ -18,7 +18,7 @@ namespace NewSR2MP.Networking.Patches
 
                 var msg = new GardenPlantMessage()
                 {
-                    ident = cropId.name,
+                    ident = GetIdentID(cropId),
                     replace = isReplacement,
                     id = id,
                 };

@@ -11,7 +11,7 @@ namespace NewSR2MP.Networking.Packet
 {
     public class AmmoEditSlotMessage : ICustomMessage
     {
-        public string ident;
+        public int ident;
         public int slot;
         public int count;
         public string id;
@@ -19,7 +19,7 @@ namespace NewSR2MP.Networking.Packet
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.AmmoEdit);
-            msg.AddString(ident);
+            msg.AddInt(ident);
             msg.AddInt(slot);
             msg.AddInt(count);
             msg.AddString(id);
@@ -29,13 +29,13 @@ namespace NewSR2MP.Networking.Packet
     }
     public class AmmoAddMessage : ICustomMessage
     {
-        public string ident;
+        public int ident;
         public string id;
         
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.AmmoAdd);
-            msg.AddString(ident);
+            msg.AddInt(ident);
             msg.AddString(id);
 
             return msg;

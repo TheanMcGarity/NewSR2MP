@@ -4,11 +4,13 @@
 
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
+using Il2CppMonomiPark.SlimeRancher.Player.CharacterController;
 using Il2CppMonomiPark.World;
 using Newtonsoft.Json;
 using SR2E;
 using SR2E.Commands;
 using UnityEngine;
+using BuildInfo = MelonLoader.BuildInfo;
 using Exception = System.Exception;
 using Guid = System.Guid;
 
@@ -58,12 +60,15 @@ namespace NewSR2MP
     
     public class Main : MelonMod
     {
+        public static Main modInstance;
+        
         public static AssetBundle ui;
         
         private static GameObject m_GameObject;
 
         public override void OnLateInitializeMelon()
         {
+            modInstance = this;
             LoadData();
             Application.add_quitting(new System.Action(SaveData));
         }
@@ -131,14 +136,14 @@ namespace NewSR2MP
                         model.gameObj.AddComponent<HandledDummy>();
                         model.gameObj.GetComponent<LandPlotLocation>().Replace(model.gameObj.transform.GetChild(0).GetComponent<LandPlot>(), GameContext.Instance.LookupDirector._plotPrefabDict[plot.type]);
                         model.gameObj.RemoveComponent<HandledDummy>();
-                        var lp = model.gameObj.transform.GetChild(0).GetComponent<LandPlot>();
+                        var lp = model.gameObj.transform.GetComponentInChildren<LandPlot>();
                         lp.ApplyUpgrades(ConvertToIEnumerable(plot.upgrades), false);
                         var silo = model.gameObj.GetComponentInChildren<SiloStorage>();
                         foreach (var ammo in plot.siloData.ammo)
                         {
                             try
                             {
-                                if (!(ammo.count == 0 || ammo.id == "None"))
+                                if (!(ammo.count == 0 || ammo.id == 9))
                                 {
                                     silo.Ammo.Slots[ammo.slot]._count = ammo.count;
                                     silo.Ammo.Slots[ammo.slot]._id = identifiableTypes[ammo.id];
@@ -178,32 +183,35 @@ namespace NewSR2MP
                 }
         }
 
-        public static void OnSceneContextLoaded(SceneContext s)
+        public static void OnSaveLoaded(SceneContext s)
         {
             if (ClientActive() && !ServerActive())
             {
-
                 LoadMessage save = latestSaveJoined;
-
-                SceneContext.Instance.player.transform.position = save.localPlayerSave.pos;
-                SceneContext.Instance.player.transform.eulerAngles = save.localPlayerSave.rot;
-
+                
+                SceneContext.Instance.player.GetComponent<SRCharacterController>().Position = save.localPlayerSave.pos;
+                SceneContext.Instance.player.GetComponent<SRCharacterController>().Rotation = Quaternion.Euler(save.localPlayerSave.rot);
+                
                 SceneContext.Instance.TimeDirector._worldModel.worldTime = save.time;
 
+                actors.Clear();
                 foreach (var a in Resources.FindObjectsOfTypeAll<IdentifiableActor>())
                 {
-                    if (a.gameObject.scene.name == "worldGenerated")
+                    if (a.gameObject.hideFlags != HideFlags.HideAndDontSave && a.gameObject.scene.name != "")
                     {
                         try
                         {
-
-                            if (a.identType.IsSceneObject && a.identType.IsPlayer)
+                            if (!a.identType.IsSceneObject && !a.identType.IsPlayer)
+                            {
+                                a.gameObject.AddComponent<HandledDummy>();
+                                SceneContext.Instance.GameModel.identifiables.Remove(a.GetActorId());
                                 Destroyer.DestroyActor(a.gameObject, "SR2MP.LoadWorld", true);
+                            }
                         }
                         catch { }
                     }
                 }
-
+                
                 for (int i = 0; i < save.initActors.Count; i++)
                 {
                     try
@@ -212,7 +220,6 @@ namespace NewSR2MP
                         IdentifiableType ident = Globals.identifiableTypes[newActor.ident];
                         if (!ident.IsSceneObject && !ident.IsPlayer)
                         {
-                            SRMP.Log(newActor.ident.ToString());
                             var obj = ident.prefab;
                             if (obj.GetComponent<NetworkActor>() == null)
                                 obj.AddComponent<NetworkActor>();
@@ -228,12 +235,15 @@ namespace NewSR2MP
                             UnityEngine.Object.Destroy(obj.GetComponent<TransformSmoother>());
 
                             obj2.transform.position = newActor.pos;
+                            obj2.GetComponent<TransformSmoother>().nextPos = newActor.pos;
+                            obj2.GetComponent<NetworkActor>().IsOwned = false;
 
                             actors.Add(newActor.id, obj2.GetComponent<NetworkActor>());
                         }
                     }
                     catch (Exception e)
                     {
+                        SRMP.Error(e.ToString());
                     }
                 }
                 foreach (var player in save.initPlayers)
@@ -249,7 +259,8 @@ namespace NewSR2MP
                         UnityEngine.Object.DontDestroyOnLoad(playerobj);
                     }
                     catch { } // Some reason it does happen. // Note found out why, the marker code is completely broken, i forgot that i didnt remove it here so i was wondering why it errored.
-                }
+                }              
+
                 foreach (var gordo in save.initGordos)
                 {
                     try
@@ -275,7 +286,7 @@ namespace NewSR2MP
                 {
                     pediaEntries.Add(Globals.pediaEntries[pediaEntry]);
                 }
-                
+                                
                 SceneContext.Instance.PediaDirector._pediaModel.unlocked = pediaEntries;
 
                 var mapFogs =
@@ -361,10 +372,19 @@ namespace NewSR2MP
             {
                 Initialize();
             }
+            else if (sceneName == "MainMenuEnvironment")
+            {
+                MultiplayerManager.Instance.GeneratePlayerModel();
+            }
+            else if (sceneName == "PlayerCore")
+            {
+                MultiplayerManager.Instance.SetupPlayerAnimations();
+            }
         }
 
         public static void Initialize()
         {
+            Globals.Version = int.Parse(modInstance.Info.Version);
             ui = InitializeAssetBundle("ui");
             
             var obj = new GameObject();

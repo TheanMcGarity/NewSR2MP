@@ -28,6 +28,8 @@
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <DefineConstants>TRACE;EOS_PLATFORM_WINDOWS_64;EOS_UNITY</DefineConstants>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      <DebugSymbols>true</DebugSymbols>
+      <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <ItemGroup>

@@ -16,7 +16,7 @@ namespace NewSR2MP.Networking.Patches
                 {
                     var packet = new AmmoEditSlotMessage()
                     {
-                        ident = id.name,
+                        ident = GetIdentID(id),
                         slot = slotIdx,
                         count = count,
                         id = netAmmo.ammoId

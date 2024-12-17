@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NewSR2MP.Networking.SaveModels
 {
-    public class PlayerListV01 : PersistedDataSet
+    public class PlayerListV01 : NetworkPersistedDataSet
     {
 
         public override string Identifier => "MPLI";

@@ -23,8 +23,6 @@ namespace NewSR2MP.Networking.Component
             {
 
                 thisPlayer = GetComponent<NetworkPlayer>();
-
-                playerRegionCheckValues.Add(thisPlayer.id, (Vector3.one * 9999));
             }
         }
         public NetworkPlayer thisPlayer;
@@ -50,7 +48,6 @@ namespace NewSR2MP.Networking.Component
         public Vector3 currRot => transform.eulerAngles;
 
         private uint frame;
-        private bool wait = true;
 
         private float playerRegionTimer = 0f;
 
@@ -74,7 +71,7 @@ namespace NewSR2MP.Networking.Component
                     return;
                 }
             }
-            if (!(frame > 10))
+            if (!(frame > 5))
             {
                 frame++;
             }

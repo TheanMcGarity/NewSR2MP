@@ -14,6 +14,15 @@ namespace NewSR2MP.Networking.Packet
         public Vector3 pos;
         public Quaternion rot;
         
+        // Amimation stuff
+        public int airborneState;
+        public bool moving;
+        public float yaw;
+        public float horizontalMovement;
+        public float forwardMovement;
+        public float horizontalSpeed;
+        public float forwardSpeed;
+        
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.PlayerUpdate);
@@ -21,7 +30,15 @@ namespace NewSR2MP.Networking.Packet
             msg.AddInt(id);
             msg.AddVector3(pos);
             msg.AddQuaternion(rot);
-
+            
+            msg.AddInt(airborneState);
+            msg.AddBool(moving);
+            msg.AddFloat(horizontalSpeed);
+            msg.AddFloat(forwardSpeed);
+            msg.AddFloat(horizontalMovement);
+            msg.AddFloat(forwardMovement);
+            msg.AddFloat(yaw);
+            
             return msg;
         }
     }

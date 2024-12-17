@@ -57,13 +57,13 @@ namespace NewSR2MP
         {
             msg.AddInt(data.count);
             msg.AddInt(data.slot);
-            msg.AddString(data.id);
+            msg.AddInt(data.id);
         }
         public static AmmoData GetAmmoData(this Message msg)
         {
             var count = msg.GetInt();
             var slot = msg.GetInt();
-            var id = msg.GetString();
+            var id = msg.GetInt();
 
             return new AmmoData()
             {
@@ -191,6 +191,9 @@ namespace NewSR2MP
     
     public static class Globals
     {
+        /// <summary>
+        /// Built in packet IDs, use a custom packet enum or an ushort to make custom packets.
+        /// </summary>
         public enum PacketType : ushort
         {
             PlayerUpdate,
@@ -254,21 +257,38 @@ namespace NewSR2MP
             return new string(result);
         }
         
-        public static string GetStringFromPersistentID_IdentifiableType(int persistentID)
-        {
-            return GameContext.Instance.AutoSaveDirector._savedGame.persistenceIdToIdentifiableType._referenceIdProviderLookup[GameContext.Instance.AutoSaveDirector._savedGame.persistenceIdToIdentifiableType._indexTable[persistentID]].name;
-        }
-        
+        /// <summary>
+        /// Set this to true to enable error logging. It should be set to true by a console command however.
+        /// </summary>
         public static bool ShowErrors = false; 
         
         public static int Version;
+
+        /// <summary>
+        /// Shortcut for getting persistent ID for identifiable types. 
+        /// </summary>
+        /// <param name="ident"></param>
+        /// <returns></returns>
+        public static int GetIdentID(IdentifiableType ident)
+        {
+            return GameContext.Instance.AutoSaveDirector.SavedGame.identifiableTypeToPersistenceId.GetPersistenceId(ident);
+        }
         
-        public static Dictionary<string, IdentifiableType> identifiableTypes = new Dictionary<string, IdentifiableType>();
+        /// <summary>
+        /// Identifiable type persistence ID lookup table. Use id 9 for identifiable type "None"
+        /// </summary>
+        public static Dictionary<int, IdentifiableType> identifiableTypes = new Dictionary<int, IdentifiableType>();
         
+        /// <summary>
+        /// Pedia name table
+        /// </summary>
         public static Dictionary<string, PediaEntry> pediaEntries = new Dictionary<string, PediaEntry>();
         
         public static Dictionary<string, UpgradeDefinition> playerUpgrades = new Dictionary<string, UpgradeDefinition>();
         
+        /// <summary>
+        /// Scene Group persistence ID lookup table. Use id 1 for the ranch's scene group.
+        /// </summary>
         public static Dictionary<int, SceneGroup> sceneGroups = new Dictionary<int, SceneGroup>();
         
         public static Dictionary<int, NetworkPlayer> players = new Dictionary<int, NetworkPlayer>();
@@ -279,12 +299,10 @@ namespace NewSR2MP
 
         public static NetworkV01 savedGame;
         public static string savedGamePath;
-        
-        public static Dictionary<int, Vector3> playerRegionCheckValues = new Dictionary<int, Vector3>();
 
         public static Dictionary<string, Ammo> ammos => NetworkAmmo.all;
 
-        public static LoadMessage latestSaveJoined;
+        public static LoadMessage? latestSaveJoined;
 
         public static int currentPlayerID;
     }

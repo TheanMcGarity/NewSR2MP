@@ -47,7 +47,7 @@ namespace NewSR2MP.Networking.Patches
                     var packet = new GardenPlantMessage()
                     {
                         id = __instance._model.gameObj.GetComponent<LandPlotLocation>()._id,
-                        ident = "",
+                        ident = 9,
                         replace = true,
                     };
 

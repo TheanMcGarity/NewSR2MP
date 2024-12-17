@@ -23,7 +23,7 @@ namespace NewSR2MP.Networking.Component
                 Identifiable ident = GetComponent<IdentifiableActor>();
                 var packet = new ActorSpawnClientMessage()
                 {
-                    ident = ident.identType.name,
+                    ident = GetIdentID(ident.identType),
                     position = transform.position,
                     rotation = transform.eulerAngles,
                     velocity = GetComponent<Rigidbody>().velocity,

@@ -6,7 +6,7 @@ namespace NewSR2MP.Networking.SaveModels
 
     // To future self; make sure you use VersionedPersistedDataSet<NetworkV01> for upgrading the network version
     // Also please take changelogs for it as well.
-    public class NetworkV01 : PersistedDataSet
+    public class NetworkV01 : NetworkPersistedDataSet
     {
         public override string Identifier => "MPNK";
         public override uint Version => 1;

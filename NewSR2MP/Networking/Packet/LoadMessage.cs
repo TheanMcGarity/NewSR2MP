@@ -31,7 +31,7 @@ namespace NewSR2MP.Networking.Packet
             foreach (var actor in initActors)
             {
                 msg.AddLong(actor.id);
-                msg.AddString(actor.ident);
+                msg.AddInt(actor.ident);
                 msg.AddVector3(actor.pos);
             }
             msg.AddInt(initPlayers.Count);
@@ -57,7 +57,7 @@ namespace NewSR2MP.Networking.Packet
                 {
                     msg.AddAmmoData(ammo);
                 }
-                msg.AddString(plot.cropIdent);
+                msg.AddInt(plot.cropIdent);
             }
             msg.AddInt(initGordos.Count);
             foreach (var gordo in initGordos)
@@ -116,7 +116,7 @@ namespace NewSR2MP.Networking.Packet
     public class InitActorData
     {
         public long id;
-        public string ident;
+        public int ident;
         public Vector3 pos;
     }
     public class InitGordoData
@@ -142,7 +142,7 @@ namespace NewSR2MP.Networking.Packet
         public string id;
         public LandPlot.Id type;
         public Il2CppSystem.Collections.Generic.HashSet<LandPlot.Upgrade> upgrades;
-        public string cropIdent;
+        public int cropIdent;
 
         public InitSiloData siloData;
     }
@@ -156,7 +156,7 @@ namespace NewSR2MP.Networking.Packet
 
     public class AmmoData
     {
-        public string id;
+        public int id;
         public int count;
         public int slot;
     }

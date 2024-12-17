@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.World;
+using NewSR2MP.Networking.Patches;
 using Riptide.Utils;
 using SR2E;
 using UnityEngine.Serialization;
@@ -17,7 +18,8 @@ namespace NewSR2MP.Networking
     {
         //public EOSLobbyGUI prototypeLobbyGUI;
 
-
+        public static LoadMessage DEBUG_latestSaveJoined => latestSaveJoined; // UE needs a instance of a class in order to use variables and stuff
+        
         public GameObject onlinePlayerPrefab;
 
 
@@ -33,6 +35,9 @@ namespace NewSR2MP.Networking
             Instance = this;
 
             MelonCoroutines.Start(UpdateNetwork());
+
+            Message.MaxPayloadSize = 2048000;
+
         }
 
 
@@ -43,6 +48,7 @@ namespace NewSR2MP.Networking
             SR2EConsole.RegisterCommand(new ShowSRMPErrorsCommand());
         }
 
+        // Prototype Player model
         public void GeneratePlayerBean()
         {
             onlinePlayerPrefab = new GameObject("PlayerDefault");
@@ -73,6 +79,30 @@ namespace NewSR2MP.Networking
             viewcam.enabled = false;
 
             onlinePlayerPrefab.GetComponent<NetworkPlayer>().InitCamera();
+        }
+
+        public void GeneratePlayerModel()
+        {
+            var found = GameObject.Find("BeatrixMainMenu");
+
+            onlinePlayerPrefab = Instantiate(found);
+            
+            
+            onlinePlayerPrefab.AddComponent<NetworkPlayer>();
+            onlinePlayerPrefab.AddComponent<TransformSmoother>();
+            onlinePlayerPrefab.GetComponent<NetworkPlayer>().enabled = false;
+            
+            onlinePlayerPrefab.transform.localScale = Vector3.one * .85f;
+            
+            DontDestroyOnLoad(onlinePlayerPrefab);
+        }
+
+        public void SetupPlayerAnimations()
+        {
+            var animator = SceneContext.Instance.Player.GetComponent<Animator>();
+            
+            onlinePlayerPrefab.GetComponent<Animator>().avatar = animator.avatar;
+            onlinePlayerPrefab.GetComponent<Animator>().runtimeAnimatorController = animator.runtimeAnimatorController;
         }
 
         public RenderTexture playerCameraPreviewImage = new RenderTexture(250, 250, 24);
@@ -106,11 +136,18 @@ namespace NewSR2MP.Networking
             SRMP.Log("connecting client.");
 
 
+            clientToGuid.Add(nctc.Id, savingID);
+            
+            var newPlayer = !savedGame.savedPlayers.playerList.TryGetValue(savingID, out var playerData);
+            if (newPlayer)
+            {
+                playerData = new NetPlayerV01();
 
+                savedGame.savedPlayers.playerList.Add(savingID, playerData);
+            }
 
             try
             {
-                clientToGuid.Add(nctc.Id, savingID);
                 // Variables
                 double time = SceneContext.Instance.TimeDirector.CurrTime();
                 List<InitActorData> actors = new List<InitActorData>();
@@ -120,15 +157,14 @@ namespace NewSR2MP.Networking
                 List<string> pedias = new List<string>();
 
 
+                foreach (var pedia in SceneContext.Instance.PediaDirector._pediaModel.unlocked)
+                {
+                    pedias.Add(pedia.name);
+                }
+                
                 var upgrades = SceneContext.Instance.PlayerState._model.upgradeModel.upgradeLevels;
 
-                var newPlayer = !savedGame.savedPlayers.playerList.TryGetValue(savingID, out var playerData);
-                if (newPlayer)
-                {
-                    playerData = new NetPlayerV01();
-
-                    savedGame.savedPlayers.playerList.Add(savingID, playerData);
-                }
+                
 
 
 
@@ -139,18 +175,20 @@ namespace NewSR2MP.Networking
                     try
                     {
 
-                        if (a.gameObject.scene.name == "worldGenerated")
+                        if (a.gameObject.hideFlags != HideFlags.HideAndDontSave && a.gameObject.scene.name != "")
                         {
                             var data = new InitActorData()
                             {
                                 id = a.GetActorId().Value,
-                                ident = a.identType.name,
+                                ident = GetIdentID(a.identType),
                                 pos = a.transform.position
                             };
                             actors.Add(data);
                         }
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
 
                 // Gordos
@@ -158,10 +196,11 @@ namespace NewSR2MP.Networking
                 {
                     try
                     {
-                        if (g.gameObject.hideFlags != HideFlags.HideAndDontSave && g.gameObject.activeInHierarchy)
+                        if (g.gameObject.hideFlags != HideFlags.HideAndDontSave && g.gameObject.scene.name != "")
                         {
-                            
+
                         }
+
                         InitGordoData data = new InitGordoData()
                         {
                             id = g.Id,
@@ -169,7 +208,9 @@ namespace NewSR2MP.Networking
                         };
                         gordos.Add(data);
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
 
                 // Current Players
@@ -185,6 +226,7 @@ namespace NewSR2MP.Networking
                         initPlayers.Add(p);
                     }
                 }
+
                 var p2 = new InitPlayerData()
                 {
                     id = 0
@@ -194,67 +236,92 @@ namespace NewSR2MP.Networking
 
 
                 // Plots
-                foreach (var plot in Resources.FindObjectsOfTypeAll<LandPlot>())
+                foreach (var landplot in SceneContext.Instance.GameModel.landPlots)
                 {
-                    if (plot.gameObject.scene.name == "worldGenerated")
-                    {
+                    var plot = landplot.value;
                         try
                         {
-                            var silo = plot.gameObject.GetComponentInChildren<SiloStorage>();
+                            
+                            
+                            
+                            if (plot.siloAmmo._count != 0)
+                            {
+                                
+                                // TODO Get multiple ammo datas
+                                string firstAmmoId = "";
 
-                            // Silos
-                            InitSiloData s = new InitSiloData()
-                            {
-                                ammo = new HashSet<AmmoData>()
-                            }; // Empty
-                            if (silo != null)
-                            {
-                                HashSet<AmmoData> ammo = new HashSet<AmmoData>();
-                                var idx = 0;
-                                foreach (var a in silo.Ammo.Slots)
+                                foreach (var _ in plot.siloAmmo)
                                 {
-                                    if (a != null)
-                                    {
-                                        var ammoSlot = new AmmoData()
-                                        {
-                                            slot = idx,
-                                            id = a.Id.name,
-                                            count = a.Count,
-                                        };
-                                        ammo.Add(ammoSlot);
-                                    }
-                                    else
-                                    {
-                                        var ammoSlot = new AmmoData()
-                                        {
-                                            slot = idx,
-                                            id = "",
-                                            count = 0,
-                                        };
-                                        ammo.Add(ammoSlot);
-                                    }
-                                    idx++;
+                                    firstAmmoId = _.key;
+                                    break;
                                 }
-                                s = new InitSiloData()
+                                
+                                // Silos
+                                InitSiloData s = new InitSiloData()
                                 {
-                                    slots = silo.LocalAmmo.Slots.Count,
-                                    ammo = ammo
+                                    ammo = new HashSet<AmmoData>()
+                                }; // Empty
+                                
+                                var silo = plot.siloAmmo[firstAmmoId];
+
+                                if (silo != null)
+                                {
+                                    HashSet<AmmoData> ammo = new HashSet<AmmoData>();
+                                    var idx = 0;
+                                    foreach (var a in silo.slots)
+                                    {
+                                        if (a != null)
+                                        {
+                                            var ammoSlot = new AmmoData()
+                                            {
+                                                slot = idx,
+                                                id = GetIdentID(a.Id),
+                                                count = a.Count,
+                                            };
+                                            ammo.Add(ammoSlot);
+                                        }
+                                        else
+                                        {
+                                            var ammoSlot = new AmmoData()
+                                            {
+                                                slot = idx,
+                                                id = 9,
+                                                count = 0,
+                                            };
+                                            ammo.Add(ammoSlot);
+                                        }
+
+                                        idx++;
+                                    }
+
+                                    s = new InitSiloData()
+                                    {
+                                        slots = silo.slots.Count,
+                                        ammo = ammo
+                                    };
+                                }
+
+                                int cropIdent = 9;
+                                if (plot.resourceGrowerDefinition != null)
+                                {
+                                    cropIdent = GetIdentID(plot.resourceGrowerDefinition._primaryResourceType);
+                                }
+                                
+                                var p = new InitPlotData()
+                                {
+                                    id = plot.gameObj.GetComponent<LandPlotLocation>().Id,
+                                    type = plot.typeId,
+                                    upgrades = plot.upgrades,
+                                    cropIdent = cropIdent,
+
+                                    siloData = s,
                                 };
+                                plots.Add(p);
                             }
-
-                            var p = new InitPlotData()
-                            {
-                                id = plot._model.gameObj.GetComponent<LandPlotLocation>().Id,
-                                type = plot._model.typeId,
-                                upgrades = plot._model.upgrades,
-                                cropIdent = plot.GetAttachedCropId().name,
-
-                                siloData = s,
-                            };
-                            plots.Add(p);
                         }
-                        catch { }
-                    }
+                        catch
+                        {
+                        }
                 }
 
                 // Slime Gates || Ranch expansions
@@ -267,6 +334,7 @@ namespace NewSR2MP.Networking
                         id = accessDoor.Key
                     });
                 }
+
                 List<AmmoData> playerAmmoData = new List<AmmoData>();
                 int i = 0;
                 foreach (var ammoSlot in playerData.ammo)
@@ -275,7 +343,7 @@ namespace NewSR2MP.Networking
                     var playerSlot = new AmmoData()
                     {
                         slot = i,
-                        id = GetStringFromPersistentID_IdentifiableType(ammoSlot.ID),
+                        id = ammoSlot.ID,
                         count = ammoSlot.Count,
                     };
                     playerAmmoData.Add(playerSlot);
@@ -286,18 +354,21 @@ namespace NewSR2MP.Networking
                 {
                     pos = playerData.position.Value,
                     rot = playerData.rotation.Value,
-                    ammo = playerAmmoData
+                    ammo = playerAmmoData,
+                    sceneGroup = playerData.sceneGroup
                 };
 
 
-                List<string> GetListFromFogEvents(Il2CppSystem.Collections.Generic.Dictionary<string, EventRecordModel.Entry>.KeyCollection events)
+                // First time ever coding a local function.... its not good, shouldve just used a normal one
+                List<string> GetListFromFogEvents(
+                    Il2CppSystem.Collections.Generic.Dictionary<string, EventRecordModel.Entry>.KeyCollection events)
                 {
                     var ret = new List<string>();
                     foreach (var e in events)
                         ret.Add(e);
                     return ret;
                 }
-                
+
 
                 var money = SceneContext.Instance.PlayerState._model.currency;
 
@@ -310,7 +381,9 @@ namespace NewSR2MP.Networking
                     initGordos = gordos,
                     initPedias = pedias,
                     initAccess = access,
-                    initMaps = GetListFromFogEvents(SceneContext.Instance.eventDirector._model.table["fogRevealed"]._keys),
+                    //initMaps = GetListFromFogEvents(SceneContext.Instance.eventDirector._model.table["fogRevealed"]
+                    //    ._keys),
+                    initMaps = new List<string>(0),
                     playerID = nctc.Id,
                     money = money,
                     time = time,
@@ -320,35 +393,25 @@ namespace NewSR2MP.Networking
                 NetworkSend(saveMessage, ServerSendOptions.SendToPlayer(nctc.Id));
                 SRMP.Log("sent world");
 
-                Ammo currentHostAmmo = SceneContext.Instance.PlayerState.Ammo;
-                NetworkAmmo netAmmo = new NetworkAmmo($"player_{savingID}",SceneContext.Instance.PlayerState._ammoSlotDefinitions);
-
-                netAmmo._ammoModel.slots = NetworkAmmo.SRMPAmmoDataToSlots(playerData.ammo);
-
-                // Spawn player for host
-                try
-                {
-                    var player = Instantiate(Instance.onlinePlayerPrefab);
-                    player.name = $"Player{nctc.Id}";
-                    var netPlayer = player.GetComponent<NetworkPlayer>();
-                    players.Add(nctc.Id, netPlayer);
-                    netPlayer.id = nctc.Id;
-                    player.SetActive(true);
-                    var packet = new PlayerJoinMessage()
-                    {
-                        id = nctc.Id,
-                        local = false
-                    };
-                    NetworkSend(packet, ServerSendOptions.SendToAllExcept(nctc.Id));
-                }
-                catch
-                { }
             }
             catch (Exception ex)
             {
                 clientToGuid.Remove(nctc.Id);
                 SRMP.Error(ex.ToString());
             }
+            try
+            {
+                Ammo currentHostAmmo = SceneContext.Instance.PlayerState.Ammo;
+                NetworkAmmo netAmmo = new NetworkAmmo($"player_{savingID}",
+                    SceneContext.Instance.PlayerState._ammoSlotDefinitions);
+
+                netAmmo._ammoModel.slots = NetworkAmmo.SRMPAmmoDataToSlots(playerData.ammo);
+            }
+            catch (Exception ex)
+            {     
+                SRMP.Error($"Post join error!\n{ex}");
+            }
+            
         }
 
 
@@ -369,7 +432,54 @@ namespace NewSR2MP.Networking
         {
             client = new Client();
             client.Connect($"{ip}:{port}");
+
+            client.Connected += OnConnectionSuccessful;
+            client.Disconnected += OnClientDisconnect;
         }
+
+        bool waitingForSave = false;
+        
+        bool WaitForSaveData()
+        {
+            if (!waitingForSave) return false;
+            if (latestSaveJoined == null) return false;
+            
+            SRMP.Debug("recieved save");
+
+            if (ServerActive())
+            {
+                server.Stop();
+                server = null;
+            }
+            
+            Main.OnSaveLoaded(SceneContext.Instance);
+
+            if (SystemContext.Instance.SceneLoader.IsCurrentSceneGroupDefault())
+            {
+                Main.OnRanchSceneGroupLoaded(SceneContext.Instance);
+            }
+
+            return true;
+        }
+        
+        public void OnConnectionSuccessful(object? sender, EventArgs args)
+        {
+            var saveRequestPacket = new ClientUserMessage()
+            {
+                guid = Main.data.Player,
+                name = Main.data.Username
+            };
+            NetworkSend(saveRequestPacket);
+
+            AutoSaveDirectorSaveGame.isClient = true;
+            waitingForSave = true;
+        }
+        
+        public void OnClientDisconnect(object? sender, EventArgs args)
+        {
+            SystemContext.Instance.SceneLoader.LoadMainMenuSceneGroup();
+        }
+        
         public void Host(ushort port)
         {
             server = new Server();
@@ -381,16 +491,27 @@ namespace NewSR2MP.Networking
         {
             while (true)
             {
-                if (ServerActive()) server.Update();
-                if (ClientActive()) client.Update();
+                try
+                {
+                    if (ServerActive()) server.Update();
+                    if (ClientActive()) client.Update();
+                }
+                catch (Exception ex)
+                {
+                    SRMP.Error($"Network loop error!\n{ex}");
+                }
                 yield return null;
             }
         }
 
-        private void FixedUpdate()
-        {            
+        void Update()
+        {
+            if (WaitForSaveData())
+            {
+                waitingForSave = false;
+            }
         }
-
+        
         public static void Shutdown()
         {
             // How do i shut them down?????

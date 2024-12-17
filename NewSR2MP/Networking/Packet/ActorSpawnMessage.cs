@@ -14,7 +14,7 @@ namespace NewSR2MP.Networking.Packet
         public long id;
         public Vector3 position;
         public Vector3 rotation;
-        public string ident;
+        public int ident;
         public int scene;
         public int player;
         
@@ -23,7 +23,7 @@ namespace NewSR2MP.Networking.Packet
             Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorSpawn);
             
             msg.AddLong(id);
-            msg.AddString(ident);
+            msg.AddInt(ident);
             msg.AddVector3(position);
             msg.AddVector3(rotation);
             msg.AddInt(scene);

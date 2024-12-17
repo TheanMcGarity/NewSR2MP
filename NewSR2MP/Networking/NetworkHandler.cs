@@ -91,7 +91,7 @@ namespace NewSR2MP.Networking
         {      
             return new AmmoAddMessage()
             {
-                ident = msg.GetString(),
+                ident = msg.GetInt(),
                 id = msg.GetString()
             };
         }
@@ -116,7 +116,7 @@ namespace NewSR2MP.Networking
         {        
             return new AmmoEditSlotMessage()
             {
-                ident = msg.GetString(),
+                ident = msg.GetInt(),
                 slot = msg.GetInt(),
                 count = msg.GetInt(),
                 id = msg.GetString()
@@ -126,7 +126,7 @@ namespace NewSR2MP.Networking
         {          
             return new GardenPlantMessage()
             {
-                ident = msg.GetString(),
+                ident = msg.GetInt(),
                 replace = msg.GetBool(),
                 id = msg.GetString(),
             };
@@ -138,21 +138,22 @@ namespace NewSR2MP.Networking
             {
                 count = msg.GetInt(),
                 slot = msg.GetInt(),
-                id = msg.GetString(),
+                id = msg.GetInt(),
             };
             return data;
         }
 
+        
         public static LoadMessage ReadLoadMessage(Message msg)
         {
-
+            
             int length = msg.GetInt();
 
             List<InitActorData> actors = new List<InitActorData>();
             for (int i = 0; i < length; i++)
             {
                 long id = msg.GetLong();
-                string ident = msg.GetString();
+                int ident = msg.GetInt();
                 Vector3 actorPos = msg.GetVector3();
                 actors.Add(new InitActorData()
                 {
@@ -201,7 +202,7 @@ namespace NewSR2MP.Networking
                     slots = slots,
                     ammo = ammoDatas
                 };
-                var crop = msg.GetString();
+                var crop = msg.GetInt();
                 plots.Add(new InitPlotData()
                 {
                     type = type,
@@ -285,7 +286,7 @@ namespace NewSR2MP.Networking
                 var key = msg.GetInt();
                 var val = msg.GetInt();
                 
-                pUpgrades.Add(key,val);
+                pUpgrades.TryAdd(key,val);
             }
 
         var time = msg.GetDouble();
@@ -321,7 +322,7 @@ namespace NewSR2MP.Networking
 
         public static ActorSpawnClientMessage ReadActorSpawnClientMessage(Message msg)
         {
-            var ident = msg.GetString();
+            var ident = msg.GetInt();
             var pos = msg.GetVector3();
             var rot = msg.GetVector3();
             var vel = msg.GetVector3();
@@ -388,18 +389,34 @@ namespace NewSR2MP.Networking
             var pos = msg.GetVector3();
             var rot = msg.GetQuaternion();
 
+            
+            var airborneState = msg.GetInt();
+            var moving = msg.GetBool();
+            var horizontalSpeed = msg.GetFloat();
+            var forwardSpeed = msg.GetFloat();
+            var horizontalMovement = msg.GetFloat();
+            var forwardMovement = msg.GetFloat();
+            var yaw = msg.GetFloat();
+            
             var returnval = new PlayerUpdateMessage()
             {
                 id = id,
                 pos = pos,
-                rot = rot
+                rot = rot,
+                airborneState = airborneState,
+                moving = moving,
+                yaw = yaw,
+                horizontalSpeed = horizontalSpeed,
+                forwardSpeed = forwardSpeed,
+                horizontalMovement = horizontalMovement,
+                forwardMovement = forwardMovement,
             };
             return returnval;
         }
         public static ActorSpawnMessage ReadActorSpawnMessage(Message msg)
         {
             var id = msg.GetLong();
-            var ident = msg.GetString();
+            var ident = msg.GetInt();
             var pos = msg.GetVector3();
             var rot = msg.GetVector3();
             var scene = msg.GetInt();
@@ -581,7 +598,8 @@ namespace NewSR2MP.Networking
             public static void HandleClientJoin(ushort client, Message joinInfo)
             {
                 var packet = Deserializer.ReadClientUserMessage(joinInfo);
-                MultiplayerManager.PlayerJoin(MultiplayerManager.server.Clients[client], packet.guid, packet.name);
+                MultiplayerManager.server.TryGetClient(client, out var con);
+                MultiplayerManager.PlayerJoin(con, packet.guid, packet.name);
             }
 
             [MessageHandler((ushort)PacketType.OpenDoor)]
@@ -589,9 +607,6 @@ namespace NewSR2MP.Networking
             {
                 var packet = Deserializer.ReadDoorOpenMessage(msg);
                 SceneContext.Instance.GameModel.doors[packet.id].gameObj.GetComponent<AccessDoor>().CurrState = AccessDoor.State.OPEN;
-
-
-                
             }
             [MessageHandler((ushort)PacketType.OpenDoor)]
             public static void HandleDoor(ushort client, Message msg)
@@ -625,8 +640,12 @@ namespace NewSR2MP.Networking
                 var packet = Deserializer.ReadActorSpawnMessage(msg);
                 try
                 {
+                    if (actors.TryGetValue(packet.id, out var actor))
+                        actors.Remove(packet.id);
+                    
                     Quaternion quat = Quaternion.Euler(packet.rotation.x, packet.rotation.y, packet.rotation.z);
                     var identObj = identifiableTypes[packet.ident].prefab;
+                    
                     if (identObj.GetComponent<NetworkActor>() == null)
                         identObj.AddComponent<NetworkActor>();
                     if (identObj.GetComponent<NetworkActorOwnerToggle>() == null)
@@ -645,7 +664,7 @@ namespace NewSR2MP.Networking
                     
                     obj.AddComponent<NetworkResource>(); // Try add resource network component. Will remove if its not a resource so please do not change
                     
-                    if (!actors.ContainsKey(obj.GetComponent<IdentifiableActor>().GetActorId().Value)) // Most useless if statement ever.
+                    if (!actors.ContainsKey(obj.GetComponent<IdentifiableActor>().GetActorId().Value))
                     {
                         actors.Add(obj.GetComponent<Identifiable>().GetActorId().Value, obj.GetComponent<NetworkActor>());
                         obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
@@ -799,9 +818,10 @@ namespace NewSR2MP.Networking
                 {
                     var actor = actors[packet.id];
 
-                    actor.GetComponent<NetworkActor>().IsOwned = false;
+                    actor.IsOwned = false;
                     actor.GetComponent<TransformSmoother>().enabled = true;
-                    actor.GetComponent<NetworkActor>().enabled = false;
+                    actor.GetComponent<TransformSmoother>().nextPos = actor.transform.position;
+                    actor.enabled = false;
 
                     actor.GetComponent<NetworkActorOwnerToggle>().LoseGrip();
                 }
@@ -834,9 +854,10 @@ namespace NewSR2MP.Networking
                 {
                     var actor = actors[packet.id];
 
-                    actor.GetComponent<NetworkActor>().IsOwned = false;
+                    actor.IsOwned = false;
                     actor.GetComponent<TransformSmoother>().enabled = true;
-                    actor.GetComponent<NetworkActor>().enabled = false;
+                    actor.GetComponent<TransformSmoother>().nextPos = actor.transform.position;
+                    actor.enabled = false;
 
                     actor.GetComponent<NetworkActorOwnerToggle>().LoseGrip();
                 }
@@ -873,6 +894,17 @@ namespace NewSR2MP.Networking
 
                     player.GetComponent<TransformSmoother>().nextPos = packet.pos;
                     player.GetComponent<TransformSmoother>().nextRot = packet.rot.eulerAngles;
+
+
+                    var anim = player.GetComponent<Animator>();
+                    
+                    anim.SetFloat("HorizontalMovement", packet.horizontalMovement);
+                    anim.SetFloat("ForwardMovement", packet.forwardMovement);
+                    anim.SetFloat("Yaw", packet.yaw);
+                    anim.SetInteger("AirborneState", packet.airborneState);
+                    anim.SetBool("Moving", packet.moving);
+                    anim.SetFloat("HorizontalSpeed", packet.horizontalSpeed);
+                    anim.SetFloat("ForwardSpeed", packet.forwardSpeed);
                 }
                 catch { }
             }                  
@@ -888,6 +920,17 @@ namespace NewSR2MP.Networking
 
                     player.GetComponent<TransformSmoother>().nextPos = packet.pos;
                     player.GetComponent<TransformSmoother>().nextRot = packet.rot.eulerAngles;
+
+
+                    var anim = player.GetComponent<Animator>();
+                    
+                    anim.SetFloat("HorizontalMovement", packet.horizontalMovement);
+                    anim.SetFloat("ForwardMovement", packet.forwardMovement);
+                    anim.SetFloat("Yaw", packet.yaw);
+                    anim.SetInteger("AirborneState", packet.airborneState);
+                    anim.SetBool("Moving", packet.moving);
+                    anim.SetFloat("HorizontalSpeed", packet.horizontalSpeed);
+                    anim.SetFloat("ForwardSpeed", packet.forwardSpeed);
                 }
                 catch { }
             }          
@@ -942,7 +985,7 @@ namespace NewSR2MP.Networking
                     var g = plot.transform.GetComponentInChildren<GardenCatcher>();
 
                     // Check if is destroy (planting NONE)
-                    if (string.IsNullOrEmpty(packet.ident))
+                    if (packet.ident != 9)
                     {
                         // Add handled component.
                         lp.gameObject.AddComponent<HandledDummy>();
@@ -1026,7 +1069,7 @@ namespace NewSR2MP.Networking
                     var g = plot.transform.GetComponentInChildren<GardenCatcher>();
 
                     // Check if is destroy (planting NONE)
-                    if (string.IsNullOrEmpty(packet.ident))
+                    if (packet.ident != 9)
                     {
                         // Add handled component.
                         lp.gameObject.AddComponent<HandledDummy>();
@@ -1081,7 +1124,7 @@ namespace NewSR2MP.Networking
                 var packet = Deserializer.ReadPediaMessage(msg);
 
                 SceneContext.Instance.gameObject.AddComponent<HandledDummy>();
-                SceneContext.Instance.PediaDirector.ShowPopupIfUnlocked(pediaEntries[packet.id]);
+                SceneContext.Instance.PediaDirector.Unlock(pediaEntries[packet.id]);
                 UnityEngine.Object.Destroy(SceneContext.Instance.gameObject.GetComponent<HandledDummy>());
             }
             [MessageHandler((ushort)PacketType.GordoExplode)]
@@ -1099,7 +1142,7 @@ namespace NewSR2MP.Networking
                 catch (Exception e)
                 {
                     if (ShowErrors)
-                        SRMP.Log($"Exception in feeding gordo({packet.id})! Stack Trace:\n{e}");
+                        SRMP.Log($"Exception in popping gordo({packet.id})! Stack Trace:\n{e}");
                 }
             }
 
@@ -1241,6 +1284,13 @@ namespace NewSR2MP.Networking
                         SRMP.Log($"Exception in handling actor({packet.id})! Stack Trace:\n{e}");
                 }
             }
-            
+
+            [MessageHandler((ushort)PacketType.JoinSave)]
+            public static void HandleSave(Message msg)
+            {
+                var packet = Deserializer.ReadLoadMessage(msg);
+
+                latestSaveJoined = packet;
+            }
     }
 }

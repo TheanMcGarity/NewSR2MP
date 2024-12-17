@@ -12,13 +12,13 @@ namespace NewSR2MP.Networking.Packet
     public class GardenPlantMessage : ICustomMessage
     {
         public string id;
-        public string ident;
+        public int ident;
         public bool replace;
         
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.GardenPlant);
-            msg.AddString(ident);
+            msg.AddInt(ident);
             msg.AddBool(replace);
             msg.AddString(id);
 

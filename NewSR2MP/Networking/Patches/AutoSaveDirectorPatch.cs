@@ -56,10 +56,31 @@ namespace NewSR2MP.Networking.Patches
     [HarmonyPatch(typeof(AutoSaveDirector), nameof(AutoSaveDirector.SaveGame))]
     public class AutoSaveDirectorSaveGame
     {
+        public static bool isClient = false;
+        public static bool Prefix(AutoSaveDirector __instance)
+        {
+            
+            if (isClient)
+            {
+                if (!ClientActive())
+                    isClient = false;
+                return false;
+            }
+            return true;
+        }
         public static void Postfix(AutoSaveDirector __instance)
         {
-            if (ClientActive() && !ServerActive()) return;
-            MultiplayerManager.DoNetworkSave();
+            try
+            {
+                if (isClient)
+                    return;
+
+                MultiplayerManager.DoNetworkSave();
+            }
+            catch (Exception ex)
+            {
+                SRMP.Error($"Error occured during saving multiplayer data!\n{ex}");
+            }
         }
     }
     
@@ -73,19 +94,17 @@ namespace NewSR2MP.Networking.Patches
             
             foreach (var ident in __instance.identifiableTypes._memberTypes)
             {
-                identifiableTypes.Add(ident.name, ident);
+                identifiableTypes.Add(GetIdentID(ident), ident);
             }
-            foreach (var pedia in Resources.FindObjectsOfTypeAll<PediaEntry>())
+            foreach (var pedia in Resources.FindObjectsOfTypeAll<PediaEntry>()) // SavedGame's list doesnt include some pedia entries.
             {
-                pediaEntries.Add(pedia.name, pedia);
+                pediaEntries.Add(pedia.name, pedia); 
             }
 
             foreach (var scene in __instance.SavedGame._sceneGroupTranslation.RawLookupDictionary)
             {
                 sceneGroups.Add(__instance._savedGame._sceneGroupTranslation.InstanceLookupTable._reverseIndex[scene.key], scene.value);
             }
-            
-            // Do player upgrades next
         }
     }
 }
