@@ -18,7 +18,7 @@ namespace NewSR2MP.Networking
     {
         //public EOSLobbyGUI prototypeLobbyGUI;
 
-        public static LoadMessage DEBUG_latestSaveJoined => latestSaveJoined; // UE needs a instance of a class in order to use variables and stuff
+        private Globals DEBUG = new Globals(); // Doesnt do anything, i just need an instance of an class to look at variables.
         
         public GameObject onlinePlayerPrefab;
 
@@ -45,6 +45,7 @@ namespace NewSR2MP.Networking
         {
             SR2EConsole.RegisterCommand(new HostCommand());
             SR2EConsole.RegisterCommand(new JoinCommand());
+            SR2EConsole.RegisterCommand(new SplitScreenDebugCommand());
             SR2EConsole.RegisterCommand(new ShowSRMPErrorsCommand());
         }
 
@@ -319,8 +320,9 @@ namespace NewSR2MP.Networking
                                 plots.Add(p);
                             }
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            SRMP.Error($"Lsndplot failed to send! This will cause major desync.\n{ex}");
                         }
                 }
 
@@ -430,6 +432,12 @@ namespace NewSR2MP.Networking
 
         public void Connect(string ip, ushort port)
         {
+            if (ServerActive())
+            {
+                SRMP.Error("You can't join a server while hosting!");     
+                return;          
+            }
+            
             client = new Client();
             client.Connect($"{ip}:{port}");
 
@@ -443,6 +451,8 @@ namespace NewSR2MP.Networking
         {
             if (!waitingForSave) return false;
             if (latestSaveJoined == null) return false;
+
+            isJoiningAsClient = true;
             
             SRMP.Debug("recieved save");
 
@@ -452,6 +462,8 @@ namespace NewSR2MP.Networking
                 server = null;
             }
             
+            ammos.Clear();
+            
             Main.OnSaveLoaded(SceneContext.Instance);
 
             if (SystemContext.Instance.SceneLoader.IsCurrentSceneGroupDefault())
@@ -459,11 +471,14 @@ namespace NewSR2MP.Networking
                 Main.OnRanchSceneGroupLoaded(SceneContext.Instance);
             }
 
+            isJoiningAsClient = false;
+            
             return true;
         }
         
         public void OnConnectionSuccessful(object? sender, EventArgs args)
         {
+            client.Connection.MaxSendAttempts = 75;
             var saveRequestPacket = new ClientUserMessage()
             {
                 guid = Main.data.Player,
@@ -482,6 +497,12 @@ namespace NewSR2MP.Networking
         
         public void Host(ushort port)
         {
+            
+            if (ClientActive())
+            {
+                SRMP.Error("You can't host a server while in one!");
+                return;
+            }
             server = new Server();
             server.Start(port,10); 
             StartHosting();
@@ -520,6 +541,7 @@ namespace NewSR2MP.Networking
             
             server = null;
             client = null;
+            EraseValues();
         }
     }
 }

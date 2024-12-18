@@ -1,15 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using HarmonyLib;
+﻿using UnityEngine;
 
-using Il2CppMonomiPark.SlimeRancher.DataModel;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
-using UnityEngine;
 namespace NewSR2MP.Networking.Patches
 {
     [HarmonyPatch(typeof(Destroyer), nameof(Destroyer.DestroyActor), typeof(GameObject), typeof(string), typeof(bool))]
@@ -17,14 +7,39 @@ namespace NewSR2MP.Networking.Patches
     {
         public static bool Prefix(GameObject actorObj, string source, bool okIfNonActor)
         {
-            if (ServerActive() || ClientActive())
+            if (isJoiningAsClient) return true;
+            try
             {
-                if (source.Equals("ResourceCycle.RegistryUpdate#1"))
+                if (ServerActive() || ClientActive())
                 {
-                    return false;
+                    if (source.Equals("ResourceCycle.RegistryUpdate#1"))
+                    {
+                        return false;
+                    }
                 }
             }
+            catch { }
             return true;
+        }
+    }
+
+
+    // this is just IdentifiableDestroy patch but with Destroyer.DestroyActor
+    [HarmonyPatch(typeof(Destroyer),nameof(Destroyer.DestroyActor))]
+    public class DestroyerDestroyNetworkActor
+    {
+        public static void Prefix(GameObject actorObj, string source, bool okIfNonActor)
+        {
+            if (isJoiningAsClient) return;
+
+            if ((ServerActive() || ClientActive()) && !actorObj.GetComponent<HandledDummy>())
+            {
+                var packet = new ActorDestroyGlobalMessage()
+                {
+                    id = actorObj.GetComponent<IdentifiableActor>().GetActorId().Value,
+                };
+                MultiplayerManager.NetworkSend(packet);
+            }
         }
     }
 }

@@ -20,7 +20,7 @@ namespace NewSR2MP.Networking.Patches
 
                 if (NetworkAmmo.all.ContainsKey(aid))
                 {
-                    aid += "_1";
+                    aid += "-1";
                 }
                 if (NetworkAmmo.all.ContainsKey(aid))
                 {
@@ -37,10 +37,9 @@ namespace NewSR2MP.Networking.Patches
                 if (NetworkAmmo.all.ContainsKey(aid))
                 {
                     aid += "-5";
-                } // idk why this happens, i only ever indended for it to go to _1.
+                } // idk why this happens, i only ever indended for it to go to 1.
                 if (__instance.Ammo == null)
                 {
-                    
                     __instance.Ammo = new NetworkAmmo(aid, __instance.AmmoSlotDefinitions);
                 }
                 else if (!(__instance.Ammo is NetworkAmmo))
@@ -51,7 +50,7 @@ namespace NewSR2MP.Networking.Patches
             }
             catch (Exception e)
             {
-                if (ShowErrors) SRMP.Log($"Error in network ammo!\n{e}\nThis can cause major desync!");
+                SRMP.Error($"Error in network ammo!\n{e}\nThis can cause major desync!");
             }
             return true;
         }

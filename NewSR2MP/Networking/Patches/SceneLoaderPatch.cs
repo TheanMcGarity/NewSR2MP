@@ -8,7 +8,7 @@ using UnityEngine.AddressableAssets;
 
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(SceneLoader), nameof(SceneLoader.LoadSceneGroupAsync))]
+    //[HarmonyPatch(typeof(SceneLoader), nameof(SceneLoader.LoadSceneGroupAsync))]
     internal class SceneLoaderLoadSceneGroupAsync
     {
         private static bool isLoadedAlready = false;

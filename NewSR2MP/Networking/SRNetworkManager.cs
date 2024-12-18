@@ -120,6 +120,8 @@ namespace NewSR2MP.Networking
             };
             NetworkSend(packet, ServerSendOptions.SendToAllExcept(args.Client.Id));
             NetworkSend(packet2, ServerSendOptions.SendToPlayer(args.Client.Id));
+
+            args.Client.MaxSendAttempts = 75;
         }
         public void OnPlayerLeft(object? sender, ServerDisconnectedEventArgs args)
         {
@@ -252,17 +254,17 @@ namespace NewSR2MP.Networking
             {
                 Destroyer.DestroyActor(actor.gameObject, "SRMP.EraseValues");
             }
-            actors = new Dictionary<long, NetworkActor>();
+            actors.Clear();
 
             foreach (var player in players.Values)
             {
                 Destroy(player.gameObject);
             }
-            players = new Dictionary<int, NetworkPlayer>();
+            players.Clear();
 
-            clientToGuid = new Dictionary<int, Guid>();
+            clientToGuid.Clear();
 
-            NetworkAmmo.all = new Dictionary<string, Ammo>();
+            NetworkAmmo.all.Clear();
 
             latestSaveJoined = new LoadMessage();
             savedGame = new NetworkV01();
@@ -281,7 +283,7 @@ namespace NewSR2MP.Networking
                 }
                 Guid playerID = clientToGuid[player.Key];
                 NetworkAmmo ammo = (NetworkAmmo)ammos[$"player_{playerID}"];
-                Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData =GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots, GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
+                Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData = GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots, GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
                 savedGame.savedPlayers.playerList[playerID].ammo = ammoData;
                 var playerPos = new Vector3V01();
                 playerPos.Value = player.Value.transform.position;
@@ -295,16 +297,5 @@ namespace NewSR2MP.Networking
             savedGame.Write(fs);
             fs.Dispose();
         }
-    }
-
-    /// <summary>
-    /// Server send type for NetworkSend
-    /// </summary>
-    public enum ServerSendType
-    {
-        ALL,
-        TO_CONNECTION,
-        ALL_EXCEPT_CONNECTION,
-        TO_MULTIPLE_CONNECTIONS,
     }
 }

@@ -31,7 +31,7 @@ namespace NewSR2MP
         }
         public static void Debug(string message)
         {
-            logger.Msg(Color.Aqua, message);
+            logger.Msg(System.Drawing.Color.Aqua, message);
         }
     }
 }

@@ -5,6 +5,7 @@
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.SlimeRancher.Player.CharacterController;
+using Il2CppMonomiPark.SlimeRancher.Util.Extensions;
 using Il2CppMonomiPark.World;
 using Newtonsoft.Json;
 using SR2E;
@@ -43,7 +44,6 @@ namespace NewSR2MP
     {
         public override bool Execute(string[] args)
         {
-            
             ushort port = ushort.Parse(args[1]);
             MultiplayerManager.Instance.Connect(args[0], port);
             return true;
@@ -52,7 +52,20 @@ namespace NewSR2MP
         public override string ID => "join";
         public override string Usage => "join <ip> <port>";
     }
-    
+    public class SplitScreenDebugCommand : SR2Command
+    {
+        public override bool Execute(string[] args)
+        {
+            Main.data.Player = Main.data.Debug_Player2;
+
+            ushort port = ushort.Parse(args[1]);
+            MultiplayerManager.Instance.Connect(args[0], port);
+            return true;
+        }
+
+        public override string ID => "debug_ss";
+        public override string Usage => "debug_ss <ip> <port>";
+    }
     public static class Extentions
     {
         public static void RemoveComponent<T>(this GameObject go) where T : Component => UnityEngine.Object.Destroy(go.GetComponent<T>());
@@ -60,6 +73,11 @@ namespace NewSR2MP
     
     public class Main : MelonMod
     {
+        public override void OnEarlyInitializeMelon()
+        {
+            
+        }
+
         public static Main modInstance;
         
         public static AssetBundle ui;
@@ -95,9 +113,11 @@ namespace NewSR2MP
             var i = rand.Next(100000, 999999);
 
             var guid = Guid.NewGuid();
+            var guid2 = Guid.NewGuid();
 
             dat.Username = $"User{i}";
             dat.Player = guid;
+            dat.Debug_Player2 = guid;
             dat.ignoredMods = new List<string>()
             {
                 "NewSR2MP"
@@ -134,9 +154,9 @@ namespace NewSR2MP
                     {
                         var model = SceneContext.Instance.GameModel.landPlots[plot.id];
                         model.gameObj.AddComponent<HandledDummy>();
-                        model.gameObj.GetComponent<LandPlotLocation>().Replace(model.gameObj.transform.GetChild(0).GetComponent<LandPlot>(), GameContext.Instance.LookupDirector._plotPrefabDict[plot.type]);
+                        model.gameObj.GetComponent<LandPlotLocation>().Replace(model.gameObj.GetComponentInChildren<LandPlot>(), GameContext.Instance.LookupDirector._plotPrefabDict[plot.type]);
                         model.gameObj.RemoveComponent<HandledDummy>();
-                        var lp = model.gameObj.transform.GetComponentInChildren<LandPlot>();
+                        var lp = model.gameObj.GetComponentInChildren<LandPlot>();
                         lp.ApplyUpgrades(ConvertToIEnumerable(plot.upgrades), false);
                         var silo = model.gameObj.GetComponentInChildren<SiloStorage>();
                         foreach (var ammo in plot.siloData.ammo)
@@ -159,7 +179,7 @@ namespace NewSR2MP
 
                         if (plot.type == LandPlot.Id.GARDEN)
                         {
-                            GardenCatcher gc = lp.transform.GetChild(3).GetChild(1).GetComponent<GardenCatcher>();
+                            GardenCatcher gc = lp.transform.GetComponentInChildren<GardenCatcher>(true);
 
                             if (gc != null)
                             {
@@ -187,6 +207,9 @@ namespace NewSR2MP
         {
             if (ClientActive() && !ServerActive())
             {
+                if (s.gameObject.GetComponent<TimeSyncer>())
+                    s.gameObject.RemoveComponent<TimeSyncer>();
+                    
                 LoadMessage save = latestSaveJoined;
                 
                 SceneContext.Instance.player.GetComponent<SRCharacterController>().Position = save.localPlayerSave.pos;
@@ -197,7 +220,7 @@ namespace NewSR2MP
                 actors.Clear();
                 foreach (var a in Resources.FindObjectsOfTypeAll<IdentifiableActor>())
                 {
-                    if (a.gameObject.hideFlags != HideFlags.HideAndDontSave && a.gameObject.scene.name != "")
+                    if (a.gameObject.hideFlags != HideFlags.HideAndDontSave && a.gameObject.name.Contains("(Clone)"))
                     {
                         try
                         {
@@ -205,7 +228,7 @@ namespace NewSR2MP
                             {
                                 a.gameObject.AddComponent<HandledDummy>();
                                 SceneContext.Instance.GameModel.identifiables.Remove(a.GetActorId());
-                                Destroyer.DestroyActor(a.gameObject, "SR2MP.LoadWorld", true);
+                                UnityEngine.Object.Destroy(a.gameObject);
                             }
                         }
                         catch { }
@@ -217,7 +240,8 @@ namespace NewSR2MP
                     try
                     {
                         InitActorData newActor = save.initActors[i];
-                        IdentifiableType ident = Globals.identifiableTypes[newActor.ident];
+                        bool gotIdent = Globals.identifiableTypes.TryGetValue(newActor.ident, out var ident);
+                        if (!gotIdent) continue;
                         if (!ident.IsSceneObject && !ident.IsPlayer)
                         {
                             var obj = ident.prefab;
@@ -289,13 +313,6 @@ namespace NewSR2MP
                                 
                 SceneContext.Instance.PediaDirector._pediaModel.unlocked = pediaEntries;
 
-                var mapFogs =
-                    SceneContext.Instance.GameModel.mapDirector.DefaultMap.Prefab.transform.FindChild("zone_fog_areas");
-                foreach (var fog in save.initMaps)
-                {
-                    var fogObject = mapFogs.FindChild($"map_fog_{fog}");
-                    fogObject.gameObject.SetActive(false);
-                }
 
                 var np = SceneContext.Instance.player.AddComponent<NetworkPlayer>();
                 np.id = save.playerID;
@@ -407,6 +424,7 @@ namespace NewSR2MP
             /// Used for player saving.
             /// </summary>
             public Guid Player;
+            public Guid Debug_Player2;
             public List<string> ignoredMods;
         }
         

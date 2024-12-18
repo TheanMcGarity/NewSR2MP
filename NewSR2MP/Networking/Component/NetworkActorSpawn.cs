@@ -30,6 +30,7 @@ namespace NewSR2MP.Networking.Component
                     player = currentPlayerID
                 };
                 MultiplayerManager.NetworkSend(packet);
+                gameObject.AddComponent<HandledDummy>();
                 Destroyer.DestroyActor(gameObject, "SRMP.CancelActor");
             }
             frame++;

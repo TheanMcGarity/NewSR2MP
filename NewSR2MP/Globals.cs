@@ -189,7 +189,8 @@ namespace NewSR2MP
 
     }
     
-    public static class Globals
+    // Not static, so i can look at it through UE.
+    public class Globals
     {
         /// <summary>
         /// Built in packet IDs, use a custom packet enum or an ushort to make custom packets.
@@ -222,8 +223,12 @@ namespace NewSR2MP
             RequestJoin,
             LandPlot,
             GardenPlant,
+            NavigationMarkerPlace,
+            NavigationMarkerRemove,
         }
 
+        public static bool isJoiningAsClient = false;
+        
         public static bool ServerActive() => MultiplayerManager.server != null;
         public static bool ClientActive() => MultiplayerManager.client != null;
         

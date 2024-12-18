@@ -515,9 +515,7 @@
 
     <ItemGroup>
       <None Remove="RiptideNetworking.dll" />
-      <Content Include="RiptideNetworking.dll">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
+      <EmbeddedResource Include="RiptideNetworking.dll" />
     </ItemGroup>
 
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">

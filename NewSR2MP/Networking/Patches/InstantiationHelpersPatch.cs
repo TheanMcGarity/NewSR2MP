@@ -1,16 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using HarmonyLib;
-
-using Il2CppMonomiPark.SlimeRancher.DataModel;
-using Il2CppMonomiPark.SlimeRancher.SceneManagement;
-using NewSR2MP.Networking;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
+﻿using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using UnityEngine;
 
 namespace NewSR2MP.Networking.Patches
@@ -21,6 +9,7 @@ namespace NewSR2MP.Networking.Patches
 
         public static void Postfix(GameObject __result, GameObject original, SceneGroup sceneGroup, Vector3 position, Quaternion rotation, bool nonActorOk = false, SlimeAppearance.AppearanceSaveSet appearance = SlimeAppearance.AppearanceSaveSet.NONE, SlimeAppearance.AppearanceSaveSet secondAppearance = SlimeAppearance.AppearanceSaveSet.NONE)
         {
+            if (isJoiningAsClient) return;
 
             if (ClientActive() && !ServerActive() && !original.GetComponent<IdentifiableActor>().identType.IsPlayer && __result.GetComponent<NetworkActor>() == null)
             {
@@ -65,23 +54,6 @@ namespace NewSR2MP.Networking.Patches
                     MultiplayerManager.NetworkSend(packet);
 
                 }
-            }
-        }
-    }
-
-
-    [HarmonyPatch(typeof(Destroyer),nameof(Destroyer.DestroyActor))]
-    public class DestroyerDestroyNetworkActor
-    {
-        public static void Prefix(GameObject actorObj, string source, bool okIfNonActor)
-        {
-            if ((ServerActive() || ClientActive()) && !actorObj.GetComponent<HandledDummy>())
-            {
-                var packet = new ActorDestroyGlobalMessage()
-                {
-                    id = actorObj.GetComponent<IdentifiableActor>().GetActorId().Value,
-                };
-                MultiplayerManager.NetworkSend(packet);
             }
         }
     }

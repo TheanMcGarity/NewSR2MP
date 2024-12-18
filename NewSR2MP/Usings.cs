@@ -10,6 +10,7 @@ global using Il2CppMonomiPark;
 global using Il2CppMonomiPark.SlimeRancher;
 global using MelonLoader;
 global using HarmonyLib;
+global using UnityEngine;
 
 global using static Il2CppInterop.Runtime.Injection.ClassInjector;
 global using static Il2Cpp.InstantiationHelpers;

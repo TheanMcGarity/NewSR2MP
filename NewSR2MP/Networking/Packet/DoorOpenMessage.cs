@@ -1,6 +1,4 @@
-﻿
-
-namespace NewSR2MP.Networking.Packet
+﻿namespace NewSR2MP.Networking.Packet
 {
     public class DoorOpenMessage : ICustomMessage
     {
