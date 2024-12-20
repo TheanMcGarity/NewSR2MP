@@ -1453,7 +1453,7 @@ namespace NewSR2MP.Networking
                     foreach (var running in dir2._runningStates)
                     {
                         if (!forcastRunCheck.Contains(running.GetName()))
-                            dir.StopPatternState(zones[zone.Key], weatherPatternsFromStateNames[running.GetName()].CreatePattern(), running);
+                            dir.StopPatternState(zones[zone.Key], weatherPatternsFromStateNames[running.Cast<WeatherStateDefinition>().name].CreatePattern(), running);
                     }
                     WeatherModel.ZoneData data = new WeatherModel.ZoneData()
                     {
