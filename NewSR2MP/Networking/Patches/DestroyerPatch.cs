@@ -19,20 +19,11 @@ namespace NewSR2MP.Networking.Patches
                 }
             }
             catch { }
-            return true;
-        }
-    }
 
+            // Moved here because it would spam testers melonloader logs and lag the game because it didnt destroy (^^^^) but it sent the packet anyways.
+            if (isJoiningAsClient) return true;
 
-    // this is just IdentifiableDestroy patch but with Destroyer.DestroyActor
-    [HarmonyPatch(typeof(Destroyer),nameof(Destroyer.DestroyActor))]
-    public class DestroyerDestroyNetworkActor
-    {
-        public static void Prefix(GameObject actorObj, string source, bool okIfNonActor)
-        {
-            if (isJoiningAsClient) return;
-
-            if ((ServerActive() || ClientActive()) && !actorObj.GetComponent<HandledDummy>())
+            if ((ServerActive() || ClientActive()) && !actorObj.GetComponent<HandledDummy>() && actorObj)
             {
                 var packet = new ActorDestroyGlobalMessage()
                 {
@@ -40,6 +31,7 @@ namespace NewSR2MP.Networking.Patches
                 };
                 MultiplayerManager.NetworkSend(packet);
             }
+            return true;
         }
     }
 }

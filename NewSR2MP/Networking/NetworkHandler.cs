@@ -3,6 +3,8 @@ using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Map;
 using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
 using Il2CppMonomiPark.SlimeRancher.UI.Map;
+using Il2CppMonomiPark.SlimeRancher.Weather;
+using Il2CppMonomiPark.SlimeRancher.World;
 using Il2CppMonomiPark.World;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -15,6 +17,10 @@ namespace NewSR2MP.Networking
     {
         public class Deserializer
         {
+            public static WeatherSyncMessage ReadWeatherMessage(Message msg)
+            {
+                return new WeatherSyncMessage(msg);
+            }
             public static LandPlotMessage ReadLandPlotMessage(Message msg)
             {
                 LandplotUpdateType mode = (LandplotUpdateType)msg.GetByte();
@@ -1399,8 +1405,84 @@ namespace NewSR2MP.Networking
             }
 
 
+            
+            [MessageHandler((ushort)PacketType.WeatherUpdate)]
+            public static void HandleWeather(Message joinInfo)
+            {
+                
+                var dir2 = Resources.FindObjectsOfTypeAll<WeatherDirector>().First();
+                var packet = Deserializer.ReadWeatherMessage(joinInfo);
 
-            private static void ForwardMessage(ICustomMessage msg, ushort from)
+                var dir = SceneContext.Instance.WeatherRegistry;
+
+                var zones = new Dictionary<byte, ZoneDefinition>();
+                byte b = 0;
+                foreach (var zone in dir._model._zoneDatas)
+                {
+                    zones.Add(b, zone.key);
+                    b++;
+                }
+                
+                var zoneDatas = new Il2CppSystem.Collections.Generic.Dictionary<ZoneDefinition, WeatherModel.ZoneData>();
+                var zoneDatas2 = new Il2CppSystem.Collections.Generic.Dictionary<ZoneDefinition, WeatherRegistry.ZoneWeatherData>();
+
+                foreach (var zone in packet.sync.zones)
+                {
+                    if (!zones.ContainsKey(zone.Key)) continue;
+
+                    var forcastRunCheck = new List<string>();
+                    
+                    var forecast = new Il2CppSystem.Collections.Generic.List<WeatherModel.ForecastEntry>();
+                    foreach (var f in zone.Value.forcast)
+                    {
+                        var forcastEntry = new WeatherModel.ForecastEntry()
+                        {
+                            StartTime = 0.0,
+                            EndTime = double.MaxValue,
+                            State = f.state.Cast<IWeatherState>(),
+                            Pattern = weatherPatternsFromStateNames[f.state.name],
+                            Started = true
+                        };
+                        forecast.Add(forcastEntry);
+                        forcastRunCheck.Add(f.state.name);
+
+                        // TODO: make it so it wont run if its already running
+                        dir.RunPatternState(zones[zone.Key], weatherPatternsFromStateNames[f.state.name].CreatePattern(), f.state.Cast<IWeatherState>(), true);
+                    }
+
+                    foreach (var running in dir2._runningStates)
+                    {
+                        if (!forcastRunCheck.Contains(running.GetName()))
+                            dir.StopPatternState(zones[zone.Key], weatherPatternsFromStateNames[running.GetName()].CreatePattern(), running);
+                    }
+                    WeatherModel.ZoneData data = new WeatherModel.ZoneData()
+                    {
+                        Forecast = forecast,
+                        Parameters = new WeatherModel.ZoneWeatherParameters()
+                        {
+                            WindDirection = zone.Value.windSpeed
+                        }
+                    };
+                    WeatherRegistry.ZoneWeatherData data2 = new WeatherRegistry.ZoneWeatherData(dir.ZoneConfigList._items[zone.Key], data);
+                    zoneDatas.Add(zones[zone.Key], data);
+                    zoneDatas2.Add(zones[zone.Key], data2);
+                }
+                dir._zones = zoneDatas2;
+                dir._model = new WeatherModel()
+                {
+                    _participant = SceneContext.Instance.WeatherRegistry.Cast<WeatherModel.Participant>(),
+                    _zoneDatas = zoneDatas,
+                };
+
+            }
+            
+
+            /// <summary>
+            /// Shortcut for forwarding messages.
+            /// </summary>
+            /// <param name="msg">Message to forward</param>
+            /// <param name="from">The client the message came from</param>
+            public static void ForwardMessage(ICustomMessage msg, ushort from)
             {
                 MultiplayerManager.NetworkSend(msg, MultiplayerManager.ServerSendOptions.SendToAllExcept(from));
             }

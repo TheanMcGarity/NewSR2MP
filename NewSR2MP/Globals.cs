@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
+using Il2CppMonomiPark.SlimeRancher.Weather;
 using NewSR2MP.Networking.SaveModels;
 using UnityEngine;
 
@@ -225,23 +226,23 @@ namespace NewSR2MP
             GardenPlant,
             NavigationMarkerPlace,
             NavigationMarkerRemove,
+            WeatherUpdate,
         }
-
+        
         public static bool isJoiningAsClient = false;
         
         public static bool ServerActive() => MultiplayerManager.server != null;
         public static bool ClientActive() => MultiplayerManager.client != null;
         
         
-        public static AssetBundle InitializeAssetBundle(string bundleName)
+        public static void InitEmbeddedDLL(string name)
         {
-            System.IO.Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"NewSR2MP.{bundleName}");
-            byte[] buffer = new byte[16 * 1024];
-            Il2CppSystem.IO.MemoryStream ms = new Il2CppSystem.IO.MemoryStream();
-            int read;
-            while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
-                ms.Write(buffer, 0, read);
-            return AssetBundle.LoadFromMemory(ms.ToArray());
+            System.IO.Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"NewSR2MP.{name}");
+            using (MemoryStream ms = new MemoryStream())
+            {
+                stream.CopyTo(ms);
+                Assembly.Load(ms.ToArray());
+            }
         }
         
         /// <summary>
@@ -295,7 +296,22 @@ namespace NewSR2MP
         /// Scene Group persistence ID lookup table. Use id 1 for the ranch's scene group.
         /// </summary>
         public static Dictionary<int, SceneGroup> sceneGroups = new Dictionary<int, SceneGroup>();
+
+        /// <summary>
+        /// Weather persistence ID lookup table. Use hash codes for the keys.
+        /// </summary>
+        public static Dictionary<int, WeatherStateDefinition> weatherStates;
         
+        /// <summary>
+        /// State name to weather pattern object table.
+        /// </summary>
+        public static Dictionary<string, WeatherPatternDefinition> weatherPatternsFromStateNames;
+        
+        /// <summary>
+        /// Reverse of the weather persistence ID lookup table. Use weather state names for the keys.
+        /// </summary>
+        public static Dictionary<string, int> weatherStatesReverseLookup;
+
         public static Dictionary<int, NetworkPlayer> players = new Dictionary<int, NetworkPlayer>();
         
         public static Dictionary<int, Guid> clientToGuid = new Dictionary<int, Guid>();
@@ -310,5 +326,39 @@ namespace NewSR2MP
         public static LoadMessage? latestSaveJoined;
 
         public static int currentPlayerID;
+
+        public static void CreateWeatherLookup(SavedGame savedGame)
+        {
+            var states = new Dictionary<int, WeatherStateDefinition>();
+            var states2 = new Dictionary<string, int>();
+            int i = 0;
+            foreach (var state in savedGame._weatherStateTranslation.RawLookupDictionary)
+            {
+                states.Add(i, state.Value.Cast<WeatherStateDefinition>());
+                states2.Add(state.value.Cast<WeatherStateDefinition>().name, i);
+                i++;
+            }
+            
+            weatherStates = states;
+            weatherStatesReverseLookup = states2;
+        }
+
+
+        public static void CreateWeatherPatternLookup(WeatherRegistry dir)
+        {
+            var list = new Dictionary<string, WeatherPatternDefinition>();
+            
+            foreach (var config in dir.ZoneConfigList)
+                foreach (var pattern in config.Patterns)
+                {
+                    pattern.GetAllStates();
+                    foreach (var state in pattern._stateList)
+                        if (state)
+                            list.TryAdd(state.name,pattern);
+                }
+            
+            weatherPatternsFromStateNames = list;
+        }
+
     }
 }

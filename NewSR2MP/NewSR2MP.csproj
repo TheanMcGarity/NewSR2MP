@@ -23,6 +23,7 @@
       <DocumentationFile>bin\Debug\NewSR2MP.xml</DocumentationFile>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       <DebugType>embedded</DebugType>
+      <NoWarn>1701;1702;8618;1591</NoWarn>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">

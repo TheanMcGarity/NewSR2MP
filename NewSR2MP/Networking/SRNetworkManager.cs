@@ -83,6 +83,7 @@ namespace NewSR2MP.Networking
             server.ClientDisconnected += OnPlayerLeft;
 
             SceneContext.Instance.gameObject.AddComponent<TimeSyncer>();
+            SceneContext.Instance.gameObject.AddComponent<WeatherSyncer>();
             
             var hostNetworkPlayer = SceneContext.Instance.player.AddComponent<NetworkPlayer>();
             hostNetworkPlayer.id = ushort.MaxValue;
@@ -92,6 +93,7 @@ namespace NewSR2MP.Networking
 
         public void OnPlayerJoined(object? sender, ServerConnectedEventArgs args)
         {
+            DoNetworkSave();
             foreach (var loadedPlayer in players)
             {
                 // !TEMP!
@@ -125,6 +127,8 @@ namespace NewSR2MP.Networking
         }
         public void OnPlayerLeft(object? sender, ServerDisconnectedEventArgs args)
         {
+            DoNetworkSave();
+
             var player = players[args.Client.Id];
             players.Remove(args.Client.Id);
             Destroy(player.gameObject);
@@ -143,7 +147,6 @@ namespace NewSR2MP.Networking
 
         public void OnServerDisconnect(ushort player)
         {
-            DoNetworkSave();
 
             try
             {
@@ -282,9 +285,9 @@ namespace NewSR2MP.Networking
                     continue;
                 }
                 Guid playerID = clientToGuid[player.Key];
-                NetworkAmmo ammo = (NetworkAmmo)ammos[$"player_{playerID}"];
-                Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData = GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots, GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
-                savedGame.savedPlayers.playerList[playerID].ammo = ammoData;
+                //NetworkAmmo ammo = (NetworkAmmo)ammos[$"player_{playerID}"];
+                //Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData = GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots, GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
+                //savedGame.savedPlayers.playerList[playerID].ammo = ammoData;
                 var playerPos = new Vector3V01();
                 playerPos.Value = player.Value.transform.position;
                 var playerRot = new Vector3V01();

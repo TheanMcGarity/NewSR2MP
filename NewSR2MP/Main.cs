@@ -75,14 +75,13 @@ namespace NewSR2MP
     {
         public override void OnEarlyInitializeMelon()
         {
-            
+            InitEmbeddedDLL("RiptideNetworking.dll");
         }
 
         public static Main modInstance;
         
         public static AssetBundle ui;
         
-        private static GameObject m_GameObject;
 
         public override void OnLateInitializeMelon()
         {
@@ -402,7 +401,7 @@ namespace NewSR2MP
         public static void Initialize()
         {
             Globals.Version = int.Parse(modInstance.Info.Version);
-            ui = InitializeAssetBundle("ui");
+            //ui = InitializeAssetBundle("ui");
             
             var obj = new GameObject();
             obj.name = "MultiplayerContext";

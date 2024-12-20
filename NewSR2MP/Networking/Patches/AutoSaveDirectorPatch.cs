@@ -105,6 +105,8 @@ namespace NewSR2MP.Networking.Patches
             {
                 sceneGroups.Add(__instance._savedGame._sceneGroupTranslation.InstanceLookupTable._reverseIndex[scene.key], scene.value);
             }
+            
+            CreateWeatherLookup(__instance.SavedGame);
         }
     }
 }
