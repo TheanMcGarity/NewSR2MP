@@ -1444,7 +1444,7 @@ namespace NewSR2MP.Networking
                             Started = true
                         };
                         forecast.Add(forcastEntry);
-                        forcastRunCheck.Add(f.state.name);
+                        forcastRunCheck.Add(f.state.GetName());
 
                         // TODO: make it so it wont run if its already running
                         dir.RunPatternState(zones[zone.Key], weatherPatternsFromStateNames[f.state.name].CreatePattern(), f.state.Cast<IWeatherState>(), true);
