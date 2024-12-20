@@ -1449,6 +1449,7 @@ namespace NewSR2MP.Networking
                         // TODO: make it so it wont run if its already running
                         dir.RunPatternState(zones[zone.Key], weatherPatternsFromStateNames[f.state.name].CreatePattern(), f.state.Cast<IWeatherState>(), true);
                     }
+                    var runningStates = dir2._runningStates; // There is a bug where the foreach loop implodes on the collection being modified. it is my fault for not adding this variable.
 
                     foreach (var running in dir2._runningStates)
                     {
