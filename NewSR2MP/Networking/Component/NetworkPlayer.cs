@@ -49,6 +49,7 @@ namespace NewSR2MP.Networking.Component
                 var packet = new PlayerUpdateMessage()
                 {
                     id = id,
+                    scene = (byte)GameContext.Instance.AutoSaveDirector._savedGame._sceneGroupTranslation.InstanceLookupTable.GetPersistenceId(SystemContext.Instance.SceneLoader._currentSceneGroup),
                     pos = transform.position,
                     rot = transform.rotation,
                     horizontalMovement = anim.GetFloat("HorizontalMovement"),

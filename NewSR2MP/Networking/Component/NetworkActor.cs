@@ -129,5 +129,9 @@ namespace NewSR2MP.Networking.Component
             GetComponent<TransformSmoother>().enabled = true;
 
         }
+        void OnDestroy()
+        {
+            actors.Remove(identComp.GetActorId().Value);
+        }
     }
 }

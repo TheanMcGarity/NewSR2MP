@@ -330,6 +330,7 @@ namespace NewSR2MP
                     } // Couldnt figure out the thingy, i tried: access.open ? AccessDoor.State.OPEN : AccessDoor.State.LOCKED
                 }
 
+                
                 // Player ammo loading and saving... Will remake later.
                 /*var ps = SceneContext.Instance.PlayerState;
                 var defaultEmotions = new SlimeEmotionDataV02()

@@ -446,14 +446,23 @@ namespace NewSR2MP.Networking
         }
 
         bool waitingForSave = false;
-        
+        bool waitingForSceneLoad = false;
         bool WaitForSaveData()
         {
             if (!waitingForSave) return false;
             if (latestSaveJoined == null) return false;
+            if (!waitingForSceneLoad)
+            {
+                SystemContext.Instance.SceneLoader.LoadSceneGroup(sceneGroups[latestSaveJoined.localPlayerSave.sceneGroup]);
+                waitingForSceneLoad = true;
+            }
+
+            if (SystemContext.Instance.SceneLoader.IsSceneLoadInProgress) return false;
+
 
             isJoiningAsClient = true;
             
+
             SRMP.Debug("recieved save");
 
             if (ServerActive())
@@ -472,6 +481,7 @@ namespace NewSR2MP.Networking
             }
 
             isJoiningAsClient = false;
+            waitingForSceneLoad = false;
             
             return true;
         }

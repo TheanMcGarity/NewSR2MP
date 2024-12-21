@@ -392,11 +392,12 @@ namespace NewSR2MP.Networking
             }
             public static PlayerUpdateMessage ReadPlayerMessage(Message msg)
             {
-                var id = msg.GetInt();
+                var id = msg.GetInt(); 
+                
+                var scene = msg.GetByte();
                 var pos = msg.GetVector3();
                 var rot = msg.GetQuaternion();
-
-
+                
                 var airborneState = msg.GetInt();
                 var moving = msg.GetBool();
                 var horizontalSpeed = msg.GetFloat();
@@ -408,6 +409,7 @@ namespace NewSR2MP.Networking
                 var returnval = new PlayerUpdateMessage()
                 {
                     id = id,
+                    scene = scene,
                     pos = pos,
                     rot = rot,
                     airborneState = airborneState,
@@ -490,7 +492,9 @@ namespace NewSR2MP.Networking
                 var packet = Deserializer.ReadResourceStateMessage(msg);
                 try
                 {
-                    var res = actors[packet.id].GetComponent<ResourceCycle>();
+                    if (!actors.TryGetValue(packet.id, out var nres)) return;
+                    
+                    var res = nres.GetComponent<ResourceCycle>();
                     Rigidbody rigidbody = res._body;
 
                     switch (packet.state)
@@ -555,9 +559,12 @@ namespace NewSR2MP.Networking
                 var packet = Deserializer.ReadResourceStateMessage(msg);
                 try
                 {
-                    var res = actors[packet.id].GetComponent<ResourceCycle>();
-                    Rigidbody rigidbody = res._body;
+                    if (!actors.TryGetValue(packet.id, out var nres)) return;
+                    
+                    var res = nres.GetComponent<ResourceCycle>();
 
+                    var rigidbody = nres.GetComponent<Rigidbody>();
+                    
                     switch (packet.state)
                     {
                         case ResourceCycle.State.ROTTEN:
@@ -808,7 +815,8 @@ namespace NewSR2MP.Networking
                 var packet = Deserializer.ReadActorClientMessage(msg);
                 try
                 {
-                    var actor = actors[packet.id];
+                    if (!actors.TryGetValue(packet.id, out var actor)) return;
+                    
                     var t = actor.GetComponent<TransformSmoother>();
                     t.nextPos = packet.position;
                     t.nextRot = packet.rotation;
@@ -833,8 +841,9 @@ namespace NewSR2MP.Networking
             {
                 var packet = Deserializer.ReadActorOwnMessage(msg);
                 try
-                {
-                    var actor = actors[packet.id];
+                {                 
+                    if (!actors.TryGetValue(packet.id, out var actor)) return;
+
 
                     actor.IsOwned = false;
                     actor.GetComponent<TransformSmoother>().enabled = true;
@@ -856,7 +865,9 @@ namespace NewSR2MP.Networking
                 var packet = Deserializer.ReadActorDestroyMessage(msg);
                 try
                 {
-                    UnityEngine.Object.Destroy(actors[packet.id].gameObject);
+                    if (!actors.TryGetValue(packet.id, out var actor)) return;
+
+                    UnityEngine.Object.Destroy(actor.gameObject);
                     actors.Remove(packet.id);
                 }
                 catch (Exception e)
@@ -870,8 +881,9 @@ namespace NewSR2MP.Networking
             {
                 var packet = Deserializer.ReadActorOwnMessage(msg);
                 try
-                {
-                    var actor = actors[packet.id];
+                {              
+                    if (!actors.TryGetValue(packet.id, out var actor)) return;
+
 
                     actor.IsOwned = false;
                     actor.GetComponent<TransformSmoother>().enabled = true;
@@ -893,7 +905,8 @@ namespace NewSR2MP.Networking
             {var packet = Deserializer.ReadActorDestroyMessage(msg);
                 try
                 {
-                    UnityEngine.Object.Destroy(actors[packet.id].gameObject);
+                    if (!actors.TryGetValue(packet.id, out var actor)) return;
+                    UnityEngine.Object.Destroy(actor.gameObject);
                     actors.Remove(packet.id);
                 }
                 catch (Exception e)
@@ -943,6 +956,8 @@ namespace NewSR2MP.Networking
                 {
                     var player = players[packet.id];
 
+                    savedGame.savedPlayers.playerList[clientToGuid[client]].sceneGroup = packet.scene;
+                    
                     player.GetComponent<TransformSmoother>().nextPos = packet.pos;
                     player.GetComponent<TransformSmoother>().nextRot = packet.rot.eulerAngles;
 
@@ -1312,7 +1327,7 @@ namespace NewSR2MP.Networking
                 
                 try
                 {
-                    var actor = actors[packet.id];
+                    if (!actors.TryGetValue(packet.id, out var actor)) return;
                     var t = actor.GetComponent<TransformSmoother>();
                     t.nextPos = packet.position;
                     t.nextRot = packet.rotation;

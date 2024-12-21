@@ -288,12 +288,15 @@ namespace NewSR2MP.Networking
                 //NetworkAmmo ammo = (NetworkAmmo)ammos[$"player_{playerID}"];
                 //Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData = GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots, GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
                 //savedGame.savedPlayers.playerList[playerID].ammo = ammoData;
-                var playerPos = new Vector3V01();
-                playerPos.Value = player.Value.transform.position;
-                var playerRot = new Vector3V01();
-                playerRot.Value = player.Value.transform.eulerAngles;
-                savedGame.savedPlayers.playerList[playerID].position = playerPos;
-                savedGame.savedPlayers.playerList[playerID].rotation = playerRot;
+                if (player.Value)
+                {
+                    var playerPos = new Vector3V01();
+                    playerPos.Value = player.Value.transform.position;
+                    var playerRot = new Vector3V01();
+                    playerRot.Value = player.Value.transform.eulerAngles;
+                    savedGame.savedPlayers.playerList[playerID].position = playerPos;
+                    savedGame.savedPlayers.playerList[playerID].rotation = playerRot;
+                }
             }
 
             GameStream fs = CppFile.Open(savedGamePath, Il2CppSystem.IO.FileMode.Create);

@@ -18,7 +18,7 @@ namespace NewSR2MP.Networking.SaveModels
         public override string Identifier => "MPPL";
         public override uint Version => 1;
 
-        public int sceneGroup = 1;
+        public byte sceneGroup = 1;
         
         public Vector3V01 position;
         public Vector3V01 rotation;
@@ -49,6 +49,8 @@ namespace NewSR2MP.Networking.SaveModels
 
         public override void LoadData(GameBinaryReader reader)
         {
+            sceneGroup = reader.ReadByte();
+            
             position = Vector3V01.Load(reader);
             rotation = Vector3V01.Load(reader);
 
@@ -79,12 +81,12 @@ namespace NewSR2MP.Networking.SaveModels
             }
 
             playerID = Guid.Parse(reader.ReadString());
-            
-            sceneGroup = reader.ReadInt32();
         }
 
         public override void WriteData(GameBinaryWriter writer)
         {
+            writer.Write(sceneGroup);
+
             position.WriteData(writer);
             rotation.WriteData(writer);
 
@@ -105,7 +107,6 @@ namespace NewSR2MP.Networking.SaveModels
                 writer.Write(upgrade);
             }
             
-            writer.Write(sceneGroup);
         }
     }
 }

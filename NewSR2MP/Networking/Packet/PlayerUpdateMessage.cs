@@ -11,6 +11,7 @@ namespace NewSR2MP.Networking.Packet
     public class PlayerUpdateMessage : ICustomMessage
     {
         public int id;
+        public byte scene;
         public Vector3 pos;
         public Quaternion rot;
         
@@ -28,6 +29,7 @@ namespace NewSR2MP.Networking.Packet
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.PlayerUpdate);
             
             msg.AddInt(id);
+            msg.AddByte(scene);
             msg.AddVector3(pos);
             msg.AddQuaternion(rot);
             
