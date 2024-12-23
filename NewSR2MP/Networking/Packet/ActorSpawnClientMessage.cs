@@ -10,6 +10,7 @@ namespace NewSR2MP.Networking.Packet
         public Vector3 rotation;
         public Vector3 velocity;
         public int ident;    
+        public int scene;
         public int player;
         
         public Message Serialize()
@@ -20,6 +21,7 @@ namespace NewSR2MP.Networking.Packet
             msg.AddVector3(position);
             msg.AddVector3(rotation);
             msg.AddVector3(velocity);
+            msg.AddInt(scene);
             msg.AddInt(player);
             
             return msg;

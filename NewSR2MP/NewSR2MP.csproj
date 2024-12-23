@@ -524,7 +524,7 @@
     </Target>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="copy &quot;$(OutDir)$(TargetFileName)&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\Slime Rancher 2\Mods&quot;&#xA;copy &quot;$(OutDir)$(TargetFileName)&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\Slime Rancher 2 - Copy\Mods&quot;&#xA;" />
+      <Exec Command="copy &quot;$(OutDir)$(TargetFileName)&quot; &quot;$(ModsDir)&quot;&#xA;" />
     </Target>
 
 </Project>

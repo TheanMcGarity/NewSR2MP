@@ -161,11 +161,13 @@ namespace NewSR2MP.Networking
                 {
                     long id = msg.GetLong();
                     int ident = msg.GetInt();
+                    int sg = msg.GetInt();
                     Vector3 actorPos = msg.GetVector3();
                     actors.Add(new InitActorData()
                     {
                         id = id,
                         ident = ident,
+                        scene = sg,
                         pos = actorPos
                     });
                 }
@@ -333,6 +335,7 @@ namespace NewSR2MP.Networking
                 var pos = msg.GetVector3();
                 var rot = msg.GetVector3();
                 var vel = msg.GetVector3();
+                var scene = msg.GetInt();
                 var p = msg.GetInt();
                 return new ActorSpawnClientMessage()
                 {
@@ -358,12 +361,20 @@ namespace NewSR2MP.Networking
                     id = msg.GetLong(),
                 };
             }
-            public static ActorUpdateOwnerMessage ReadActorOwnMessage(Message msg)
+            public static ActorUpdateOwnerMessage ReadActorUpdateOwnerMessage(Message msg)
             {
                 return new ActorUpdateOwnerMessage()
                 {
                     id = msg.GetLong(),
                     player = msg.GetInt(),
+                };
+            }
+            public static ActorSetOwnerMessage ReadActorSetOwnerMessage(Message msg)
+            {
+                return new ActorSetOwnerMessage()
+                {
+                    id = msg.GetLong(),
+                    velocity = msg.GetVector3(),
                 };
             }
             public static ActorUpdateClientMessage ReadActorClientMessage(Message msg)
@@ -799,14 +810,20 @@ namespace NewSR2MP.Networking
                         obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
                         obj.GetComponent<Vacuumable>()._launched = true;
                     }
-                    SRMP.Log($"Actor spawned with velocity {packet.velocity}.");
+
+                    var ownPacket = new ActorSetOwnerMessage()
+                    {
+                        id = obj.GetComponent<IdentifiableActor>()._model.actorId.Value,
+                        velocity = packet.velocity
+                    };
+                    MultiplayerManager.NetworkSend(ownPacket, MultiplayerManager.ServerSendOptions.SendToPlayer(client));
                 }
                 catch (Exception e)
                 {
                     if (ShowErrors)
                         SRMP.Log($"Exception in spawning actor(no id)! Stack Trace:\n{e}");
                 }
-                ForwardMessage(packet, client);
+                
             }
             [MessageHandler((ushort)PacketType.TempClientActorUpdate)]
 
@@ -835,11 +852,11 @@ namespace NewSR2MP.Networking
                 
                 ForwardMessage(packetS2C, client);
             }
-            [MessageHandler((ushort)PacketType.ActorOwner)]
+            [MessageHandler((ushort)PacketType.ActorBecomeOwner)]
 
             public static void HandleActorOwner(Message msg)
             {
-                var packet = Deserializer.ReadActorOwnMessage(msg);
+                var packet = Deserializer.ReadActorUpdateOwnerMessage(msg);
                 try
                 {                 
                     if (!actors.TryGetValue(packet.id, out var actor)) return;
@@ -876,10 +893,10 @@ namespace NewSR2MP.Networking
                 }
             }          
             
-            [MessageHandler((ushort)PacketType.ActorOwner)]
+            [MessageHandler((ushort)PacketType.ActorBecomeOwner)]
             public static void HandleActorOwner(ushort client, Message msg)
             {
-                var packet = Deserializer.ReadActorOwnMessage(msg);
+                var packet = Deserializer.ReadActorUpdateOwnerMessage(msg);
                 try
                 {              
                     if (!actors.TryGetValue(packet.id, out var actor)) return;
@@ -914,7 +931,25 @@ namespace NewSR2MP.Networking
                     SRMP.Error($"Exception in destroying actor({packet.id})! Stack Trace:\n{e}");
                 }
                 ForwardMessage(packet, client);
-            }           
+            }      
+            
+            [MessageHandler((ushort)PacketType.ActorSetOwner)]
+            public static void HandleActorSetOwner(Message msg)
+            {
+                var packet = Deserializer.ReadActorSetOwnerMessage(msg);
+                try
+                {                 
+                    if (!actors.TryGetValue(packet.id, out var actor)) return;
+                    
+                    actor.GetComponent<NetworkActorOwnerToggle>().OwnActor();
+                    actor.GetComponent<Rigidbody>().velocity = packet.velocity;
+                }
+                catch (Exception e)
+                {
+                    if (ShowErrors)
+                        SRMP.Log($"Exception in transfering actor({packet.id})! Stack Trace:\n{e}");
+                }
+            }      
             [MessageHandler((ushort)PacketType.PlayerUpdate)]
 
             public static void HandlePlayer(Message msg)

@@ -7,13 +7,13 @@ namespace NewSR2MP.Networking.Packet
         public List<InitActorData> initActors;
         public List<InitPlayerData> initPlayers;
         public List<InitPlotData> initPlots;
-        public HashSet<InitGordoData> initGordos;
         //public List<InitGadgetData> initGadgets;
+        public List<InitAccessData> initAccess;
 
         public List<string> initPedias;
         public List<string> initMaps;
 
-        public List<InitAccessData> initAccess;
+        public HashSet<InitGordoData> initGordos;
 
         public LocalPlayerData localPlayerSave;
         public int playerID;
@@ -32,6 +32,7 @@ namespace NewSR2MP.Networking.Packet
             {
                 msg.AddLong(actor.id);
                 msg.AddInt(actor.ident);
+                msg.AddInt(actor.scene);
                 msg.AddVector3(actor.pos);
             }
             msg.AddInt(initPlayers.Count);
@@ -117,6 +118,7 @@ namespace NewSR2MP.Networking.Packet
     {
         public long id;
         public int ident;
+        public int scene;
         public Vector3 pos;
     }
     public class InitGordoData

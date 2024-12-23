@@ -96,7 +96,7 @@ namespace NewSR2MP.Networking.Component
             transformTimer -= Time.unscaledDeltaTime;
             if (transformTimer <= 0)
             {
-                transformTimer = .15f;
+                transformTimer = .215f;
 
                 if (MultiplayerManager.server == null && MultiplayerManager.client != null)
                 {

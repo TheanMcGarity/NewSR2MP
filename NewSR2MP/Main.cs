@@ -18,7 +18,7 @@ using Guid = System.Guid;
 
 namespace NewSR2MP
 {
-    public class HostCommand : SR2Command
+    public class HostCommand : SR2ECommand
     {
         public override bool Execute(string[] args)
         {
@@ -29,7 +29,7 @@ namespace NewSR2MP
         public override string ID => "host";
         public override string Usage => "host <port>";
     }
-    public class ShowSRMPErrorsCommand : SR2Command
+    public class ShowSRMPErrorsCommand : SR2ECommand
     {
         public override bool Execute(string[] args)
         {
@@ -40,7 +40,7 @@ namespace NewSR2MP
         public override string ID => "showsrmperrors";
         public override string Usage => "showsrmperrors";
     }
-    public class JoinCommand : SR2Command
+    public class JoinCommand : SR2ECommand
     {
         public override bool Execute(string[] args)
         {
@@ -52,7 +52,7 @@ namespace NewSR2MP
         public override string ID => "join";
         public override string Usage => "join <ip> <port>";
     }
-    public class SplitScreenDebugCommand : SR2Command
+    public class SplitScreenDebugCommand : SR2ECommand
     {
         public override bool Execute(string[] args)
         {

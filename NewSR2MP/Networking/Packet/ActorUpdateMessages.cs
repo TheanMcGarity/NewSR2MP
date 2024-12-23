@@ -49,10 +49,24 @@ namespace NewSR2MP.Networking.Packet
         
         public Message Serialize()
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorOwner);
+            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorBecomeOwner);
             msg.AddLong(id);
             msg.AddInt(player);
 
+            return msg;
+        }
+    }
+    public class ActorSetOwnerMessage : ICustomMessage // Host informing client to set actor
+    {
+        public long id;
+        public Vector3 velocity;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorBecomeOwner);
+            msg.AddLong(id);
+            msg.AddVector3(velocity);
+            
             return msg;
         }
     }
