@@ -18,8 +18,6 @@ namespace NewSR2MP.Networking
     {
         //public EOSLobbyGUI prototypeLobbyGUI;
 
-        private Globals DEBUG = new Globals(); // Doesnt do anything, i just need an instance of an class to look at variables.
-        
         public GameObject onlinePlayerPrefab;
 
 
@@ -171,21 +169,19 @@ namespace NewSR2MP.Networking
 
 
                 // Actors
-                foreach (var a in Resources.FindObjectsOfTypeAll<Identifiable>())
+                foreach (var a in SceneContext.Instance.GameModel.identifiables)
                 {
                     try
                     {
 
-                        if (a.gameObject.hideFlags != HideFlags.HideAndDontSave && a.gameObject.scene.name != "")
+                        var data = new InitActorData()
                         {
-                            var data = new InitActorData()
-                            {
-                                id = a.GetActorId().Value,
-                                ident = GetIdentID(a.identType),
-                                pos = a.transform.position
-                            };
-                            actors.Add(data);
-                        }
+                            id = a.key.Value,
+                            ident = GetIdentID(a.Value.ident),
+                            pos = a.Value.lastPosition,
+                            scene = GameContext.Instance.AutoSaveDirector.SavedGame._sceneGroupTranslation.InstanceLookupTable.GetPersistenceId(a.Value.sceneGroup)
+                        };
+                        actors.Add(data);
                     }
                     catch
                     {

@@ -12,6 +12,14 @@ namespace NewSR2MP.Networking.Component
     [RegisterTypeInIl2Cpp(false)]
     public class NetworkPlayer : MonoBehaviour
     {
+        void Awake()
+        {
+            if (transform.GetComponents<NetworkPlayer>().Length > 1)
+            {
+                Destroy(this);
+            }
+        }
+        
         public int id;
         float transformTimer = 0.1f;
         /// <summary>
@@ -61,6 +69,11 @@ namespace NewSR2MP.Networking.Component
                     forwardSpeed = anim.GetFloat("ForwardSpeed"),
                 };
                 MultiplayerManager.NetworkSend(packet);
+
+                foreach (var actor in GetUnownedActors())
+                {
+                    actor.OwnActor();
+                }
             }
             
         }

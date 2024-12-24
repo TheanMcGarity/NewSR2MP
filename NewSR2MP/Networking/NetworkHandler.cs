@@ -687,7 +687,7 @@ namespace NewSR2MP.Networking
                     identObj.GetComponent<NetworkActor>().enabled = false;
                     identObj.GetComponent<TransformSmoother>().enabled = true;
                     
-                    var obj = InstantiateActor(identObj, SystemContext.Instance.SceneLoader._currentSceneGroup, packet.position, quat, false);
+                    var obj = InstantiateActor(identObj, sceneGroups[packet.scene], packet.position, quat, false);
                     
                     identObj.RemoveComponent<NetworkActor>();
                     identObj.RemoveComponent<NetworkActorOwnerToggle>();
@@ -788,7 +788,7 @@ namespace NewSR2MP.Networking
                         identObj.AddComponent<NetworkActorOwnerToggle>();
                     if (identObj.GetComponent<TransformSmoother>() == null)
                         identObj.AddComponent<TransformSmoother>();
-                    var obj = InstantiateActor(identObj, SystemContext.Instance.SceneLoader._currentSceneGroup, packet.position, quat, false);
+                    var obj = InstantiateActor(identObj, sceneGroups[packet.scene], packet.position, quat, false);
                     identObj.RemoveComponent<NetworkActor>();
                     identObj.RemoveComponent<NetworkActorOwnerToggle>();
                     identObj.RemoveComponent<TransformSmoother>();

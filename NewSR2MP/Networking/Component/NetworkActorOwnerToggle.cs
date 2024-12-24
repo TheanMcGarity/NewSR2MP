@@ -14,7 +14,15 @@ namespace NewSR2MP.Networking.Component
     [RegisterTypeInIl2Cpp(false)]
     public class NetworkActorOwnerToggle : MonoBehaviour
     {
+        void OnEnable()
+        {
+            activeActors.Add(this);
+        }
 
+        void OnDisable()
+        {
+            activeActors.Remove(this);
+        }
         /// <summary>
         /// Use this to drop the current largo held for this client.
         /// </summary>
@@ -43,10 +51,13 @@ namespace NewSR2MP.Networking.Component
         /// </summary>
         public void OwnActor()
         {
+            NetworkActor net = GetComponent<NetworkActor>();
+
+            if (net.IsOwned) return;
             
             // Owner change
-            GetComponent<NetworkActor>().enabled = true;
-            GetComponent<NetworkActor>().IsOwned = true;
+            net.enabled = true;
+            net.IsOwned = true;
             GetComponent<TransformSmoother>().enabled = false;
 
             // Inform server of owner change.

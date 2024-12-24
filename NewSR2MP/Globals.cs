@@ -191,7 +191,7 @@ namespace NewSR2MP
     }
     
     // Not static, so i can look at it through UE.
-    public class Globals
+    public static class Globals
     {
         /// <summary>
         /// Built in packet IDs, use a custom packet enum or an ushort to make custom packets.
@@ -318,7 +318,55 @@ namespace NewSR2MP
         public static Dictionary<int, Guid> clientToGuid = new Dictionary<int, Guid>();
         
         public static Dictionary<long, NetworkActor> actors = new Dictionary<long, NetworkActor>();
+        
+        internal static List<NetworkActorOwnerToggle> activeActors = new List<NetworkActorOwnerToggle>();
 
+        public static List<NetworkActorOwnerToggle> GetActorsInBounds(Bounds bounds)
+        {
+            List<NetworkActorOwnerToggle> found = new List<NetworkActorOwnerToggle>();
+            
+            foreach (var actor in activeActors)
+                if (bounds.Contains(actor.transform.position))
+                    found.Add(actor);
+            
+            return found;
+        }
+
+        public static List<NetworkActorOwnerToggle> GetUnownedActors()
+        {
+            // Local Functions
+            void AddList(List<NetworkActorOwnerToggle> toAdd, List<NetworkActorOwnerToggle> original)
+            {
+                foreach (var add in toAdd)
+                    original.Add(add);
+            }
+            List<NetworkActorOwnerToggle> DifferenceOf(List<NetworkActorOwnerToggle> a, List<NetworkActorOwnerToggle> b)
+            {
+                List<NetworkActorOwnerToggle> result = new List<NetworkActorOwnerToggle>();
+                
+                foreach (var val1 in a)
+                    if (!b.Contains(val1))
+                        result.Add(val1);
+                
+                return result;
+            }
+            // Main Function
+            List<NetworkActorOwnerToggle> found = new List<NetworkActorOwnerToggle>();
+            List<NetworkActorOwnerToggle> owned = new List<NetworkActorOwnerToggle>();
+            List<NetworkActorOwnerToggle> unowned = new List<NetworkActorOwnerToggle>();
+
+            Vector3 size = new Vector3(50, 200, 50);
+            
+            foreach(var player in players.Values)
+                AddList(GetActorsInBounds(new Bounds(player.transform.position, size)), owned);
+
+            found = GetActorsInBounds(new Bounds(SceneContext.Instance.player.transform.position, size));
+            
+            unowned = DifferenceOf(found, owned);
+            
+            return unowned;
+        }
+        
         public static NetworkV01 savedGame;
         public static string savedGamePath;
 

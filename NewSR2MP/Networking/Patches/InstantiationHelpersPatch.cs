@@ -48,8 +48,8 @@ namespace NewSR2MP.Networking.Patches
                         id = id,
                         ident = GetIdentID(__result.GetComponent<IdentifiableActor>().identType),
                         position = __result.transform.position,
-                        rotation = __result.transform.eulerAngles
-
+                        rotation = __result.transform.eulerAngles,
+                        scene = GameContext.Instance.AutoSaveDirector.SavedGame._sceneGroupTranslation.InstanceLookupTable.GetPersistenceId(sceneGroup)
                     };
                     MultiplayerManager.NetworkSend(packet);
 
