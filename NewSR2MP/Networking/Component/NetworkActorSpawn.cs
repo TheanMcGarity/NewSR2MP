@@ -21,6 +21,7 @@ namespace NewSR2MP.Networking.Component
             if (frame > 1) // On frame 2
             {
                 Identifiable ident = GetComponent<IdentifiableActor>();
+                
                 var packet = new ActorSpawnClientMessage()
                 {
                     ident = GetIdentID(ident.identType),
