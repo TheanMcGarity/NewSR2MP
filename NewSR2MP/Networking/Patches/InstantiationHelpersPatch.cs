@@ -1,4 +1,5 @@
-﻿using Il2CppMonomiPark.SlimeRancher.SceneManagement;
+﻿using Il2CppMonomiPark.SlimeRancher.DataModel;
+using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using UnityEngine;
 
 namespace NewSR2MP.Networking.Patches
@@ -28,32 +29,19 @@ namespace NewSR2MP.Networking.Patches
             }
             else if (ServerActive())
             {
-                if (!__result.GetComponent<IdentifiableActor>().identType.IsPlayer)
+                
+                if (__result.GetComponent<NetworkActor>() == null)
                 {
-                    if (__result.GetComponent<NetworkActor>() == null)
-                    {
-                        __result.AddComponent<NetworkActor>();
-                        __result.AddComponent<TransformSmoother>();
-                        __result.AddComponent<NetworkActorOwnerToggle>();
-                    }
-                    var ts = __result.GetComponent<TransformSmoother>();
-                    actors.Add(__result.GetComponent<IdentifiableActor>().GetActorId().Value, __result.GetComponent<NetworkActor>());
-
-
-                    ts.interpolPeriod = 0.15f;
-                    ts.enabled = false;
-                    var id = __result.GetComponent<IdentifiableActor>().GetActorId().Value;
-                    var packet = new ActorSpawnMessage()
-                    {
-                        id = id,
-                        ident = GetIdentID(__result.GetComponent<IdentifiableActor>().identType),
-                        position = __result.transform.position,
-                        rotation = __result.transform.eulerAngles,
-                        scene = GameContext.Instance.AutoSaveDirector.SavedGame._sceneGroupTranslation.InstanceLookupTable.GetPersistenceId(sceneGroup)
-                    };
-                    MultiplayerManager.NetworkSend(packet);
-
+                    __result.AddComponent<NetworkActor>();
+                    __result.AddComponent<TransformSmoother>();
+                    __result.AddComponent<NetworkActorOwnerToggle>();
                 }
+                var ts = __result.GetComponent<TransformSmoother>();
+                actors.Add(__result.GetComponent<IdentifiableActor>().GetActorId().Value, __result.GetComponent<NetworkActor>());
+
+
+                ts.interpolPeriod = 0.15f;
+                ts.enabled = false;
             }
         }
     }

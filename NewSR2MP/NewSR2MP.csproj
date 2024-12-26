@@ -512,6 +512,8 @@
     <ItemGroup>
       <None Remove="ui" />
       <EmbeddedResource Include="ui" />
+      <None Remove="en.txt" />
+      <EmbeddedResource Include="en.txt" />
     </ItemGroup>
 
     <ItemGroup>

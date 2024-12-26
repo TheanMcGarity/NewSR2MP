@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Il2CppMonomiPark.ScriptedValue;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -74,125 +75,19 @@ namespace NewSR2MP
             };
         }
     }
-    
-    public static class FinnDevExtentions
-    {
-        //
-        // Copied from SR2E
-        // I do technically partially own sr2e as well but these methods were made by Finn (https://github.com/ThatFinnDev)
-        //
-        public static T getObjRec<T>(this GameObject obj, string name) where T : class
-        {
-            var transform = obj.transform;
-
-            List<GameObject> totalChildren = getAllChildren(transform);
-            for (int i = 0; i < totalChildren.Count; i++)
-                if (totalChildren[i].name == name)
-                {
-                    if (typeof(T) == typeof(GameObject))
-                        return totalChildren[i] as T;
-                    if (typeof(T) == typeof(Transform))
-                        return totalChildren[i].transform as T;
-                    if (totalChildren[i].GetComponent<T>() != null)
-                        return totalChildren[i].GetComponent<T>();
-                }
-            return null;
-        }
-
-        public static List<Transform> GetChildren(this Transform obj)
-        {
-            List<Transform> children = new List<Transform>();
-            for (int i = 0; i < obj.childCount; i++)
-                children.Add(obj.GetChild(i)); 
-            return children;
-        }
-        public static void DestroyAllChildren(this Transform obj)
-        {
-            for (int i = 0; i < obj.childCount; i++) GameObject.Destroy(obj.GetChild(i).gameObject); 
-        }
-        public static List<GameObject> getAllChildren(this GameObject obj)
-        {
-            var container = obj.transform;
-            List<GameObject> allChildren = new List<GameObject>();
-            for (int i = 0; i < container.childCount; i++)
-            {
-                var child = container.GetChild(i);
-                allChildren.Add(child.gameObject);
-                allChildren.AddRange(getAllChildren(child));
-            }
-            return allChildren;
-        }
-
-        public static T[] getAllChildrenOfType<T>(this GameObject obj) where T : Component
-        {
-            List<T> children = new List<T>();
-            foreach (var child in obj.getAllChildren())
-            {
-                if (child.GetComponent<T>() != null)
-                {
-                    children.Add(child.GetComponent<T>());
-                }
-            }
-            return children.ToArray();
-        }
-
-        public static T[] getAllChildrenOfType<T>(this Transform obj) where T : Component
-        {
-            List<T> children = new List<T>();
-            foreach (var child in obj.getAllChildren())
-            {
-                if (child.GetComponent<T>() != null)
-                {
-                    children.Add(child.GetComponent<T>());
-                }
-            }
-            return children.ToArray();
-        }
-
-        public static T getObjRec<T>(this Transform transform, string name) where T : class
-        {
-            List<GameObject> totalChildren = getAllChildren(transform);
-            for (int i = 0; i < totalChildren.Count; i++)
-                if (totalChildren[i].name == name)
-                {
-                    if (typeof(T) == typeof(GameObject))
-                        return totalChildren[i] as T;
-                    if (typeof(T) == typeof(Transform))
-                        return totalChildren[i].transform as T;
-                    if (totalChildren[i].GetComponent<T>() != null)
-                        return totalChildren[i].GetComponent<T>();
-                }
-            return null;
-        } public static List<GameObject> getAllChildren(this Transform container)
-        {
-            List<GameObject> allChildren = new List<GameObject>();
-            for (int i = 0; i < container.childCount; i++)
-            {
-                var child = container.GetChild(i);
-                allChildren.Add(child.gameObject);
-                allChildren.AddRange(getAllChildren(child));
-            }
-            return allChildren;
-        }
-        public static Il2CppSystem.Type il2cppTypeof(this Type type)
-        {
-            string typeName = type.AssemblyQualifiedName;
-
-            if (typeName.ToLower().StartsWith("il2cpp"))
-            {
-                typeName = typeName.Substring("il2cpp".Length);
-            }
-
-            Il2CppSystem.Type il2cppType = Il2CppSystem.Type.GetType(typeName);
-
-            return il2cppType;
-        }
-
-    }
-    
-    // Not static, so i can look at it through UE.
     public static class Globals
     {
+        /// <summary>
+        /// Auto host port in options. can be 0/off, 7777, [insert more please]
+        /// </summary>
+        public static int autoHostPort => scriptedAutoHostPort.Value;
+        
+        /// <summary>
+        /// Do not manually edit this.
+        /// </summary>
+        internal static ScriptedInt scriptedAutoHostPort;
+        
+        
         /// <summary>
         /// Built in packet IDs, use a custom packet enum or an ushort to make custom packets.
         /// </summary>
@@ -297,11 +192,16 @@ namespace NewSR2MP
         /// Scene Group persistence ID lookup table. Use id 1 for the ranch's scene group.
         /// </summary>
         public static Dictionary<int, SceneGroup> sceneGroups = new Dictionary<int, SceneGroup>();
+        
+        /// <summary>
+        /// Scene Group reverse persistence ID lookup table. Use SceneGroup.name for the keys.
+        /// </summary>
+        public static Dictionary<string, int> sceneGroupsReverse = new Dictionary<string, int>();
 
         /// <summary>
-        /// Weather persistence ID lookup table. Use hash codes for the keys.
+        /// Weather persistence ID lookup table. Use hash codes for the keys. not to be confused with SR2EUtils.weatherStates
         /// </summary>
-        public static Dictionary<int, WeatherStateDefinition> weatherStates;
+        public static Dictionary<int, WeatherStateDefinition> mpWeatherStates;
         
         /// <summary>
         /// State name to weather pattern object table.
@@ -324,10 +224,23 @@ namespace NewSR2MP
         public static List<NetworkActorOwnerToggle> GetActorsInBounds(Bounds bounds)
         {
             List<NetworkActorOwnerToggle> found = new List<NetworkActorOwnerToggle>();
+
+            List<NetworkActorOwnerToggle> toRemove = new List<NetworkActorOwnerToggle>();
             
             foreach (var actor in activeActors)
+            {
+                if (!actor)
+                {
+                    toRemove.Add(actor);
+                    continue;
+                }
+                
                 if (bounds.Contains(actor.transform.position))
                     found.Add(actor);
+            }
+
+            foreach (var remove in toRemove)
+                activeActors.Remove(remove);
             
             return found;
         }
@@ -388,7 +301,7 @@ namespace NewSR2MP
                 i++;
             }
             
-            weatherStates = states;
+            mpWeatherStates = states;
             weatherStatesReverseLookup = states2;
         }
 
@@ -408,6 +321,6 @@ namespace NewSR2MP
             
             weatherPatternsFromStateNames = list;
         }
-
     }
+    
 }

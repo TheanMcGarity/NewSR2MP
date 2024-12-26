@@ -9,7 +9,7 @@ using UnityEngine.AddressableAssets;
 namespace NewSR2MP.Networking.Patches
 {
     //[HarmonyPatch(typeof(SceneLoader), nameof(SceneLoader.LoadSceneGroupAsync))]
-    internal class SceneLoaderLoadSceneGroupAsync
+    /*internal class SceneLoaderLoadSceneGroupAsync
     {
         private static bool isLoadedAlready = false;
         public static void Postfix(SceneLoader __instance,SceneGroup sceneGroup, AssetReference loadingScene, SceneLoadingParameters parameters)
@@ -34,5 +34,5 @@ namespace NewSR2MP.Networking.Patches
                 }
             }
         }
-    }
+    }*/
 }

@@ -12,11 +12,11 @@ global using MelonLoader;
 global using HarmonyLib;
 global using UnityEngine;
 
+global using static SR2E.SR2EUtils;
 global using static Il2CppInterop.Runtime.Injection.ClassInjector;
 global using static Il2Cpp.InstantiationHelpers;
 global using static Il2Cpp.Destroyer;
 global using static NewSR2MP.Globals;
-global using static NewSR2MP.FinnDevExtentions;
 
 global using GameBinaryReader = Il2CppSystem.IO.BinaryReader;
 global using GameBinaryWriter = Il2CppSystem.IO.BinaryWriter;

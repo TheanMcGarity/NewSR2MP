@@ -1,15 +1,19 @@
-﻿using Main = NewSR2MP.Main;
+﻿using Il2CppMonomiPark.ScriptedValue;
+using Main = NewSR2MP.Main;
 
 
 
 using Il2CppMonomiPark.SlimeRancher.DataModel;
+using Il2CppMonomiPark.SlimeRancher.Options;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.SlimeRancher.Player.CharacterController;
 using Il2CppMonomiPark.SlimeRancher.Util.Extensions;
 using Il2CppMonomiPark.World;
 using Newtonsoft.Json;
 using SR2E;
+using SR2E.Buttons;
 using SR2E.Commands;
+using SR2E.Expansion;
 using UnityEngine;
 using BuildInfo = MelonLoader.BuildInfo;
 using Exception = System.Exception;
@@ -71,8 +75,23 @@ namespace NewSR2MP
         public static void RemoveComponent<T>(this GameObject go) where T : Component => UnityEngine.Object.Destroy(go.GetComponent<T>());
     }
     
-    public class Main : MelonMod
+    public class Main : SR2EExpansionV1
     {
+        
+        public override void OnNormalInitializeMelon()
+        {
+            SR2EEntryPoint.RegisterOptionMenuButtons += RegisterSR2ESettings;
+            foreach (var code in new List<string> { "en" })
+                SR2ELanguageManger.AddLanguage(code,LoadTextFile("NewSR2MP."+code+".txt"));
+        }
+        
+        internal static void RegisterSR2ESettings(object o, EventArgs e)
+        {
+            scriptedAutoHostPort = CustomSettingsCreator.CreateScriptedInt(0);
+            
+            CustomSettingsCreator.Create(CustomSettingsCreator.BuiltinSettingsCategory.GameSettings, AddTranslationFromSR2E("setting.mpautohost", "b.autohost", "UI"),AddTranslationFromSR2E("setting.mpautohost.desc", "b.autohostdescription", "UI"), "autoHost", true, false, ((_,_,_) => { }), new CustomSettingsCreator.OptionValue("off",AddTranslationFromSR2E("setting.mpautohost.off", "b.autohostoff", "UI"),scriptedAutoHostPort, 0), new CustomSettingsCreator.OptionValue("val1",AddTranslationFromSR2E("setting.mpautohost.val1", "b.autohostval1", "UI"),scriptedAutoHostPort, 7777), new CustomSettingsCreator.OptionValue("val1",AddTranslationFromSR2E("setting.mpautohost.val2", "b.autohostval2", "UI"),scriptedAutoHostPort, 16500));
+        }
+        
         public override void OnEarlyInitializeMelon()
         {
             InitEmbeddedDLL("RiptideNetworking.dll");
@@ -216,7 +235,9 @@ namespace NewSR2MP
                 
                 SceneContext.Instance.TimeDirector._worldModel.worldTime = save.time;
 
-                actors.Clear();
+                actors.Clear();                            
+                SceneContext.Instance.GameModel.identifiables.Clear();
+
                 foreach (var a in Resources.FindObjectsOfTypeAll<IdentifiableActor>())
                 {
                     if (a.gameObject.hideFlags != HideFlags.HideAndDontSave && a.gameObject.name.Contains("(Clone)"))
@@ -248,12 +269,12 @@ namespace NewSR2MP
                                 obj.AddComponent<NetworkActor>();
                             if (obj.GetComponent<TransformSmoother>() == null)
                                 obj.AddComponent<TransformSmoother>();
-                            var obj2 = InstantiateActor(obj, SystemContext.Instance.SceneLoader._currentSceneGroup, Vector3.zero, Quaternion.identity);
+                            var obj2 = InstantiateActor(obj, sceneGroups[newActor.scene], newActor.pos, Quaternion.identity);
                             var obj2ID = obj2.GetComponent<IdentifiableActor>()._model.actorId;
                             obj2.GetComponent<IdentifiableActor>()._model.actorId = new ActorId(newActor.id);
                             SceneContext.Instance.GameModel.identifiables.Remove(obj2ID);
                             SceneContext.Instance.GameModel._actorIdProvider._nextActorId = obj2.GetComponent<IdentifiableActor>()._model.actorId.Value + 1;
-                            SceneContext.Instance.GameModel.identifiables.Add(obj2.GetComponent<IdentifiableActor>()._model.actorId, obj2.GetComponent<IdentifiableActor>()._model);
+                            SceneContext.Instance.GameModel.identifiables.TryAdd(obj2.GetComponent<IdentifiableActor>()._model.actorId, obj2.GetComponent<IdentifiableActor>()._model);
                             UnityEngine.Object.Destroy(obj.GetComponent<NetworkActor>());
                             UnityEngine.Object.Destroy(obj.GetComponent<TransformSmoother>());
 
@@ -261,7 +282,8 @@ namespace NewSR2MP
                             obj2.GetComponent<TransformSmoother>().nextPos = newActor.pos;
                             obj2.GetComponent<NetworkActor>().IsOwned = false;
 
-                            actors.Add(newActor.id, obj2.GetComponent<NetworkActor>());
+                            if (!actors.TryAdd(newActor.id, obj2.GetComponent<NetworkActor>()))
+                                UnityEngine.Object.Destroy(obj2);
                         }
                     }
                     catch (Exception e)
@@ -385,17 +407,21 @@ namespace NewSR2MP
 
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
-            if (sceneName == "SystemCore")
+            switch (sceneName)
             {
-                Initialize();
-            }
-            else if (sceneName == "MainMenuEnvironment")
-            {
-                MultiplayerManager.Instance.GeneratePlayerModel();
-            }
-            else if (sceneName == "PlayerCore")
-            {
-                MultiplayerManager.Instance.SetupPlayerAnimations();
+                case "SystemCore":
+                    Initialize();
+                    break;
+                case "MainMenuEnvironment":
+                    MultiplayerManager.Instance.GeneratePlayerModel();
+                    break;
+                case "PlayerCore":        
+                    MultiplayerManager.Instance.SetupPlayerAnimations();
+                    break;
+                case "UICore":
+                    if (autoHostPort != 0)
+                        MultiplayerManager.Instance.Host((ushort)autoHostPort);
+                    break;
             }
         }
 

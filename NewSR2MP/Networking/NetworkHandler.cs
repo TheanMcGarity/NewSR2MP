@@ -343,6 +343,7 @@ namespace NewSR2MP.Networking
                     position = pos,
                     rotation = rot,
                     velocity = vel,
+                    scene = scene,
                     player = p
                 };
             }
@@ -687,6 +688,8 @@ namespace NewSR2MP.Networking
                     identObj.GetComponent<NetworkActor>().enabled = false;
                     identObj.GetComponent<TransformSmoother>().enabled = true;
                     
+                    SRMP.Debug($"[{SystemContext.Instance._SceneLoader_k__BackingField.CurrentSceneGroup.name} | {sceneGroups[packet.scene].name}]");
+                    
                     var obj = InstantiateActor(identObj, sceneGroups[packet.scene], packet.position, quat, false);
                     
                     identObj.RemoveComponent<NetworkActor>();
@@ -715,6 +718,8 @@ namespace NewSR2MP.Networking
                     SceneContext.Instance.GameModel.identifiables.Remove(obj.GetComponent<IdentifiableActor>()._model.actorId);
                     SceneContext.Instance.GameModel.identifiables.Add(obj.GetComponent<IdentifiableActor>()._model.actorId, obj.GetComponent<IdentifiableActor>()._model);
                     actors.Add(packet.id, obj.GetComponent<NetworkActor>());
+                    
+                    SceneContext.Instance.GameModel.RegisterActor( obj.GetComponent<IdentifiableActor>().GetActorId(), obj.GetComponent<IdentifiableActor>().identType,packet.position,Quaternion.identity,sceneGroups[packet.scene]);
                 }
                 catch (Exception e)
                 {
@@ -810,6 +815,17 @@ namespace NewSR2MP.Networking
                         obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
                         obj.GetComponent<Vacuumable>()._launched = true;
                     }
+                    
+                    SceneContext.Instance.GameModel.RegisterActor( obj.GetComponent<IdentifiableActor>().GetActorId(), obj.GetComponent<IdentifiableActor>().identType,packet.position,Quaternion.identity,sceneGroups[packet.scene]);
+                    
+                    var packetR = new ActorSpawnMessage()
+                    {
+                        id = obj.GetComponent<IdentifiableActor>().GetActorId().Value,
+                        ident = packet.ident,
+                        position = packet.position,
+                        rotation = packet.rotation,
+                        scene = packet.scene,
+                    };
 
                     var ownPacket = new ActorSetOwnerMessage()
                     {
@@ -817,6 +833,7 @@ namespace NewSR2MP.Networking
                         velocity = packet.velocity
                     };
                     MultiplayerManager.NetworkSend(ownPacket, MultiplayerManager.ServerSendOptions.SendToPlayer(client));
+                    MultiplayerManager.NetworkSend(packetR);
                 }
                 catch (Exception e)
                 {

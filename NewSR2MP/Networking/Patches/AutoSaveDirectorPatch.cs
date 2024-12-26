@@ -104,6 +104,7 @@ namespace NewSR2MP.Networking.Patches
             foreach (var scene in __instance.SavedGame._sceneGroupTranslation.RawLookupDictionary)
             {
                 sceneGroups.Add(__instance._savedGame._sceneGroupTranslation.InstanceLookupTable._reverseIndex[scene.key], scene.value);
+                sceneGroupsReverse.Add(scene.key.TrimStart('S','c','e','n','e','G','r','o','u','p','.'), __instance._savedGame._sceneGroupTranslation.InstanceLookupTable._reverseIndex[scene.key]);
             }
             
             CreateWeatherLookup(__instance.SavedGame);

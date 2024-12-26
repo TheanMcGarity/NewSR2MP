@@ -17,7 +17,7 @@ namespace NewSR2MP.Networking
     public partial class MultiplayerManager : SRBehaviour
     {
         //public EOSLobbyGUI prototypeLobbyGUI;
-
+        
         public GameObject onlinePlayerPrefab;
 
 
@@ -179,7 +179,7 @@ namespace NewSR2MP.Networking
                             id = a.key.Value,
                             ident = GetIdentID(a.Value.ident),
                             pos = a.Value.lastPosition,
-                            scene = GameContext.Instance.AutoSaveDirector.SavedGame._sceneGroupTranslation.InstanceLookupTable.GetPersistenceId(a.Value.sceneGroup)
+                            scene = sceneGroupsReverse[a.value.sceneGroup.name]
                         };
                         actors.Add(data);
                     }

@@ -123,7 +123,7 @@ namespace NewSR2MP.Networking
             NetworkSend(packet, ServerSendOptions.SendToAllExcept(args.Client.Id));
             NetworkSend(packet2, ServerSendOptions.SendToPlayer(args.Client.Id));
 
-            args.Client.MaxSendAttempts = 75;
+            args.Client.MaxSendAttempts = 750;
         }
         public void OnPlayerLeft(object? sender, ServerDisconnectedEventArgs args)
         {
