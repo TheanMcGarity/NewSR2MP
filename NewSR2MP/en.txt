@@ -1,5 +1,0 @@
-setting.mpautohost=Auto Host
-setting.mpautohost.desc=Automatically host on this world. You can set this to disabled, port 7777, or port 16500. Make sure you port forward (if you don't know what that means, please use Google)
-setting.mpautohost.off=Disabled
-setting.mpautohost.val1=Port 7777
-setting.mpautohost.val2=Port 16500

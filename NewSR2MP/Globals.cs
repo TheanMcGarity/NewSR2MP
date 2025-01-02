@@ -78,14 +78,14 @@ namespace NewSR2MP
     public static class Globals
     {
         /// <summary>
-        /// Auto host port in options. can be 0/off, 7777, [insert more please]
+        /// Auto host port in options. can be 0/off, 7777, 16500
         /// </summary>
-        public static int autoHostPort => scriptedAutoHostPort.Value;
+        public static int autoHostPort => scriptedAutoHostPort ? scriptedAutoHostPort.Value : 0;
         
         /// <summary>
         /// Do not manually edit this.
         /// </summary>
-        internal static ScriptedInt scriptedAutoHostPort;
+        internal static ScriptedInt? scriptedAutoHostPort;
         
         
         /// <summary>

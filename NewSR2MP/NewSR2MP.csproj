@@ -24,6 +24,7 @@
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       <DebugType>embedded</DebugType>
       <NoWarn>1701;1702;8618;1591</NoWarn>
+      <WarningLevel>0</WarningLevel>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -31,6 +32,7 @@
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       <DebugSymbols>true</DebugSymbols>
       <DebugType>embedded</DebugType>
+      <WarningLevel>0</WarningLevel>
     </PropertyGroup>
 
     <ItemGroup>
@@ -513,7 +515,8 @@
       <None Remove="ui" />
       <EmbeddedResource Include="ui" />
       <None Remove="en.txt" />
-      <EmbeddedResource Include="en.txt" />
+      <None Remove="translations.csv" />
+      <EmbeddedResource Include="translations.csv" />
     </ItemGroup>
 
     <ItemGroup>

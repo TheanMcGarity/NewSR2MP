@@ -109,6 +109,7 @@ namespace NewSR2MP.Networking
             var netPlayer = player.GetComponent<NetworkPlayer>();
             players.Add(args.Client.Id, netPlayer);
             netPlayer.id = args.Client.Id;
+            DontDestroyOnLoad(player);
             player.SetActive(true);
             var packet = new PlayerJoinMessage()
             {

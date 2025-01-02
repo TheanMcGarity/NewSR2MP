@@ -451,6 +451,7 @@ namespace NewSR2MP.Networking
             {
                 SystemContext.Instance.SceneLoader.LoadSceneGroup(sceneGroups[latestSaveJoined.localPlayerSave.sceneGroup]);
                 waitingForSceneLoad = true;
+                return false;
             }
 
             if (SystemContext.Instance.SceneLoader.IsSceneLoadInProgress) return false;

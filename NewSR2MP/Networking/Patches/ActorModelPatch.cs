@@ -47,7 +47,7 @@ namespace NewSR2MP.Networking.Patches
             {
                 if (ShowErrors)
                 {
-                    SRMP.Log($"Error when getting actor position (probably during saving!)\n{StackTraceUtility.ExtractStackTrace()}");
+                    SRMP.Log($"Error when getting actor rotation (probably during saving!)\n{StackTraceUtility.ExtractStackTrace()}");
                 }
             }
             return false;

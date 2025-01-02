@@ -16,6 +16,10 @@ namespace NewSR2MP.Networking.Patches
                     {
                         return false;
                     }
+                    else if (source.Equals("SlimeFeral.Awake"))
+                    {
+                        return false;
+                    }
                 }
             }
             catch { }

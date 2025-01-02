@@ -77,19 +77,18 @@ namespace NewSR2MP
     
     public class Main : SR2EExpansionV1
     {
-        
+
         public override void OnNormalInitializeMelon()
         {
             SR2EEntryPoint.RegisterOptionMenuButtons += RegisterSR2ESettings;
-            foreach (var code in new List<string> { "en" })
-                SR2ELanguageManger.AddLanguage(code,LoadTextFile("NewSR2MP."+code+".txt"));
+            SR2ELanguageManger.AddLanguages(LoadTextFile("NewSR2MP.translations.csv"));
         }
-        
+
         internal static void RegisterSR2ESettings(object o, EventArgs e)
         {
             scriptedAutoHostPort = CustomSettingsCreator.CreateScriptedInt(0);
             
-            CustomSettingsCreator.Create(CustomSettingsCreator.BuiltinSettingsCategory.GameSettings, AddTranslationFromSR2E("setting.mpautohost", "b.autohost", "UI"),AddTranslationFromSR2E("setting.mpautohost.desc", "b.autohostdescription", "UI"), "autoHost", true, false, ((_,_,_) => { }), new CustomSettingsCreator.OptionValue("off",AddTranslationFromSR2E("setting.mpautohost.off", "b.autohostoff", "UI"),scriptedAutoHostPort, 0), new CustomSettingsCreator.OptionValue("val1",AddTranslationFromSR2E("setting.mpautohost.val1", "b.autohostval1", "UI"),scriptedAutoHostPort, 7777), new CustomSettingsCreator.OptionValue("val1",AddTranslationFromSR2E("setting.mpautohost.val2", "b.autohostval2", "UI"),scriptedAutoHostPort, 16500));
+            CustomSettingsCreator.Create(CustomSettingsCreator.BuiltinSettingsCategory.GameSettings, AddTranslationFromSR2E("setting.mpautohost", "b.autohost", "UI"),AddTranslationFromSR2E("setting.mpautohost.desc", "b.autohostdescription", "UI"), "autoHost", 0, true, false, false, ((_,_,_) => { }), new CustomSettingsCreator.OptionValue("off",AddTranslationFromSR2E("setting.mpautohost.off", "b.autohostoff", "UI"),scriptedAutoHostPort, 0), new CustomSettingsCreator.OptionValue("val1",AddTranslationFromSR2E("setting.mpautohost.val1", "b.autohostval1", "UI"),scriptedAutoHostPort, 7777), new CustomSettingsCreator.OptionValue("val1",AddTranslationFromSR2E("setting.mpautohost.val2", "b.autohostval2", "UI"),scriptedAutoHostPort, 16500));
         }
         
         public override void OnEarlyInitializeMelon()
