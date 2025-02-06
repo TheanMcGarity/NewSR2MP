@@ -9,6 +9,8 @@ using Il2CppMonomiPark.World;
 using NewSR2MP.Networking.Patches;
 using Riptide.Utils;
 using SR2E;
+using SR2E.Managers;
+using SR2E.Menus;
 using UnityEngine.Serialization;
 
 namespace NewSR2MP.Networking
@@ -41,10 +43,10 @@ namespace NewSR2MP.Networking
 
         private void Start()
         {
-            SR2EConsole.RegisterCommand(new HostCommand());
-            SR2EConsole.RegisterCommand(new JoinCommand());
-            SR2EConsole.RegisterCommand(new SplitScreenDebugCommand());
-            SR2EConsole.RegisterCommand(new ShowSRMPErrorsCommand());
+            SR2ECommandManager.RegisterCommand(new HostCommand());
+            SR2ECommandManager.RegisterCommand(new JoinCommand());
+            SR2ECommandManager.RegisterCommand(new SplitScreenDebugCommand());
+            SR2ECommandManager.RegisterCommand(new ShowSRMPErrorsCommand());
         }
 
         // Prototype Player model

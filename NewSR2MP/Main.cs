@@ -14,8 +14,9 @@ using SR2E;
 using SR2E.Buttons;
 using SR2E.Commands;
 using SR2E.Expansion;
+using SR2E.Managers;
 using UnityEngine;
-using BuildInfo = MelonLoader.BuildInfo;
+using BuildInfo = MelonLoader.Properties.BuildInfo;
 using Exception = System.Exception;
 using Guid = System.Guid;
 
