@@ -5,9 +5,11 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.SlimeRancher.Weather;
+using Il2CppSystem.Net.WebSockets;
 using NewSR2MP.Networking.SaveModels;
 using UnityEngine;
 
@@ -273,7 +275,7 @@ namespace NewSR2MP
             foreach(var player in players.Values)
                 AddList(GetActorsInBounds(new Bounds(player.transform.position, size)), owned);
 
-            found = GetActorsInBounds(new Bounds(SceneContext.Instance.player.transform.position, size));
+            found = GetActorsInBounds(new Bounds(sceneContext.player.transform.position, size));
             
             unowned = DifferenceOf(found, owned);
             
@@ -321,6 +323,36 @@ namespace NewSR2MP
             
             weatherPatternsFromStateNames = list;
         }
+
+        public static GameObject? RegisterActor(
+            ActorId id,
+            IdentifiableType ident,
+            Vector3 position,
+            Quaternion rotation,
+            SceneGroup sceneGroup)
+        {
+            var model = CreateActorModel(id, ident, position, rotation, sceneGroup);
+            
+            sceneContext.GameModel.identifiables.Add(id, model);
+            if (sceneContext.GameModel.identifiablesByIdent.TryGetValue(ident, out var types))
+                types.Add(model);
+            
+            debugRegisteredActors.Add(id.Value, model);
+            var actor = InstantiateActorFromModel(model);
+            
+            SRMP.Debug($"Spawned actor - ID:{id.Value} TYPE:{ident.name} POSITION:({position}) ROTATION:({rotation.ToEuler()}) SCENEGROUP:{sceneGroup.name}");
+            
+            return actor;
+        }
+        public static ActorModel? CreateActorModel(
+            ActorId id,
+            IdentifiableType ident,
+            Vector3 position,
+            Quaternion rotation,
+            SceneGroup sceneGroup)
+            => sceneContext.GameModel.CreateActorModel(id, ident, sceneGroup, position, rotation);
+        
+        private static Dictionary<long, ActorModel> debugRegisteredActors = new Dictionary<long, ActorModel>();
     }
     
 }

@@ -170,7 +170,7 @@ namespace NewSR2MP
                 {
                     try
                     {
-                        var model = SceneContext.Instance.GameModel.landPlots[plot.id];
+                        var model = sceneContext.GameModel.landPlots[plot.id];
                         model.gameObj.AddComponent<HandledDummy>();
                         model.gameObj.GetComponent<LandPlotLocation>().Replace(model.gameObj.GetComponentInChildren<LandPlot>(), GameContext.Instance.LookupDirector._plotPrefabDict[plot.type]);
                         model.gameObj.RemoveComponent<HandledDummy>();
@@ -199,19 +199,17 @@ namespace NewSR2MP
                         {
                             GardenCatcher gc = lp.transform.GetComponentInChildren<GardenCatcher>(true);
 
-                            if (gc != null)
-                            {
-                                GameObject cropObj = UnityEngine.Object.Instantiate(lp.HasUpgrade(LandPlot.Upgrade.DELUXE_GARDEN) ? gc._deluxeDict[identifiableTypes[plot.cropIdent]] : gc._plantableDict[identifiableTypes[plot.cropIdent]], lp.transform.position, lp.transform.rotation);
+                            GameObject cropObj = UnityEngine.Object.Instantiate(
+                                lp.HasUpgrade(LandPlot.Upgrade.DELUXE_GARDEN)
+                                    ? gc._deluxeDict[identifiableTypes[plot.cropIdent]]
+                                    : gc._plantableDict[identifiableTypes[plot.cropIdent]], lp.transform.position,
+                                lp.transform.rotation);
 
-                                gc.gameObject.AddComponent<HandledDummy>();
-                                if (gc.CanAccept(identifiableTypes[plot.cropIdent]))
-                                    lp.Attach(cropObj, true, true);
-                                gc.gameObject.RemoveComponent<HandledDummy>();
-                            }
-                            else
-                            {
-                                SRMP.Log("'GardenCatcher' is null on a garden! i need to fix this rftijegiostgjio");
-                            }
+                            gc.gameObject.AddComponent<HandledDummy>();
+                            if (gc.CanAccept(identifiableTypes[plot.cropIdent]))
+                                lp.Attach(cropObj, true, true);
+                            gc.gameObject.RemoveComponent<HandledDummy>();
+
                         }
                     }
                     catch (Exception e)
@@ -230,29 +228,28 @@ namespace NewSR2MP
                     
                 LoadMessage save = latestSaveJoined;
                 
-                SceneContext.Instance.player.GetComponent<SRCharacterController>().Position = save.localPlayerSave.pos;
-                SceneContext.Instance.player.GetComponent<SRCharacterController>().Rotation = Quaternion.Euler(save.localPlayerSave.rot);
+                sceneContext.player.GetComponent<SRCharacterController>().Position = save.localPlayerSave.pos;
+                sceneContext.player.GetComponent<SRCharacterController>().Rotation = Quaternion.Euler(save.localPlayerSave.rot);
                 
-                SceneContext.Instance.TimeDirector._worldModel.worldTime = save.time;
+                sceneContext.TimeDirector._worldModel.worldTime = save.time;
 
                 actors.Clear();                            
-                SceneContext.Instance.GameModel.identifiables.Clear();
+                sceneContext.GameModel.identifiables.Clear();
 
                 foreach (var a in Resources.FindObjectsOfTypeAll<IdentifiableActor>())
                 {
-                    if (a.gameObject.hideFlags != HideFlags.HideAndDontSave && a.gameObject.name.Contains("(Clone)"))
+                    if (a.hideFlags == HideFlags.HideAndDontSave) continue;
+                    
+                    try
                     {
-                        try
+                        if (!a.identType.IsSceneObject && !a.identType.IsPlayer)
                         {
-                            if (!a.identType.IsSceneObject && !a.identType.IsPlayer)
-                            {
-                                a.gameObject.AddComponent<HandledDummy>();
-                                SceneContext.Instance.GameModel.identifiables.Remove(a.GetActorId());
-                                UnityEngine.Object.Destroy(a.gameObject);
-                            }
+                            a.gameObject.AddComponent<HandledDummy>();
+                            sceneContext.GameModel.identifiables.Remove(a.GetActorId());
+                            UnityEngine.Object.Destroy(a.gameObject);
                         }
-                        catch { }
                     }
+                    catch { }
                 }
                 
                 for (int i = 0; i < save.initActors.Count; i++)
@@ -260,21 +257,17 @@ namespace NewSR2MP
                     try
                     {
                         InitActorData newActor = save.initActors[i];
-                        bool gotIdent = Globals.identifiableTypes.TryGetValue(newActor.ident, out var ident);
+                        bool gotIdent = identifiableTypes.TryGetValue(newActor.ident, out var ident);
                         if (!gotIdent) continue;
                         if (!ident.IsSceneObject && !ident.IsPlayer)
                         {
                             var obj = ident.prefab;
-                            if (obj.GetComponent<NetworkActor>() == null)
+                            if (!obj.GetComponent<NetworkActor>())
                                 obj.AddComponent<NetworkActor>();
-                            if (obj.GetComponent<TransformSmoother>() == null)
+                            if (!obj.GetComponent<TransformSmoother>())
                                 obj.AddComponent<TransformSmoother>();
-                            var obj2 = InstantiateActor(obj, sceneGroups[newActor.scene], newActor.pos, Quaternion.identity);
-                            var obj2ID = obj2.GetComponent<IdentifiableActor>()._model.actorId;
-                            obj2.GetComponent<IdentifiableActor>()._model.actorId = new ActorId(newActor.id);
-                            SceneContext.Instance.GameModel.identifiables.Remove(obj2ID);
-                            SceneContext.Instance.GameModel._actorIdProvider._nextActorId = obj2.GetComponent<IdentifiableActor>()._model.actorId.Value + 1;
-                            SceneContext.Instance.GameModel.identifiables.TryAdd(obj2.GetComponent<IdentifiableActor>()._model.actorId, obj2.GetComponent<IdentifiableActor>()._model);
+                            var obj2 = RegisterActor(new ActorId(newActor.id), identifiableTypes[newActor.ident], newActor.pos, Quaternion.identity, sceneGroups[newActor.scene]);
+                            
                             UnityEngine.Object.Destroy(obj.GetComponent<NetworkActor>());
                             UnityEngine.Object.Destroy(obj.GetComponent<TransformSmoother>());
 
@@ -310,7 +303,7 @@ namespace NewSR2MP
                 {
                     try
                     {
-                        GordoModel gm = SceneContext.Instance.GameModel.gordos[gordo.id];
+                        GordoModel gm = sceneContext.GameModel.gordos[gordo.id];
 
                         if (gordo.eaten <= -1 || gordo.eaten >= gm.targetCount)
                         {
@@ -324,7 +317,7 @@ namespace NewSR2MP
                 }
 
 
-                SceneContext.Instance.PlayerState._model.currency = save.money;
+                sceneContext.PlayerState._model.currency = save.money;
 
                 var pediaEntries = new Il2CppSystem.Collections.Generic.HashSet<PediaEntry>();
                 foreach (var pediaEntry in save.initPedias)
@@ -332,15 +325,15 @@ namespace NewSR2MP
                     pediaEntries.Add(Globals.pediaEntries[pediaEntry]);
                 }
                                 
-                SceneContext.Instance.PediaDirector._pediaModel.unlocked = pediaEntries;
+                sceneContext.PediaDirector._pediaModel.unlocked = pediaEntries;
 
 
-                var np = SceneContext.Instance.player.AddComponent<NetworkPlayer>();
+                var np = sceneContext.player.AddComponent<NetworkPlayer>();
                 np.id = save.playerID;
 
                 foreach (var access in save.initAccess)
                 {
-                    GameModel gm = SceneContext.Instance.GameModel;
+                    GameModel gm = sceneContext.GameModel;
                     AccessDoorModel adm = gm.doors[access.id];
                     if (access.open)
                     {
@@ -354,7 +347,7 @@ namespace NewSR2MP
 
                 
                 // Player ammo loading and saving... Will remake later.
-                /*var ps = SceneContext.Instance.PlayerState;
+                /*var ps = sceneContext.PlayerState;
                 var defaultEmotions = new SlimeEmotionDataV02()
                 {
                     emotionData = new Dictionary<SlimeEmotions.Emotion, float>()
@@ -364,7 +357,7 @@ namespace NewSR2MP
                             {SlimeEmotions.Emotion.HUNGER,0},
                         }
                 };
-                Ammo currentAmmoNormal = SceneContext.Instance.PlayerState.GetAmmo(AmmoMode.DEFAULT);
+                Ammo currentAmmoNormal = sceneContext.PlayerState.GetAmmo(AmmoMode.DEFAULT);
                 NetworkAmmo normalNetAmmo = new NetworkAmmo($"player_{data.Player}_normal", currentAmmoNormal.potentialAmmo, currentAmmoNormal.numSlots, currentAmmoNormal.ammoModel.usableSlots, currentAmmoNormal.slotPreds, currentAmmoNormal.ammoModel.slotMaxCountFunction);
                 Il2CppSystem.Collections.Generic.List<AmmoDataV02> ammoDataNormal = new Il2CppSystem.Collections.Generic.List<AmmoDataV02>();
                 foreach (var ammo in save.localPlayerSave.ammo[AmmoMode.DEFAULT])
@@ -377,7 +370,7 @@ namespace NewSR2MP
                     });
                 }
                 normalNetAmmo.ammoModel.slots = NetworkAmmo.SRMPAmmoDataToSlots(ammoDataNormal);
-                Ammo currentAmmoNimble = SceneContext.Instance.PlayerState.GetAmmo(AmmoMode.NIMBLE_VALLEY);
+                Ammo currentAmmoNimble = sceneContext.PlayerState.GetAmmo(AmmoMode.NIMBLE_VALLEY);
 
                 NetworkAmmo nimbleNetAmmo = new NetworkAmmo($"player_{data.Player}_nimble", currentAmmoNimble.potentialAmmo, currentAmmoNimble.numSlots, currentAmmoNimble.ammoModel.usableSlots, currentAmmoNimble.slotPreds, currentAmmoNimble.ammoModel.slotMaxCountFunction);
                 Il2CppSystem.Collections.Generic.List<AmmoDataV02> ammoDataNimble = new Il2CppSystem.Collections.Generic.List<AmmoDataV02>();

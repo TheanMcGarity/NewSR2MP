@@ -13,6 +13,7 @@ namespace NewSR2MP.Networking.SaveModels
     /// <summary>
     /// TODO: Add health, stamina, and rads.
     /// </summary>
+    [RegisterTypeInIl2Cpp(false)]
     public class NetPlayerV01 : NetworkPersistedDataSet
     {
         public override string Identifier => "MPPL";

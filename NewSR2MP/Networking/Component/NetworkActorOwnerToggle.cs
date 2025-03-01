@@ -28,7 +28,7 @@ namespace NewSR2MP.Networking.Component
         /// </summary>
         public void LoseGrip()
         {
-            VacuumItem vac = SceneContext.Instance.PlayerState.VacuumItem;
+            VacuumItem vac = sceneContext.PlayerState.VacuumItem;
 
             if (vac._held == gameObject)
             {

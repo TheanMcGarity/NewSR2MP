@@ -154,16 +154,16 @@ namespace NewSR2MP.Networking
             public static LoadMessage ReadLoadMessage(Message msg)
             {
 
-                int length = msg.GetInt();
+                int lengthActor = msg.GetInt();
 
                 List<InitActorData> actors = new List<InitActorData>();
-                for (int i = 0; i < length; i++)
+                for (int i = 0; i < lengthActor; i++)
                 {
                     long id = msg.GetLong();
                     int ident = msg.GetInt();
                     int sg = msg.GetInt();
                     Vector3 actorPos = msg.GetVector3();
-                    actors.Add(new InitActorData()
+                    actors.Add(new InitActorData
                     {
                         id = id,
                         ident = ident,
@@ -172,9 +172,9 @@ namespace NewSR2MP.Networking
                     });
                 }
 
-                int length2 = msg.GetInt();
+                int lengthPlayer = msg.GetInt();
                 List<InitPlayerData> players = new List<InitPlayerData>();
-                for (int i = 0; i < length2; i++)
+                for (int i = 0; i < lengthPlayer; i++)
                 {
                     int id = msg.GetInt();
                     players.Add(new InitPlayerData()
@@ -183,9 +183,9 @@ namespace NewSR2MP.Networking
                     });
                 }
 
-                int length3 = msg.GetInt();
+                int lengthPlot = msg.GetInt();
                 List<InitPlotData> plots = new List<InitPlotData>();
-                for (int i = 0; i < length3; i++)
+                for (int i = 0; i < lengthPlot; i++)
                 {
                     string id = msg.GetString();
                     LandPlot.Id type = (LandPlot.Id)msg.GetInt();
@@ -222,9 +222,9 @@ namespace NewSR2MP.Networking
                     });
                 }
 
-                int length4 = msg.GetInt();
+                int lengthGordo = msg.GetInt();
                 HashSet<InitGordoData> gordos = new HashSet<InitGordoData>();
-                for (int i = 0; i < length4; i++)
+                for (int i = 0; i < lengthGordo; i++)
                 {
                     string id = msg.GetString();
                     int eaten = msg.GetInt();
@@ -299,10 +299,6 @@ namespace NewSR2MP.Networking
                 }
 
                 var time = msg.GetDouble();
-
-                //var sm = msg.GetBool();
-                //var sk = msg.GetBool();
-                //var su = msg.GetBool();
 
                 return new LoadMessage()
                 {
@@ -442,7 +438,7 @@ namespace NewSR2MP.Networking
                 var rot = msg.GetVector3();
                 var scene = msg.GetInt();
                 var player = msg.GetInt();
-                return new ActorSpawnMessage()
+                return new ActorSpawnMessage
                 {
                     ident = ident,
                     position = pos,
@@ -638,13 +634,13 @@ namespace NewSR2MP.Networking
             public static void HandleDoor(Message msg)
             {
                 var packet = Deserializer.ReadDoorOpenMessage(msg);
-                SceneContext.Instance.GameModel.doors[packet.id].gameObj.GetComponent<AccessDoor>().CurrState = AccessDoor.State.OPEN;
+                sceneContext.GameModel.doors[packet.id].gameObj.GetComponent<AccessDoor>().CurrState = AccessDoor.State.OPEN;
             }
             [MessageHandler((ushort)PacketType.OpenDoor)]
             public static void HandleDoor(ushort client, Message msg)
             {
                 var packet = Deserializer.ReadDoorOpenMessage(msg);
-                SceneContext.Instance.GameModel.doors[packet.id].gameObj.GetComponent<AccessDoor>().CurrState = AccessDoor.State.OPEN;
+                sceneContext.GameModel.doors[packet.id].gameObj.GetComponent<AccessDoor>().CurrState = AccessDoor.State.OPEN;
 
 
                 
@@ -653,7 +649,7 @@ namespace NewSR2MP.Networking
             public static void HandleMoneyChange(Message msg)
             {
                 var packet = Deserializer.ReadCurrencyMessage(msg);
-                SceneContext.Instance.PlayerState._model.currency = packet.newMoney;
+                sceneContext.PlayerState._model.currency = packet.newMoney;
 
                 
             }
@@ -661,7 +657,7 @@ namespace NewSR2MP.Networking
             public static void HandleMoneyChange(ushort client, Message msg)
             {
                 var packet = Deserializer.ReadCurrencyMessage(msg);
-                SceneContext.Instance.PlayerState._model.currency = packet.newMoney;
+                sceneContext.PlayerState._model.currency = packet.newMoney;
 
                 
             }
@@ -672,11 +668,14 @@ namespace NewSR2MP.Networking
                 var packet = Deserializer.ReadActorSpawnMessage(msg);
                 try
                 {
+                    var sg = sceneGroups[packet.scene];
+
                     if (actors.TryGetValue(packet.id, out var actor))
                         actors.Remove(packet.id);
                     
                     Quaternion quat = Quaternion.Euler(packet.rotation.x, packet.rotation.y, packet.rotation.z);
-                    var identObj = identifiableTypes[packet.ident].prefab;
+                    var ident = identifiableTypes[packet.ident];
+                    var identObj = ident.prefab;
                     
                     if (identObj.GetComponent<NetworkActor>() == null)
                         identObj.AddComponent<NetworkActor>();
@@ -688,38 +687,40 @@ namespace NewSR2MP.Networking
                     identObj.GetComponent<NetworkActor>().enabled = false;
                     identObj.GetComponent<TransformSmoother>().enabled = true;
                     
-                    SRMP.Debug($"[{SystemContext.Instance._SceneLoader_k__BackingField.CurrentSceneGroup.name} | {sceneGroups[packet.scene].name}]");
-                    
-                    var obj = InstantiateActor(identObj, sceneGroups[packet.scene], packet.position, quat, false);
+                    SRMP.Debug($"[{systemContext._SceneLoader_k__BackingField.CurrentSceneGroup.name} | {sg.name}]");
+
+
+
+                    var obj = RegisterActor(new ActorId(packet.id), ident, packet.position, Quaternion.identity, sg);
                     
                     identObj.RemoveComponent<NetworkActor>();
                     identObj.RemoveComponent<NetworkActorOwnerToggle>();
                     identObj.RemoveComponent<TransformSmoother>();
-                    
-                    obj.AddComponent<NetworkResource>(); // Try add resource network component. Will remove if its not a resource so please do not change
-                    
-                    if (!actors.ContainsKey(obj.GetComponent<IdentifiableActor>().GetActorId().Value))
-                    {
-                        actors.Add(obj.GetComponent<Identifiable>().GetActorId().Value, obj.GetComponent<NetworkActor>());
-                        obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
-                        obj.GetComponent<Vacuumable>()._launched = true;
-                    }
-                    else
-                    {
-                        obj.GetComponent<TransformSmoother>().enabled = false;
-                        obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
-                        obj.GetComponent<Vacuumable>()._launched = true;
-                    }
 
-                    obj.GetComponent<NetworkActor>().IsOwned = false;
-                    obj.GetComponent<TransformSmoother>().nextPos = packet.position;
+                    if (obj)
+                    {
+                        
+                        obj.AddComponent<NetworkResource>(); // Try add resource network component. Will remove if its not a resource so please do not change
                     
-                    obj.GetComponent<IdentifiableActor>()._model.actorId = new ActorId(packet.id);
-                    SceneContext.Instance.GameModel.identifiables.Remove(obj.GetComponent<IdentifiableActor>()._model.actorId);
-                    SceneContext.Instance.GameModel.identifiables.Add(obj.GetComponent<IdentifiableActor>()._model.actorId, obj.GetComponent<IdentifiableActor>()._model);
-                    actors.Add(packet.id, obj.GetComponent<NetworkActor>());
+                        if (!actors.ContainsKey(obj.GetComponent<IdentifiableActor>().GetActorId().Value))
+                        {
+                            actors.Add(obj.GetComponent<IdentifiableActor>().GetActorId().Value, obj.GetComponent<NetworkActor>());
+                            obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
+                            obj.GetComponent<Vacuumable>()._launched = true;
+                        }
+                        else
+                        {
+                            obj.GetComponent<TransformSmoother>().enabled = false;
+                            obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
+                            obj.GetComponent<Vacuumable>()._launched = true;
+                        }
+
+                        obj.GetComponent<NetworkActor>().IsOwned = false;
+                        obj.GetComponent<TransformSmoother>().nextPos = packet.position;
                     
-                    SceneContext.Instance.GameModel.RegisterActor( obj.GetComponent<IdentifiableActor>().GetActorId(), obj.GetComponent<IdentifiableActor>().identType,packet.position,Quaternion.identity,sceneGroups[packet.scene]);
+                        actors.TryAdd(packet.id, obj.GetComponent<NetworkActor>());
+                    }
+                    
                 }
                 catch (Exception e)
                 {
@@ -737,7 +738,7 @@ namespace NewSR2MP.Networking
                 {
                     if (packet.local)
                     {
-                        var localPlayer = SceneContext.Instance.player.AddComponent<NetworkPlayer>();
+                        var localPlayer = sceneContext.player.AddComponent<NetworkPlayer>();
                         localPlayer.id = packet.id;
                         currentPlayerID = localPlayer.id;
                     }
@@ -767,14 +768,16 @@ namespace NewSR2MP.Networking
             [MessageHandler((ushort)PacketType.TimeUpdate)]
             public static void HandleTime(Message msg)
             {
+                if (systemContext.SceneLoader.IsCurrentSceneGroupMainMenu()) return;
+                
                 var packet = Deserializer.ReadTimeMessage(msg);
-                SceneContext.Instance.GameModel.world.worldTime = packet.time;
+                sceneContext.GameModel.world.worldTime = packet.time;
             }
             [MessageHandler((ushort)PacketType.FastForward)]
             public static void HandleClientSleep(ushort client, Message msg)
             {
                 var packet = Deserializer.ReadSleepMessage(msg);
-                SceneContext.Instance.TimeDirector.FastForwardTo(packet.time);
+                sceneContext.TimeDirector.FastForwardTo(packet.time);
                 
                 ForwardMessage(packet, client);
             }
@@ -785,42 +788,36 @@ namespace NewSR2MP.Networking
                 var packet = Deserializer.ReadActorSpawnClientMessage(msg);
                 try
                 {
-                    Quaternion quat = Quaternion.Euler(packet.rotation.x, packet.rotation.y, packet.rotation.z);
-                    var identObj = identifiableTypes[packet.ident].prefab;
-                    if (identObj.GetComponent<NetworkActor>() == null)
+                    var sg = sceneGroups[packet.scene];
+                    Quaternion rot = Quaternion.Euler(packet.rotation);
+                    var ident = identifiableTypes[packet.ident];
+                    var identObj = ident.prefab;
+                    if (!identObj.GetComponent<NetworkActor>())
                         identObj.AddComponent<NetworkActor>();
-                    if (identObj.GetComponent<NetworkActorOwnerToggle>() == null)
+                    if (!identObj.GetComponent<NetworkActorOwnerToggle>())
                         identObj.AddComponent<NetworkActorOwnerToggle>();
-                    if (identObj.GetComponent<TransformSmoother>() == null)
+                    if (!identObj.GetComponent<TransformSmoother>())
                         identObj.AddComponent<TransformSmoother>();
-                    var obj = InstantiateActor(identObj, sceneGroups[packet.scene], packet.position, quat, false);
+                    var nextID = sceneContext.GameModel._actorIdProvider._nextActorId;
+                    var obj = RegisterActor(new ActorId(nextID), ident, packet.position, rot, sg);
                     identObj.RemoveComponent<NetworkActor>();
                     identObj.RemoveComponent<NetworkActorOwnerToggle>();
                     identObj.RemoveComponent<TransformSmoother>();
-                    obj.AddComponent<NetworkResource>();
-                    if (!actors.ContainsKey(obj.GetComponent<IdentifiableActor>().GetActorId().Value)) // Most useless if statement ever.
+                    if (obj)
                     {
-                        obj.GetComponent<TransformSmoother>().enabled = false;
-                        actors.Add(obj.GetComponent<Identifiable>().GetActorId().Value, obj.GetComponent<NetworkActor>());
-                        obj.GetComponent<Rigidbody>().velocity = packet.velocity;
-                        obj.GetComponent<NetworkActor>().startingVel = packet.velocity;
-                        obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
-                        obj.GetComponent<Vacuumable>()._launched = true;
-                    }
-                    else
-                    {
+                        obj.AddComponent<NetworkResource>();
                         obj.GetComponent<TransformSmoother>().enabled = false;
                         obj.GetComponent<Rigidbody>().velocity = packet.velocity;
                         obj.GetComponent<NetworkActor>().startingVel = packet.velocity;
                         obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
                         obj.GetComponent<Vacuumable>()._launched = true;
+                        actors.TryAdd(nextID, obj.GetComponent<NetworkActor>());
                     }
-                    
-                    SceneContext.Instance.GameModel.RegisterActor( obj.GetComponent<IdentifiableActor>().GetActorId(), obj.GetComponent<IdentifiableActor>().identType,packet.position,Quaternion.identity,sceneGroups[packet.scene]);
-                    
+
+
                     var packetR = new ActorSpawnMessage()
                     {
-                        id = obj.GetComponent<IdentifiableActor>().GetActorId().Value,
+                        id = nextID,
                         ident = packet.ident,
                         position = packet.position,
                         rotation = packet.rotation,
@@ -1035,7 +1032,7 @@ namespace NewSR2MP.Networking
 
                 try
                 {
-                    var plot = SceneContext.Instance.GameModel.landPlots[packet.id].gameObj;
+                    var plot = sceneContext.GameModel.landPlots[packet.id].gameObj;
 
                     if (packet.messageType == LandplotUpdateType.SET)
                     {
@@ -1073,7 +1070,7 @@ namespace NewSR2MP.Networking
                 try
                 {
                     // get plot from id.
-                    var plot = SceneContext.Instance.GameModel.landPlots[packet.id].gameObj;
+                    var plot = sceneContext.GameModel.landPlots[packet.id].gameObj;
 
                     // Get required components
                     var lp = plot.transform.GetChild(0).GetComponent<LandPlot>();
@@ -1120,7 +1117,7 @@ namespace NewSR2MP.Networking
 
                 try
                 {
-                    var plot = SceneContext.Instance.GameModel.landPlots[packet.id].gameObj;
+                    var plot = sceneContext.GameModel.landPlots[packet.id].gameObj;
 
                     if (packet.messageType == LandplotUpdateType.SET)
                     {
@@ -1159,7 +1156,7 @@ namespace NewSR2MP.Networking
                 try
                 {
                     // get plot from id.
-                    var plot = SceneContext.Instance.GameModel.landPlots[packet.id].gameObj;
+                    var plot = sceneContext.GameModel.landPlots[packet.id].gameObj;
 
                     // Get required components
                     var lp = plot.transform.GetChild(0).GetComponent<LandPlot>();
@@ -1209,7 +1206,7 @@ namespace NewSR2MP.Networking
 
                 try
                 {
-                    SceneContext.Instance.GameModel.gordos[packet.id].gordoEatCount = packet.count;
+                    sceneContext.GameModel.gordos[packet.id].gordoEatCount = packet.count;
                 }
                 catch (Exception e)
                 {
@@ -1222,9 +1219,9 @@ namespace NewSR2MP.Networking
             {
                 var packet = Deserializer.ReadPediaMessage(msg);
 
-                SceneContext.Instance.gameObject.AddComponent<HandledDummy>();
-                SceneContext.Instance.PediaDirector.Unlock(pediaEntries[packet.id]);
-                UnityEngine.Object.Destroy(SceneContext.Instance.gameObject.GetComponent<HandledDummy>());
+                sceneContext.gameObject.AddComponent<HandledDummy>();
+                sceneContext.PediaDirector.Unlock(pediaEntries[packet.id]);
+                UnityEngine.Object.Destroy(sceneContext.gameObject.GetComponent<HandledDummy>());
             }
             [MessageHandler((ushort)PacketType.GordoExplode)]
             public static void HandleGordoBurst(Message msg)
@@ -1233,7 +1230,7 @@ namespace NewSR2MP.Networking
 
                 try
                 {
-                    var gordo = SceneContext.Instance.GameModel.gordos[packet.id].gameObj;
+                    var gordo = sceneContext.GameModel.gordos[packet.id].gameObj;
                     gordo.AddComponent<HandledDummy>();
                     gordo.GetComponent<GordoEat>().ImmediateReachedTarget();
                     UnityEngine.Object.Destroy(gordo.GetComponent<HandledDummy>());
@@ -1254,7 +1251,7 @@ namespace NewSR2MP.Networking
 
                 try
                 {
-                    SceneContext.Instance.GameModel.gordos[packet.id].gordoEatCount = packet.count;
+                    sceneContext.GameModel.gordos[packet.id].gordoEatCount = packet.count;
                 }
                 catch (Exception e)
                 {
@@ -1269,9 +1266,9 @@ namespace NewSR2MP.Networking
             {
                 var packet = Deserializer.ReadPediaMessage(msg);
 
-                SceneContext.Instance.gameObject.AddComponent<HandledDummy>();
-                SceneContext.Instance.PediaDirector.ShowPopupIfUnlocked(pediaEntries[packet.id]);
-                UnityEngine.Object.Destroy(SceneContext.Instance.gameObject.GetComponent<HandledDummy>());
+                sceneContext.gameObject.AddComponent<HandledDummy>();
+                sceneContext.PediaDirector.ShowPopupIfUnlocked(pediaEntries[packet.id]);
+                UnityEngine.Object.Destroy(sceneContext.gameObject.GetComponent<HandledDummy>());
                 
                 ForwardMessage(packet, client);
             }
@@ -1282,7 +1279,7 @@ namespace NewSR2MP.Networking
 
                 try
                 {
-                    var gordo = SceneContext.Instance.GameModel.gordos[packet.id].gameObj;
+                    var gordo = sceneContext.GameModel.gordos[packet.id].gameObj;
                     gordo.AddComponent<HandledDummy>();
                     gordo.GetComponent<GordoEat>().ImmediateReachedTarget();
                     UnityEngine.Object.Destroy(gordo.GetComponent<HandledDummy>());
@@ -1369,7 +1366,7 @@ namespace NewSR2MP.Networking
             //
             public static void HandleMap(Message msg)
             {
-                // SceneContext.Instance.PlayerState._model.unlockedZoneMaps.Add(packet.id);
+                // sceneContext.PlayerState._model.unlockedZoneMaps.Add(packet.id);
             }
             
             [MessageHandler((ushort)PacketType.ActorUpdate)]
@@ -1420,25 +1417,25 @@ namespace NewSR2MP.Networking
                 switch (packet.map)
                 {
                     case MapType.RainbowIsland:
-                        map = SceneContext.Instance.MapDirector._mapList._maps[0];
+                        map = sceneContext.MapDirector._mapList._maps[0];
                         break;
                     case MapType.Labyrinth:
-                        map = SceneContext.Instance.MapDirector._mapList._maps[1];
+                        map = sceneContext.MapDirector._mapList._maps[1];
                         break;
                 }
                 
-                SceneContext.Instance.gameObject.AddComponent<HandledDummy>();
-                SceneContext.Instance.MapDirector.SetPlayerNavigationMarker(packet.position, map, 0);
-                SceneContext.Instance.gameObject.RemoveComponent<HandledDummy>();
+                sceneContext.gameObject.AddComponent<HandledDummy>();
+                sceneContext.MapDirector.SetPlayerNavigationMarker(packet.position, map, 0);
+                sceneContext.gameObject.RemoveComponent<HandledDummy>();
                 
                 ForwardMessage(packet, client);
             }
             [MessageHandler((ushort)PacketType.NavigationMarkerRemove)]
             public static void HandleNavRemove(ushort client, Message joinInfo)
             {
-                SceneContext.Instance.gameObject.AddComponent<HandledDummy>();
-                SceneContext.Instance.MapDirector.ClearPlayerNavigationMarker();
-                SceneContext.Instance.gameObject.RemoveComponent<HandledDummy>();
+                sceneContext.gameObject.AddComponent<HandledDummy>();
+                sceneContext.MapDirector.ClearPlayerNavigationMarker();
+                sceneContext.gameObject.RemoveComponent<HandledDummy>();
                 
                 ForwardMessage(new RemoveNavMarkerNessage(), client);
             }
@@ -1452,23 +1449,23 @@ namespace NewSR2MP.Networking
                 switch (packet.map)
                 {
                     case MapType.RainbowIsland:
-                        map = SceneContext.Instance.MapDirector._mapList._maps[0];
+                        map = sceneContext.MapDirector._mapList._maps[0];
                         break;
                     case MapType.Labyrinth:
-                        map = SceneContext.Instance.MapDirector._mapList._maps[1];
+                        map = sceneContext.MapDirector._mapList._maps[1];
                         break;
                 }
                 
-                SceneContext.Instance.gameObject.AddComponent<HandledDummy>();
-                SceneContext.Instance.MapDirector.SetPlayerNavigationMarker(packet.position, map, 0);
-                SceneContext.Instance.gameObject.RemoveComponent<HandledDummy>();
+                sceneContext.gameObject.AddComponent<HandledDummy>();
+                sceneContext.MapDirector.SetPlayerNavigationMarker(packet.position, map, 0);
+                sceneContext.gameObject.RemoveComponent<HandledDummy>();
             }
             [MessageHandler((ushort)PacketType.NavigationMarkerRemove)]
             public static void HandleNavRemove(Message joinInfo)
             {
-                SceneContext.Instance.gameObject.AddComponent<HandledDummy>();
-                SceneContext.Instance.MapDirector.ClearPlayerNavigationMarker();
-                SceneContext.Instance.gameObject.RemoveComponent<HandledDummy>();
+                sceneContext.gameObject.AddComponent<HandledDummy>();
+                sceneContext.MapDirector.ClearPlayerNavigationMarker();
+                sceneContext.gameObject.RemoveComponent<HandledDummy>();
             }
 
 
@@ -1480,7 +1477,7 @@ namespace NewSR2MP.Networking
                 var dir2 = Resources.FindObjectsOfTypeAll<WeatherDirector>().First();
                 var packet = Deserializer.ReadWeatherMessage(joinInfo);
 
-                var dir = SceneContext.Instance.WeatherRegistry;
+                var dir = sceneContext.WeatherRegistry;
 
                 var zones = new Dictionary<byte, ZoneDefinition>();
                 byte b = 0;
@@ -1538,7 +1535,7 @@ namespace NewSR2MP.Networking
                 dir._zones = zoneDatas2;
                 dir._model = new WeatherModel()
                 {
-                    _participant = SceneContext.Instance.WeatherRegistry.Cast<WeatherModel.Participant>(),
+                    _participant = sceneContext.WeatherRegistry.Cast<WeatherModel.Participant>(),
                     _zoneDatas = zoneDatas,
                 };
 

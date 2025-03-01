@@ -6,7 +6,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(MapDirector __instance, Vector3 position, MapDefinition onMap, float minimumDistanceToPlace)
         {
-            if (SceneContext.Instance.GetComponent<HandledDummy>()) return;
+            if (sceneContext.GetComponent<HandledDummy>()) return;
             
             MapType packetMapType;
             switch (onMap.name)
@@ -34,7 +34,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(MapDirector __instance)
         {
-            if (SceneContext.Instance.GetComponent<HandledDummy>()) return;
+            if (sceneContext.GetComponent<HandledDummy>()) return;
 
             var packet = new RemoveNavMarkerNessage();
             

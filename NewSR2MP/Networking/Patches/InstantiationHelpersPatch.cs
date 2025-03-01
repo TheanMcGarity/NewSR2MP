@@ -37,11 +37,22 @@ namespace NewSR2MP.Networking.Patches
                     __result.AddComponent<NetworkActorOwnerToggle>();
                 }
                 var ts = __result.GetComponent<TransformSmoother>();
-                actors.Add(__result.GetComponent<IdentifiableActor>().GetActorId().Value, __result.GetComponent<NetworkActor>());
+                var id = __result.GetComponent<IdentifiableActor>().GetActorId().Value;
+                if (actors.TryAdd(id, __result.GetComponent<NetworkActor>()))
+                    SRMP.Error("An actor has already been added ");
 
 
                 ts.interpolPeriod = 0.15f;
                 ts.enabled = false;
+                
+                MultiplayerManager.NetworkSend(new ActorSpawnMessage
+                {
+                    rotation = rotation.ToEuler(),
+                    position = position,
+                    id = id,
+                    ident = GetIdentID(__result.GetComponent<IdentifiableActor>().identType),
+                    scene = sceneGroupsReverse[sceneGroup.name]
+                });
             }
         }
     }

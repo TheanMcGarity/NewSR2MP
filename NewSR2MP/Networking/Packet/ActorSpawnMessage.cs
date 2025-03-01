@@ -30,8 +30,6 @@ namespace NewSR2MP.Networking.Packet
             msg.AddInt(player);
 
             return msg;
-
-            return msg;
         }
     }
 }

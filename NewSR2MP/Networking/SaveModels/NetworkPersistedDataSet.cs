@@ -3,6 +3,7 @@ using Il2CppSystem.Text;
 using Stream = Il2CppSystem.IO.Stream;
 namespace NewSR2MP.Networking.SaveModels
 {
+    [RegisterTypeInIl2Cpp(false)]
     public class NetworkPersistedDataSet : PersistedDataSet
     {
         public override void Write(Stream stream)
@@ -16,6 +17,16 @@ namespace NewSR2MP.Networking.SaveModels
             binaryWriter.Write(version);
             WriteData(binaryWriter);
             binaryWriter.Dispose();
+        }
+
+        public override void LoadData(GameBinaryReader reader)
+        {
+            base.LoadData(reader);
+        }
+
+        public override void WriteData(GameBinaryWriter writer)
+        {
+            base.WriteData(writer);
         }
     }
 }

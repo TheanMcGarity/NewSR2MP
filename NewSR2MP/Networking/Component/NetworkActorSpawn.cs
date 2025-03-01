@@ -29,7 +29,7 @@ namespace NewSR2MP.Networking.Component
                     rotation = transform.eulerAngles,
                     velocity = GetComponent<Rigidbody>().velocity,
                     player = currentPlayerID,
-                    scene = sceneGroupsReverse[SystemContext.Instance.SceneLoader.CurrentSceneGroup.name]
+                    scene = sceneGroupsReverse[systemContext.SceneLoader.CurrentSceneGroup.name]
                 };
                 MultiplayerManager.NetworkSend(packet);
                 gameObject.AddComponent<HandledDummy>();

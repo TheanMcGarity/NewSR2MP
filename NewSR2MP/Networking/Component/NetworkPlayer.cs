@@ -57,7 +57,7 @@ namespace NewSR2MP.Networking.Component
                 var packet = new PlayerUpdateMessage()
                 {
                     id = id,
-                    scene = (byte)sceneGroupsReverse[SystemContext.Instance.SceneLoader.CurrentSceneGroup.name],
+                    scene = (byte)sceneGroupsReverse[systemContext.SceneLoader.CurrentSceneGroup.name],
                     pos = transform.position,
                     rot = transform.rotation,
                     horizontalMovement = anim.GetFloat("HorizontalMovement"),

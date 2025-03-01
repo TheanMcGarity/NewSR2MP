@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 
 namespace NewSR2MP.Networking.SaveModels
 {
+    
+    [RegisterTypeInIl2Cpp(false)]
     public class PlayerListV01 : NetworkPersistedDataSet
     {
 

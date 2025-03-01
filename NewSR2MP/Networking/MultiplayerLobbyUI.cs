@@ -116,7 +116,7 @@ public class MultiplayerLobbyUI : MonoBehaviour
     void CheckFlags()
     {
         isPaused = Time.timeScale == 0;
-        isInMainMenu = SystemContext.Instance.SceneLoader._currentSceneGroup.name.Contains("MainMenu"); // Using name because there are 2 main menu scene groups for some reason.
+        isInMainMenu = systemContext.SceneLoader._currentSceneGroup.name.Contains("MainMenu"); // Using name because there are 2 main menu scene groups for some reason.
         isConnected = ClientActive();
         isHost = ServerActive();
     }

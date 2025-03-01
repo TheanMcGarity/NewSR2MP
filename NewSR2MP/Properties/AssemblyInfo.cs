@@ -1,4 +1,4 @@
-﻿
+
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,11 +14,15 @@ using System.Resources;
 [assembly: AssemblyTrademark("HELLO MAMA")]
 [assembly: AssemblyCulture("")]
 
-// Version information
-[assembly: AssemblyVersion("0.0.0.239")]
-[assembly: AssemblyFileVersion("0.0.0.239")]
-[assembly: NeutralResourcesLanguageAttribute( "en-US" )]
+// Version information 
+// SCRIPT_RUN_BELOW
+[assembly: AssemblyVersion("0.0.0.260")]
+// SCRIPT_RUN_BELOW
+[assembly: AssemblyFileVersion("0.0.0.260")]
+[assembly: NeutralResourcesLanguage( "en-US" )]
 
 [assembly: MelonGame("MonomiPark", "SlimeRancher2")]
-[assembly: MelonInfo(typeof(NewSR2MP.Main),"New SR2MP", "239", "PinkTarr")]
+[assembly: MelonInfo(typeof(NewSR2MP.Main),"New SR2MP", // SCRIPT_RUN_BELOW
+    "260",
+    "PinkTarr")]
 [assembly: SR2E.Expansion.SR2EExpansion]

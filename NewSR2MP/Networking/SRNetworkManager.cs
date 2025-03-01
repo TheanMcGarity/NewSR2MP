@@ -82,10 +82,10 @@ namespace NewSR2MP.Networking
             server.ClientConnected += OnPlayerJoined;
             server.ClientDisconnected += OnPlayerLeft;
 
-            SceneContext.Instance.gameObject.AddComponent<TimeSyncer>();
-            SceneContext.Instance.gameObject.AddComponent<WeatherSyncer>();
+            sceneContext.gameObject.AddComponent<TimeSyncer>();
+            sceneContext.gameObject.AddComponent<WeatherSyncer>();
             
-            var hostNetworkPlayer = SceneContext.Instance.player.AddComponent<NetworkPlayer>();
+            var hostNetworkPlayer = sceneContext.player.AddComponent<NetworkPlayer>();
             hostNetworkPlayer.id = ushort.MaxValue;
             currentPlayerID = hostNetworkPlayer.id;
             players.Add(ushort.MaxValue, hostNetworkPlayer);
@@ -164,13 +164,13 @@ namespace NewSR2MP.Networking
             NetworkAmmo.all.Clear();
             try
             {
-                SystemContext.Instance.SceneLoader.LoadMainMenuSceneGroup();
+                systemContext.SceneLoader.LoadMainMenuSceneGroup();
             }
             catch { }
         }
         public void ClientDisconnect()
         {
-            SystemContext.Instance.SceneLoader.LoadMainMenuSceneGroup();
+            systemContext.SceneLoader.LoadMainMenuSceneGroup();
         }
         public void InitializeClient()
         {

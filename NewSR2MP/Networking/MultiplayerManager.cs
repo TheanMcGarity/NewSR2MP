@@ -100,7 +100,7 @@ namespace NewSR2MP.Networking
 
         public void SetupPlayerAnimations()
         {
-            var animator = SceneContext.Instance.Player.GetComponent<Animator>();
+            var animator = sceneContext.Player.GetComponent<Animator>();
             
             onlinePlayerPrefab.GetComponent<Animator>().avatar = animator.avatar;
             onlinePlayerPrefab.GetComponent<Animator>().runtimeAnimatorController = animator.runtimeAnimatorController;
@@ -119,7 +119,7 @@ namespace NewSR2MP.Networking
         HashSet<string> getPediaEntries()
         {
             
-            var pedias = SceneContext.Instance.PediaDirector._pediaModel.unlocked;
+            var pedias = sceneContext.PediaDirector._pediaModel.unlocked;
             
             var ret = new HashSet<string>();
 
@@ -138,7 +138,7 @@ namespace NewSR2MP.Networking
 
 
             clientToGuid.Add(nctc.Id, savingID);
-            
+
             var newPlayer = !savedGame.savedPlayers.playerList.TryGetValue(savingID, out var playerData);
             if (newPlayer)
             {
@@ -150,7 +150,7 @@ namespace NewSR2MP.Networking
             try
             {
                 // Variables
-                double time = SceneContext.Instance.TimeDirector.CurrTime();
+                double time = sceneContext.TimeDirector.CurrTime();
                 List<InitActorData> actors = new List<InitActorData>();
                 HashSet<InitGordoData> gordos = new HashSet<InitGordoData>();
                 List<InitPlayerData> initPlayers = new List<InitPlayerData>();
@@ -158,30 +158,25 @@ namespace NewSR2MP.Networking
                 List<string> pedias = new List<string>();
 
 
-                foreach (var pedia in SceneContext.Instance.PediaDirector._pediaModel.unlocked)
+                foreach (var pedia in sceneContext.PediaDirector._pediaModel.unlocked)
                 {
                     pedias.Add(pedia.name);
                 }
-                
-                var upgrades = SceneContext.Instance.PlayerState._model.upgradeModel.upgradeLevels;
 
-                
-
-
-
+                var upgrades = sceneContext.PlayerState._model.upgradeModel.upgradeLevels;
 
                 // Actors
-                foreach (var a in SceneContext.Instance.GameModel.identifiables)
+                foreach (var typeDict in sceneContext.GameModel.identifiablesByIdent)
+                foreach (var a in typeDict.value)
                 {
                     try
                     {
-
                         var data = new InitActorData()
                         {
-                            id = a.key.Value,
-                            ident = GetIdentID(a.Value.ident),
-                            pos = a.Value.lastPosition,
-                            scene = sceneGroupsReverse[a.value.sceneGroup.name]
+                            id = a.actorId.Value,
+                            ident = GetIdentID(a.ident),
+                            pos = a.lastPosition,
+                            scene = sceneGroupsReverse[a.sceneGroup.name]
                         };
                         actors.Add(data);
                     }
@@ -189,6 +184,8 @@ namespace NewSR2MP.Networking
                     {
                     }
                 }
+
+
 
                 // Gordos
                 foreach (var g in Resources.FindObjectsOfTypeAll<GordoEat>())
@@ -235,98 +232,98 @@ namespace NewSR2MP.Networking
 
 
                 // Plots
-                foreach (var landplot in SceneContext.Instance.GameModel.landPlots)
+                foreach (var landplot in sceneContext.GameModel.landPlots)
                 {
                     var plot = landplot.value;
-                        try
+                    try
+                    {
+
+
+
+                        if (plot.siloAmmo._count != 0)
                         {
-                            
-                            
-                            
-                            if (plot.siloAmmo._count != 0)
+
+                            // TODO Get multiple ammo datas
+                            string firstAmmoId = "";
+
+                            foreach (var _ in plot.siloAmmo)
                             {
-                                
-                                // TODO Get multiple ammo datas
-                                string firstAmmoId = "";
+                                firstAmmoId = _.key;
+                                break;
+                            }
 
-                                foreach (var _ in plot.siloAmmo)
-                                {
-                                    firstAmmoId = _.key;
-                                    break;
-                                }
-                                
-                                // Silos
-                                InitSiloData s = new InitSiloData()
-                                {
-                                    ammo = new HashSet<AmmoData>()
-                                }; // Empty
-                                
-                                var silo = plot.siloAmmo[firstAmmoId];
+                            // Silos
+                            InitSiloData s = new InitSiloData()
+                            {
+                                ammo = new HashSet<AmmoData>()
+                            }; // Empty
 
-                                if (silo != null)
+                            var silo = plot.siloAmmo[firstAmmoId];
+
+                            if (silo != null)
+                            {
+                                HashSet<AmmoData> ammo = new HashSet<AmmoData>();
+                                var idx = 0;
+                                foreach (var a in silo.slots)
                                 {
-                                    HashSet<AmmoData> ammo = new HashSet<AmmoData>();
-                                    var idx = 0;
-                                    foreach (var a in silo.slots)
+                                    if (a != null)
                                     {
-                                        if (a != null)
+                                        var ammoSlot = new AmmoData()
                                         {
-                                            var ammoSlot = new AmmoData()
-                                            {
-                                                slot = idx,
-                                                id = GetIdentID(a.Id),
-                                                count = a.Count,
-                                            };
-                                            ammo.Add(ammoSlot);
-                                        }
-                                        else
+                                            slot = idx,
+                                            id = GetIdentID(a.Id),
+                                            count = a.Count,
+                                        };
+                                        ammo.Add(ammoSlot);
+                                    }
+                                    else
+                                    {
+                                        var ammoSlot = new AmmoData()
                                         {
-                                            var ammoSlot = new AmmoData()
-                                            {
-                                                slot = idx,
-                                                id = 9,
-                                                count = 0,
-                                            };
-                                            ammo.Add(ammoSlot);
-                                        }
-
-                                        idx++;
+                                            slot = idx,
+                                            id = 9,
+                                            count = 0,
+                                        };
+                                        ammo.Add(ammoSlot);
                                     }
 
-                                    s = new InitSiloData()
-                                    {
-                                        slots = silo.slots.Count,
-                                        ammo = ammo
-                                    };
+                                    idx++;
                                 }
 
-                                int cropIdent = 9;
-                                if (plot.resourceGrowerDefinition != null)
+                                s = new InitSiloData()
                                 {
-                                    cropIdent = GetIdentID(plot.resourceGrowerDefinition._primaryResourceType);
-                                }
-                                
-                                var p = new InitPlotData()
-                                {
-                                    id = plot.gameObj.GetComponent<LandPlotLocation>().Id,
-                                    type = plot.typeId,
-                                    upgrades = plot.upgrades,
-                                    cropIdent = cropIdent,
-
-                                    siloData = s,
+                                    slots = silo.slots.Count,
+                                    ammo = ammo
                                 };
-                                plots.Add(p);
                             }
+
+                            int cropIdent = 9;
+                            if (plot.resourceGrowerDefinition != null)
+                            {
+                                cropIdent = GetIdentID(plot.resourceGrowerDefinition._primaryResourceType);
+                            }
+
+                            var p = new InitPlotData()
+                            {
+                                id = plot.gameObj.GetComponent<LandPlotLocation>().Id,
+                                type = plot.typeId,
+                                upgrades = plot.upgrades,
+                                cropIdent = cropIdent,
+
+                                siloData = s,
+                            };
+                            plots.Add(p);
                         }
-                        catch (Exception ex)
-                        {
-                            SRMP.Error($"Lsndplot failed to send! This will cause major desync.\n{ex}");
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        SRMP.Error($"Lsndplot failed to send! This will cause major desync.\n{ex}");
+                    }
                 }
 
                 // Slime Gates || Ranch expansions
                 List<InitAccessData> access = new List<InitAccessData>();
-                foreach (var accessDoor in SceneContext.Instance.GameModel.doors)
+                foreach (var accessDoor in sceneContext.GameModel.doors)
                 {
                     access.Add(new InitAccessData()
                     {
@@ -370,7 +367,7 @@ namespace NewSR2MP.Networking
                 }
 
 
-                var money = SceneContext.Instance.PlayerState._model.currency;
+                var money = sceneContext.PlayerState._model.currency;
 
                 // Send save data.
                 var saveMessage = new LoadMessage()
@@ -381,9 +378,9 @@ namespace NewSR2MP.Networking
                     initGordos = gordos,
                     initPedias = pedias,
                     initAccess = access,
-                    //initMaps = GetListFromFogEvents(SceneContext.Instance.eventDirector._model.table["fogRevealed"]
+                    //initMaps = GetListFromFogEvents(sceneContext.eventDirector._model.table["fogRevealed"]
                     //    ._keys),
-                    initMaps = new List<string>(0),
+                    initMaps = new List<string>(),
                     playerID = nctc.Id,
                     money = money,
                     time = time,
@@ -399,19 +396,20 @@ namespace NewSR2MP.Networking
                 clientToGuid.Remove(nctc.Id);
                 SRMP.Error(ex.ToString());
             }
+
             try
             {
-                Ammo currentHostAmmo = SceneContext.Instance.PlayerState.Ammo;
+                Ammo currentHostAmmo = sceneContext.PlayerState.Ammo;
                 NetworkAmmo netAmmo = new NetworkAmmo($"player_{savingID}",
-                    SceneContext.Instance.PlayerState._ammoSlotDefinitions);
+                    sceneContext.PlayerState._ammoSlotDefinitions);
 
                 netAmmo._ammoModel.slots = NetworkAmmo.SRMPAmmoDataToSlots(playerData.ammo);
             }
             catch (Exception ex)
-            {     
+            {
                 SRMP.Error($"Post join error!\n{ex}");
             }
-            
+
         }
 
 
@@ -425,7 +423,7 @@ namespace NewSR2MP.Networking
         
         public static void ClientLeave()
         {
-            SystemContext.Instance.SceneLoader.LoadSceneGroup(SystemContext.Instance.SceneLoader._mainMenuSceneGroup);
+            systemContext.SceneLoader.LoadSceneGroup(systemContext.SceneLoader._mainMenuSceneGroup);
         }
 
         public void Connect(string ip, ushort port)
@@ -451,12 +449,17 @@ namespace NewSR2MP.Networking
             if (latestSaveJoined == null) return false;
             if (!waitingForSceneLoad)
             {
-                SystemContext.Instance.SceneLoader.LoadSceneGroup(sceneGroups[latestSaveJoined.localPlayerSave.sceneGroup]);
+                if (latestSaveJoined.localPlayerSave == null)
+                {
+                    MelonLogger.Error("latestSaveJoined.localPlayerSave == null");
+                    return false;
+                }
+                systemContext.SceneLoader.LoadSceneGroup(sceneGroups[latestSaveJoined.localPlayerSave.sceneGroup]);
                 waitingForSceneLoad = true;
                 return false;
             }
 
-            if (SystemContext.Instance.SceneLoader.IsSceneLoadInProgress) return false;
+            if (systemContext.SceneLoader.IsSceneLoadInProgress) return false;
 
 
             isJoiningAsClient = true;
@@ -474,7 +477,7 @@ namespace NewSR2MP.Networking
             
             Main.OnSaveLoaded(SceneContext.Instance);
 
-            if (SystemContext.Instance.SceneLoader.IsCurrentSceneGroupDefault())
+            if (systemContext.SceneLoader.IsCurrentSceneGroupDefault())
             {
                 Main.OnRanchSceneGroupLoaded(SceneContext.Instance);
             }
@@ -501,7 +504,7 @@ namespace NewSR2MP.Networking
         
         public void OnClientDisconnect(object? sender, EventArgs args)
         {
-            SystemContext.Instance.SceneLoader.LoadMainMenuSceneGroup();
+            systemContext.SceneLoader.LoadMainMenuSceneGroup();
         }
         
         public void Host(ushort port)

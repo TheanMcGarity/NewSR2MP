@@ -41,8 +41,7 @@
         <Private>False</Private>
       </Reference>
       <Reference Include="Assembly-CSharp">
-        <HintPath>Libs\Assembly-CSharp.dll</HintPath>
-        <Private>False</Private>
+        <HintPath>..\..\..\Downloads\Cpp2IL-Netframework472-Windows\cpp2il_out\Assembly-CSharp3.dll</HintPath>
       </Reference>
       <Reference Include="Il2Cppcom.rlabrecque.steamworks.net">
         <HintPath>Libs\Il2Cppcom.rlabrecque.steamworks.net.dll</HintPath>
@@ -525,7 +524,7 @@
     </ItemGroup>
 
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-      <Exec Command="&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)Properties\AssemblyInfo.tt&quot;&#xA;&quot;$(DevEnvDir)TextTransform.exe&quot; &quot;$(ProjectDir)asmver.tt&quot;" />
+      <Exec Command="&quot;$(ProjectDir)../VersionHandler/bin/Debug/net9.0/VersionHandler.exe&quot;" />
     </Target>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">

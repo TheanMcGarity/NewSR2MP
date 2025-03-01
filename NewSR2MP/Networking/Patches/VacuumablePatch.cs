@@ -34,7 +34,7 @@ namespace NewSR2MP.Networking.Patches
         {
             if (ServerActive() || ClientActive())
             {
-                var ammo = SceneContext.Instance.PlayerState.Ammo;
+                var ammo = sceneContext.PlayerState.Ammo;
                 if (!(ammo is NetworkAmmo)) return true;
 
                 NetworkAmmo netAmmo = (NetworkAmmo)ammo;
