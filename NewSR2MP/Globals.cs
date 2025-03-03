@@ -175,7 +175,7 @@ namespace NewSR2MP
         /// <returns></returns>
         public static int GetIdentID(IdentifiableType ident)
         {
-            return GameContext.Instance.AutoSaveDirector.SavedGame.identifiableTypeToPersistenceId.GetPersistenceId(ident);
+            return gameContext.AutoSaveDirector.SavedGame.identifiableTypeToPersistenceId.GetPersistenceId(ident);
         }
         
         /// <summary>
