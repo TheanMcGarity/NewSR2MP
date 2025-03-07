@@ -9,11 +9,48 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
+    public struct NetworkEmotions
+    {
+        public float x;
+        public float y;
+        public float z;
+        public float w;
+
+        public NetworkEmotions(float x, float y, float z, float w)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+        }
+
+        public void Serialize(Message msg)
+        {
+            msg.AddFloat(x);
+            msg.AddFloat(y);
+            msg.AddFloat(z);
+            msg.AddFloat(w);
+        }
+        public static NetworkEmotions Deserialize(Message msg)
+        {
+            var x = msg.GetFloat();
+            var y = msg.GetFloat();
+            var z = msg.GetFloat();
+            var w = msg.GetFloat();
+            
+            return new NetworkEmotions(x, y, z, w);
+        }
+    }
     public class ActorUpdateMessage : ICustomMessage
     {
         public long id;
+        
         public Vector3 position;
         public Vector3 rotation;
+
+        public Vector3 velocity;
+        
+        public NetworkEmotions slimeEmotions = new NetworkEmotions();
         
         public Message Serialize()
         {
@@ -22,23 +59,34 @@ namespace NewSR2MP.Networking.Packet
             msg.AddLong(id);
             msg.AddVector3(position);
             msg.AddVector3(rotation);
+            msg.AddVector3(velocity);
 
+            slimeEmotions.Serialize(msg);
+            
             return msg;
         }
     }
-    public class ActorUpdateClientMessage : ICustomMessage // Client Message is just a copy, but it has a different handler.
+    public class ActorUpdateClientMessage : ICustomMessage // Remind me to merge this with the main message
     {
         public long id;
+        
         public Vector3 position;
         public Vector3 rotation;
         
+        public Vector3 velocity;
+
+        public NetworkEmotions slimeEmotions = new NetworkEmotions();
+
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.TempClientActorUpdate);
             msg.AddLong(id);
             msg.AddVector3(position);
             msg.AddVector3(rotation);
-
+            msg.AddVector3(velocity);
+            
+            slimeEmotions.Serialize(msg);
+            
             return msg;
         }
     }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Il2CppMonomiPark.SlimeRancher.Slime;
 using MelonLoader;
 using UnityEngine;
 
@@ -106,6 +107,16 @@ namespace NewSR2MP.Networking.Component
                         position = transform.position,
                         rotation = transform.eulerAngles,
                     };
+                    
+                    if (TryGetComponent<SlimeEmotions>(out var emotions))
+                    {
+                        packet.slimeEmotions = new NetworkEmotions(
+                            emotions._emotions.x,
+                            emotions._emotions.y,
+                            emotions._emotions.z,
+                            emotions._emotions.w);
+                    }
+                    
                     MultiplayerManager.NetworkSend(packet);
                 }
                 else if (MultiplayerManager.server != null)
@@ -117,6 +128,16 @@ namespace NewSR2MP.Networking.Component
                         position = transform.position,
                         rotation = transform.eulerAngles,
                     };
+                    
+                    if (TryGetComponent<SlimeEmotions>(out var emotions))
+                    {
+                        packet.slimeEmotions = new NetworkEmotions(
+                            emotions._emotions.x,
+                            emotions._emotions.y,
+                            emotions._emotions.z,
+                            emotions._emotions.w);
+                    }
+                    
                     MultiplayerManager.NetworkSend(packet);
                 }
 

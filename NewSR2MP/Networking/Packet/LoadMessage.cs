@@ -21,7 +21,9 @@ namespace NewSR2MP.Networking.Packet
         public int money;
         public Il2CppSystem.Collections.Generic.Dictionary<int, int> upgrades; // Needs to be Il2Cpp so it can be moved right into the player upgrades model.
         public double time;
-    
+        
+        public List<float> marketPrices = new List<float>();
+        
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Reliable, PacketType.JoinSave);
@@ -94,12 +96,8 @@ namespace NewSR2MP.Networking.Packet
             }
             msg.AddInt(localPlayerSave.sceneGroup);
             
-            
-            
-            
             msg.AddInt(money);
-
-
+            
             msg.AddInt(upgrades.Count);
             foreach (var upg in upgrades)
             {
@@ -109,6 +107,11 @@ namespace NewSR2MP.Networking.Packet
 
             msg.AddDouble(time);
 
+            msg.AddInt(marketPrices.Count);
+
+            foreach (var price in marketPrices)
+                msg.AddFloat(price);
+            
             return msg;
         }
         

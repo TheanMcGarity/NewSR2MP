@@ -43,10 +43,7 @@ namespace NewSR2MP.Networking.Patches
             var networkGame = new NetworkV01();
             
             GameStream fs = CppFile.Create(path);
-            try
-            {
-                networkGame.Write(fs);
-            } catch { }
+            try { networkGame.Write(fs); } catch { }
             fs.Dispose();
             
             savedGame = networkGame;

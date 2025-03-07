@@ -35,12 +35,6 @@ namespace NewSR2MP.Networking
     }
     public partial class MultiplayerManager
     {
-        void InitializeMessages()
-        {
-            
-        }
-        
-        
         public static Server server;
         
         public static Client client;
@@ -142,7 +136,7 @@ namespace NewSR2MP.Networking
         
         public void StopHosting()
         {
-            NetworkAmmo.all.Clear();
+            ammoByPlotID.Clear();
 
         }
 
@@ -161,7 +155,7 @@ namespace NewSR2MP.Networking
         }
         public void Leave()
         {
-            NetworkAmmo.all.Clear();
+            ammoByPlotID.Clear();
             try
             {
                 systemContext.SceneLoader.LoadMainMenuSceneGroup();
@@ -268,9 +262,8 @@ namespace NewSR2MP.Networking
 
             clientToGuid.Clear();
 
-            NetworkAmmo.all.Clear();
+            ammoByPlotID.Clear();
 
-            latestSaveJoined = new LoadMessage();
             savedGame = new NetworkV01();
             savedGamePath = String.Empty;
         }
@@ -286,9 +279,9 @@ namespace NewSR2MP.Networking
                     continue;
                 }
                 Guid playerID = clientToGuid[player.Key];
-                //NetworkAmmo ammo = (NetworkAmmo)ammos[$"player_{playerID}"];
-                //Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData = GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots, GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
-                //savedGame.savedPlayers.playerList[playerID].ammo = ammoData;
+                var ammo = GetNetworkAmmo($"player_{playerID}");
+                Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData = GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots, GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
+                savedGame.savedPlayers.playerList[playerID].ammo = ammoData;
                 if (player.Value)
                 {
                     var playerPos = new Vector3V01();

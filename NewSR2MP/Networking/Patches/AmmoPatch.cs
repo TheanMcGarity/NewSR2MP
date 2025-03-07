@@ -12,38 +12,50 @@ namespace NewSR2MP.Networking.Patches
             
             if (__result)
             {
-                if (__instance is NetworkAmmo netAmmo)
+                
+                var packet = new AmmoEditSlotMessage()
                 {
-                    var packet = new AmmoEditSlotMessage()
-                    {
-                        ident = GetIdentID(id),
-                        slot = slotIdx,
-                        count = count,
-                        id = netAmmo.ammoId
-                    };
-                    MultiplayerManager.NetworkSend(packet);
-                }
+                    ident = GetIdentID(id),
+                    slot = slotIdx,
+                    count = count,
+                    id = __instance.GetPlotID()
+                };
+                if (packet.id == null) return;
+                
+                MultiplayerManager.NetworkSend(packet);
             }
         }
     }
 
-    [HarmonyPatch(typeof(Ammo), nameof(Ammo.MaybeAddToSlot), typeof(IdentifiableType), typeof(Identifiable), typeof(SlimeAppearance.AppearanceSaveSet))]
+    [HarmonyPatch(typeof(Ammo), nameof(Ammo.MaybeAddToSlot), typeof(IdentifiableType), typeof(Identifiable),
+        typeof(SlimeAppearance.AppearanceSaveSet))]
     public class AmmoMaybeAddToSlot
     {
 
-        public static bool Prefix(Ammo __instance, ref bool __result, IdentifiableType id, Identifiable identifiable, SlimeAppearance.AppearanceSaveSet appearance)
+        public static void Postfix(Ammo __instance, ref bool __result, IdentifiableType id, Identifiable identifiable,
+            SlimeAppearance.AppearanceSaveSet appearance)
         {
             if (!(ClientActive() || ServerActive()))
-                return true;
+                return;
+            
+            var slotIDX = __instance.GetSlotIDX(id);
+            
+            if (slotIDX == -1) return;
+            
+            if (__result)
+            {
+                var packet = new AmmoEditSlotMessage
+                {
+                    ident = GetIdentID(id),
+                    slot = slotIDX,
+                    count = 1,
+                    id = __instance.GetPlotID()
+                };
+                
+                if (packet.id == null) return;
 
-            if (!(__instance is NetworkAmmo)) return true;
-
-            var slotIDX = (__instance as NetworkAmmo).GetSlotIDX(id);
-            if (slotIDX == -1) return true;
-
-            __instance.MaybeAddToSpecificSlot(id, identifiable, slotIDX);
-
-            return false;
+                MultiplayerManager.NetworkSend(packet);
+            }
         }
     }
 
@@ -54,18 +66,19 @@ namespace NewSR2MP.Networking.Patches
         {
             if (!(ClientActive() || ServerActive()))
                 return;
-            if (__instance is NetworkAmmo netAmmo)
-            {
-                if (__instance.Slots[index]._count <= 0) __instance.Slots[index]._id = null;
+            
+            if (__instance.Slots[index]._count <= 0) __instance.Slots[index]._id = null;
 
-                var packet = new AmmoRemoveMessage()
-                {
-                    index = index,
-                    count = count,
-                    id = netAmmo.ammoId
-                };
-                MultiplayerManager.NetworkSend(packet);
-            }
+            var packet = new AmmoRemoveMessage()
+            {
+                index = index,
+                count = count,
+                id = __instance.GetPlotID()
+            };        
+            
+            if (packet.id == null) return;
+            
+            MultiplayerManager.NetworkSend(packet);
         }
     }
 
@@ -76,20 +89,17 @@ namespace NewSR2MP.Networking.Patches
         {
             if (!(ClientActive() || ServerActive()))
                 return;
-
-            if (__instance is NetworkAmmo netAmmo)
+            
+            var packet = new AmmoRemoveMessage()
             {
-                
-                if (__instance.Slots[netAmmo._selectedAmmoIdx] != null && __instance.Slots[netAmmo._selectedAmmoIdx]._count <= 0) __instance.Slots[netAmmo._selectedAmmoIdx] = null;
+                index = __instance._selectedAmmoIdx,
+                count = amount,
+                id = __instance.GetPlotID()
+            };          
+            
+            if (packet.id == null) return;
 
-                var packet = new AmmoRemoveMessage()
-                {
-                    index = netAmmo._selectedAmmoIdx,
-                    count = amount,
-                    id = netAmmo.ammoId
-                };
-                MultiplayerManager.NetworkSend(packet);
-            }
+            MultiplayerManager.NetworkSend(packet);
         }
     }
 }

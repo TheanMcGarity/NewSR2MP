@@ -7,7 +7,7 @@ using (BinaryReader reader = new BinaryReader(infoVER))
 ver++;
 
 using (BinaryWriter writer = new BinaryWriter(File.Open("../NewSR2MP/asmver.txt", FileMode.Create)))
-    writer.Write(ver);
+    writer.Write(ver.ToString().ToArray());
 
 string infoCS = File.ReadAllText("../NewSR2MP/Properties/AssemblyInfo.cs");
 string newVersion = $"0.0.0.{ver}";

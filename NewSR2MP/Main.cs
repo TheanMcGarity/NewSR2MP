@@ -1,4 +1,6 @@
-﻿using Il2CppMonomiPark.ScriptedValue;
+﻿using System.Collections;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
+using Il2CppMonomiPark.ScriptedValue;
 using Main = NewSR2MP.Main;
 
 
@@ -165,100 +167,123 @@ namespace NewSR2MP
         public static void OnRanchSceneGroupLoaded(SceneContext s)
         {
             var save = latestSaveJoined;
-            
-                foreach (var plot in save.initPlots)
+
+            foreach (var plot in save.initPlots)
+            {
+                try
                 {
-                    try
+                    var model = sceneContext.GameModel.landPlots[plot.id];
+                    model.gameObj.AddComponent<HandledDummy>();
+                    model.gameObj.GetComponent<LandPlotLocation>().Replace(
+                        model.gameObj.GetComponentInChildren<LandPlot>(),
+                        GameContext.Instance.LookupDirector._plotPrefabDict[plot.type]);
+                    model.gameObj.RemoveComponent<HandledDummy>();
+                    var lp = model.gameObj.GetComponentInChildren<LandPlot>();
+                    lp.ApplyUpgrades(ConvertToIEnumerable(plot.upgrades), false);
+                    var silo = model.gameObj.GetComponentInChildren<SiloStorage>();
+                    foreach (var ammo in plot.siloData.ammo)
                     {
-                        var model = sceneContext.GameModel.landPlots[plot.id];
-                        model.gameObj.AddComponent<HandledDummy>();
-                        model.gameObj.GetComponent<LandPlotLocation>().Replace(model.gameObj.GetComponentInChildren<LandPlot>(), GameContext.Instance.LookupDirector._plotPrefabDict[plot.type]);
-                        model.gameObj.RemoveComponent<HandledDummy>();
-                        var lp = model.gameObj.GetComponentInChildren<LandPlot>();
-                        lp.ApplyUpgrades(ConvertToIEnumerable(plot.upgrades), false);
-                        var silo = model.gameObj.GetComponentInChildren<SiloStorage>();
-                        foreach (var ammo in plot.siloData.ammo)
+                        try
                         {
-                            try
+                            if (!(ammo.count == 0 || ammo.id == 9))
                             {
-                                if (!(ammo.count == 0 || ammo.id == 9))
-                                {
-                                    silo.Ammo.Slots[ammo.slot]._count = ammo.count;
-                                    silo.Ammo.Slots[ammo.slot]._id = identifiableTypes[ammo.id];
-                                }
-                                else
-                                {
-                                    silo.Ammo.Slots[ammo.slot]._count = 0;
-                                    silo.Ammo.Slots[ammo.slot]._id = null;
-                                }
+                                silo.Ammo.Slots[ammo.slot]._count = ammo.count;
+                                silo.Ammo.Slots[ammo.slot]._id = identifiableTypes[ammo.id];
                             }
-                            catch { }
+                            else
+                            {
+                                silo.Ammo.Slots[ammo.slot]._count = 0;
+                                silo.Ammo.Slots[ammo.slot]._id = null;
+                            }
                         }
-
-                        if (plot.type == LandPlot.Id.GARDEN)
+                        catch
                         {
-                            GardenCatcher gc = lp.transform.GetComponentInChildren<GardenCatcher>(true);
-
-                            GameObject cropObj = UnityEngine.Object.Instantiate(
-                                lp.HasUpgrade(LandPlot.Upgrade.DELUXE_GARDEN)
-                                    ? gc._deluxeDict[identifiableTypes[plot.cropIdent]]
-                                    : gc._plantableDict[identifiableTypes[plot.cropIdent]], lp.transform.position,
-                                lp.transform.rotation);
-
-                            gc.gameObject.AddComponent<HandledDummy>();
-                            if (gc.CanAccept(identifiableTypes[plot.cropIdent]))
-                                lp.Attach(cropObj, true, true);
-                            gc.gameObject.RemoveComponent<HandledDummy>();
-
                         }
                     }
-                    catch (Exception e)
+
+                    if (plot.type == LandPlot.Id.GARDEN)
                     {
-                        SRMP.Log($"Error in world load for plot({plot.id}).\n{e}");
+                        GardenCatcher gc = lp.transform.GetComponentInChildren<GardenCatcher>(true);
+
+                        GameObject cropObj = UnityEngine.Object.Instantiate(
+                            lp.HasUpgrade(LandPlot.Upgrade.DELUXE_GARDEN)
+                                ? gc._deluxeDict[identifiableTypes[plot.cropIdent]]
+                                : gc._plantableDict[identifiableTypes[plot.cropIdent]], lp.transform.position,
+                            lp.transform.rotation);
+
+                        gc.gameObject.AddComponent<HandledDummy>();
+                        if (gc.CanAccept(identifiableTypes[plot.cropIdent]))
+                            lp.Attach(cropObj, true, true);
+                        gc.gameObject.RemoveComponent<HandledDummy>();
+
                     }
                 }
+                catch (Exception e)
+                {
+                    SRMP.Log($"Error in world load for plot({plot.id}).\n{e}");
+                }
+            }
         }
 
-        public static void OnSaveLoaded(SceneContext s)
+        public static IEnumerator OnSaveLoaded()
         {
             if (ClientActive() && !ServerActive())
             {
-                if (s.gameObject.GetComponent<TimeSyncer>())
-                    s.gameObject.RemoveComponent<TimeSyncer>();
-                    
+                if (sceneContext.gameObject.GetComponent<TimeSyncer>())
+                    sceneContext.gameObject.RemoveComponent<TimeSyncer>();
+
                 LoadMessage save = latestSaveJoined;
-                
+
                 sceneContext.player.GetComponent<SRCharacterController>().Position = save.localPlayerSave.pos;
-                sceneContext.player.GetComponent<SRCharacterController>().Rotation = Quaternion.Euler(save.localPlayerSave.rot);
-                
+                sceneContext.player.GetComponent<SRCharacterController>().Rotation =
+                    Quaternion.Euler(save.localPlayerSave.rot);
+
                 sceneContext.TimeDirector._worldModel.worldTime = save.time;
 
-                actors.Clear();                            
+                actors.Clear();
                 sceneContext.GameModel.identifiables.Clear();
 
-                foreach (var a in Resources.FindObjectsOfTypeAll<IdentifiableActor>())
+                bool destroyedExistingActors = false;
+
+                if (!destroyedExistingActors)
                 {
-                    if (a.hideFlags == HideFlags.HideAndDontSave) continue;
                     
-                    try
+                    foreach (var a in Resources.FindObjectsOfTypeAll<IdentifiableActor>())
                     {
-                        if (!a.identType.IsSceneObject && !a.identType.IsPlayer)
+                        if (string.IsNullOrEmpty(a.gameObject.scene.name)) continue;
+
+                        try
                         {
-                            a.gameObject.AddComponent<HandledDummy>();
-                            sceneContext.GameModel.identifiables.Remove(a.GetActorId());
-                            UnityEngine.Object.Destroy(a.gameObject);
+                            if (!a.identType.IsSceneObject && !a.identType.IsPlayer)
+                            {
+                                a.gameObject.AddComponent<HandledDummy>();
+                                sceneContext.GameModel.identifiables.Remove(a.GetActorId());
+                                UnityEngine.Object.Destroy(a.gameObject);
+                            }
+                        }
+                        catch
+                        {
                         }
                     }
-                    catch { }
+                    destroyedExistingActors = true;
+                    yield return null;
                 }
+
+                int actorYieldCounter = 0;
+                int actorTotalCounter = 0;
                 
-                for (int i = 0; i < save.initActors.Count; i++)
+                for (;actorTotalCounter < save.initActors.Count;)
                 {
                     try
                     {
-                        InitActorData newActor = save.initActors[i];
+                        InitActorData newActor = save.initActors[actorTotalCounter];
                         bool gotIdent = identifiableTypes.TryGetValue(newActor.ident, out var ident);
-                        if (!gotIdent) continue;
+                        if (!gotIdent)
+                        {
+                            actorTotalCounter++;
+                            continue;
+                        }
+
                         if (!ident.IsSceneObject && !ident.IsPlayer)
                         {
                             var obj = ident.prefab;
@@ -266,8 +291,9 @@ namespace NewSR2MP
                                 obj.AddComponent<NetworkActor>();
                             if (!obj.GetComponent<TransformSmoother>())
                                 obj.AddComponent<TransformSmoother>();
-                            var obj2 = RegisterActor(new ActorId(newActor.id), identifiableTypes[newActor.ident], newActor.pos, Quaternion.identity, sceneGroups[newActor.scene]);
-                            
+                            var obj2 = RegisterActor(new ActorId(newActor.id), identifiableTypes[newActor.ident],
+                                newActor.pos, Quaternion.identity, sceneGroups[newActor.scene]);
+
                             UnityEngine.Object.Destroy(obj.GetComponent<NetworkActor>());
                             UnityEngine.Object.Destroy(obj.GetComponent<TransformSmoother>());
 
@@ -283,118 +309,143 @@ namespace NewSR2MP
                     {
                         SRMP.Error(e.ToString());
                     }
+                    
+                    actorTotalCounter++;
+                    
+                    actorYieldCounter++;
+                    if (actorYieldCounter == 50)
+                    {
+                        actorYieldCounter = 0;
+                        yield return null;
+                    }
                 }
-                foreach (var player in save.initPlayers)
-                {
-                    try
-                    {
-                        var playerobj = UnityEngine.Object.Instantiate(MultiplayerManager.Instance.onlinePlayerPrefab);
-                        playerobj.name = $"Player{player.id}";
-                        var netPlayer = playerobj.GetComponent<NetworkPlayer>();
-                        players.Add(player.id, netPlayer);
-                        netPlayer.id = player.id;
-                        playerobj.SetActive(true);
-                        UnityEngine.Object.DontDestroyOnLoad(playerobj);
-                    }
-                    catch { } // Some reason it does happen. // Note found out why, the marker code is completely broken, i forgot that i didnt remove it here so i was wondering why it errored.
-                }              
 
-                foreach (var gordo in save.initGordos)
-                {
-                    try
-                    {
-                        GordoModel gm = sceneContext.GameModel.gordos[gordo.id];
+                bool completedPlayers = false;
 
-                        if (gordo.eaten <= -1 || gordo.eaten >= gm.targetCount)
+                if (!completedPlayers)
+                {
+                    foreach (var player in save.initPlayers)
+                    {
+                        try
                         {
-                            gm.gameObj.SetActive(false);
+                            var playerobj = UnityEngine.Object.Instantiate(MultiplayerManager.Instance.onlinePlayerPrefab);
+                            playerobj.name = $"Player{player.id}";
+                            var netPlayer = playerobj.GetComponent<NetworkPlayer>();
+                            players.Add(player.id, netPlayer);
+                            netPlayer.id = player.id;
+                            playerobj.SetActive(true);
+                            UnityEngine.Object.DontDestroyOnLoad(playerobj);
                         }
-                        gm.gordoEatCount = gordo.eaten;
+                        catch
+                        {
+                        } // Some reason it does happen. // Note found out why, the marker code is completely broken, i forgot that i didnt remove it here so i was wondering why it errored.
                     }
-                    catch
+
+                    completedPlayers = true;
+                
+                    yield return null;
+                }
+
+                bool completedGordos = false;
+                if (!completedGordos)
+                {
+                    foreach (var gordo in save.initGordos)
                     {
+                        try
+                        {
+                            GordoModel gm = sceneContext.GameModel.gordos[gordo.id];
+
+                            if (gordo.eaten <= -1 || gordo.eaten >= gm.targetCount)
+                            {
+                                gm.gameObj.SetActive(false);
+                            }
+
+                            gm.gordoEatCount = gordo.eaten;
+                        }
+                        catch
+                        {
+                        }
                     }
+
+                    completedGordos = true;
+
+                    yield return null;
                 }
 
 
                 sceneContext.PlayerState._model.currency = save.money;
 
-                var pediaEntries = new Il2CppSystem.Collections.Generic.HashSet<PediaEntry>();
-                foreach (var pediaEntry in save.initPedias)
+                bool completedPedia = false;
+                if (!completedPedia)
                 {
-                    pediaEntries.Add(Globals.pediaEntries[pediaEntry]);
+                    var pediaEntries = new Il2CppSystem.Collections.Generic.HashSet<PediaEntry>();
+                    foreach (var pediaEntry in save.initPedias)
+                    {
+                        pediaEntries.Add(Globals.pediaEntries[pediaEntry]);
+                    }
+
+                    sceneContext.PediaDirector._pediaModel.unlocked = pediaEntries;
+
+                    completedPedia = true;
+                    
+                    yield return null;
                 }
-                                
-                sceneContext.PediaDirector._pediaModel.unlocked = pediaEntries;
+                
 
 
                 var np = sceneContext.player.AddComponent<NetworkPlayer>();
                 np.id = save.playerID;
 
-                foreach (var access in save.initAccess)
-                {
-                    GameModel gm = sceneContext.GameModel;
-                    AccessDoorModel adm = gm.doors[access.id];
-                    if (access.open)
-                    {
-                        adm.state = AccessDoor.State.OPEN;
-                    }
-                    else
-                    {
-                        adm.state = AccessDoor.State.LOCKED;
-                    } // Couldnt figure out the thingy, i tried: access.open ? AccessDoor.State.OPEN : AccessDoor.State.LOCKED
-                }
+                bool completedAccessDoors = false;
 
-                
-                // Player ammo loading and saving... Will remake later.
-                /*var ps = sceneContext.PlayerState;
-                var defaultEmotions = new SlimeEmotionDataV02()
+                if (!completedAccessDoors)
                 {
-                    emotionData = new Dictionary<SlimeEmotions.Emotion, float>()
+                    foreach (var access in save.initAccess)
+                    {
+                        GameModel gm = sceneContext.GameModel;
+                        AccessDoorModel adm = gm.doors[access.id];
+                        if (access.open)
                         {
-                            {SlimeEmotions.Emotion.AGITATION,0},
-                            {SlimeEmotions.Emotion.FEAR,0},
-                            {SlimeEmotions.Emotion.HUNGER,0},
+                            adm.state = AccessDoor.State.OPEN;
                         }
-                };
-                Ammo currentAmmoNormal = sceneContext.PlayerState.GetAmmo(AmmoMode.DEFAULT);
-                NetworkAmmo normalNetAmmo = new NetworkAmmo($"player_{data.Player}_normal", currentAmmoNormal.potentialAmmo, currentAmmoNormal.numSlots, currentAmmoNormal.ammoModel.usableSlots, currentAmmoNormal.slotPreds, currentAmmoNormal.ammoModel.slotMaxCountFunction);
-                Il2CppSystem.Collections.Generic.List<AmmoDataV02> ammoDataNormal = new Il2CppSystem.Collections.Generic.List<AmmoDataV02>();
-                foreach (var ammo in save.localPlayerSave.ammo[AmmoMode.DEFAULT])
-                {
-                    ammoDataNormal.Add(new AmmoDataV02()
-                    {
-                        count = ammo.count,
-                        id = ammo.id,
-                        emotionData = defaultEmotions
-                    });
+                        else
+                        {
+                            adm.state = AccessDoor.State.LOCKED;
+                        } // Couldnt figure out the thingy, i tried: access.open ? AccessDoor.State.OPEN : AccessDoor.State.LOCKED
+                    }
+                    
+                    completedAccessDoors = true;
+                    
+                    yield return null;
                 }
-                normalNetAmmo.ammoModel.slots = NetworkAmmo.SRMPAmmoDataToSlots(ammoDataNormal);
-                Ammo currentAmmoNimble = sceneContext.PlayerState.GetAmmo(AmmoMode.NIMBLE_VALLEY);
+                
 
-                NetworkAmmo nimbleNetAmmo = new NetworkAmmo($"player_{data.Player}_nimble", currentAmmoNimble.potentialAmmo, currentAmmoNimble.numSlots, currentAmmoNimble.ammoModel.usableSlots, currentAmmoNimble.slotPreds, currentAmmoNimble.ammoModel.slotMaxCountFunction);
-                Il2CppSystem.Collections.Generic.List<AmmoDataV02> ammoDataNimble = new Il2CppSystem.Collections.Generic.List<AmmoDataV02>();
-                foreach (var ammo in save.localPlayerSave.ammo[AmmoMode.NIMBLE_VALLEY])
+                int marketPriceCount = 0;
+                foreach (var price in sceneContext.EconomyDirector._currValueMap)
                 {
-                    ammoDataNimble.Add(new AmmoDataV02()
+                    try
                     {
-                        count = ammo.count,
-                        id = ammo.id,
-                        emotionData = defaultEmotions
-                    });
+                        price.Value.CurrValue = save.marketPrices[marketPriceCount];
+                        marketPriceCount++;
+                    }
+                    catch { }
                 }
-                nimbleNetAmmo.ammoModel.slots = NetworkAmmo.SRMPAmmoDataToSlots(ammoDataNimble);
+                
+                var ammo = sceneContext.PlayerState.Ammo;
 
-                ps.ammoDict = new Dictionary<AmmoMode, Ammo>()
-                    {
-                        {AmmoMode.DEFAULT, normalNetAmmo},
-                        {AmmoMode.NIMBLE_VALLEY, nimbleNetAmmo},
-                    };
-                ps.model.ammoDict = new Dictionary<AmmoMode, AmmoModel>()
-                    {
-                        {AmmoMode.DEFAULT,normalNetAmmo.ammoModel},
-                        {AmmoMode.NIMBLE_VALLEY,nimbleNetAmmo.ammoModel},
-                    };*/
+                ammo.RegisterAmmoPointer($"player_{data.Player}");
+
+                try
+                {
+                    ammo._ammoModel.slots =
+                        new Il2CppReferenceArray<Ammo.Slot>(MultiplayerAmmoDataToSlots(save.localPlayerSave.ammo,
+                            ammo.Slots.Count));
+                }
+                catch
+                {
+                }
+
+                sceneContext.PlayerState.Ammo = ammo;
             }
         }
 

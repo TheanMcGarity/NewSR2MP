@@ -7,10 +7,15 @@ using System.Text;
 using System.Threading.Tasks;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
+using Il2CppMonomiPark.SlimeRancher.Persist;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
+using Il2CppMonomiPark.SlimeRancher.Slime;
 using Il2CppMonomiPark.SlimeRancher.Weather;
 using Il2CppSystem.Net.WebSockets;
 using NewSR2MP.Networking.SaveModels;
+using SR2E;
+using SR2E.Managers;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace NewSR2MP
@@ -125,6 +130,51 @@ namespace NewSR2MP
             NavigationMarkerPlace,
             NavigationMarkerRemove,
             WeatherUpdate,
+            MarketRefresh,
+            EmotionsCommand,
+        }
+
+        private static bool TryParseFloat(string input, out float value, float min, bool inclusive)
+        {
+            value = 0;
+            try { value = float.Parse(input); }
+            catch { return false; }
+            if (inclusive)
+            {
+                if (value < min) return false;
+            }
+            else if (value <= min) return false;
+            return true;
+        }
+        public static void InitializeCommandExtensions()
+        {
+            SR2ECommandManager.RegisterCommandAddon("emotions", new(args =>
+            {
+                SlimeEmotions.Emotion emotion;
+                switch (args[0])
+                {
+                    case "hunger": emotion = SlimeEmotions.Emotion.HUNGER; break;
+                    case "agitation": emotion = SlimeEmotions.Emotion.AGITATION; break;
+                    case "fear": emotion = SlimeEmotions.Emotion.FEAR; break;
+                    case "sleepiness": emotion = SlimeEmotions.Emotion.SLEEPINESS; break;
+                    default: return;
+                }
+                Camera cam = Camera.main; if (cam == null) return;
+                if (Physics.Raycast(new Ray(cam.transform.position, cam.transform.forward), out var hit,Mathf.Infinity,defaultMask))
+                {
+                    var slime = hit.collider.gameObject.GetComponent<SlimeEmotions>();
+                    if (slime != null)
+                    {
+                        if (args.Length == 2)
+                        {
+                            if (!TryParseFloat(args[1], out float newValue, 0,true)) return;
+                            if (newValue > 1) newValue = 1;
+                            slime.Set(emotion, newValue);
+                        }
+
+                    }
+                }
+            }));
         }
         
         public static bool isJoiningAsClient = false;
@@ -135,7 +185,7 @@ namespace NewSR2MP
         
         public static void InitEmbeddedDLL(string name)
         {
-            System.IO.Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"NewSR2MP.{name}");
+            Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"NewSR2MP.{name}");
             using (MemoryStream ms = new MemoryStream())
             {
                 stream.CopyTo(ms);
@@ -285,8 +335,28 @@ namespace NewSR2MP
         public static NetworkV01 savedGame;
         public static string savedGamePath;
 
-        public static Dictionary<string, Ammo> ammos => NetworkAmmo.all;
+        public static Dictionary<string, Ammo> ammoByPlotID = new Dictionary<string, Ammo>();
 
+        public static Ammo GetNetworkAmmo(string name)
+        {
+            ammoByPlotID.TryGetValue(name, out Ammo ammo);
+            
+            return ammo;
+        }
+
+        public static bool IsUnlocked(this PediaEntry entry)
+        {
+            try
+            {
+                sceneContext.PediaDirector._pediaModel.unlocked._slots.First(x => x.value.name == entry.name);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        
         public static LoadMessage? latestSaveJoined;
 
         public static int currentPlayerID;
@@ -331,16 +401,26 @@ namespace NewSR2MP
             Quaternion rotation,
             SceneGroup sceneGroup)
         {
+            sceneContext.GameModel._actorIdProvider._nextActorId++;
+            
             var model = CreateActorModel(id, ident, position, rotation, sceneGroup);
             
             sceneContext.GameModel.identifiables.Add(id, model);
-            if (sceneContext.GameModel.identifiablesByIdent.TryGetValue(ident, out var types))
-                types.Add(model);
+            if (!sceneContext.GameModel.identifiablesByIdent.TryGetValue(ident, out var types))
+            {  
+                sceneContext.GameModel.identifiablesByIdent.Add(ident, new Il2CppSystem.Collections.Generic.List<IdentifiableModel>(0));
+                types = sceneContext.GameModel.identifiablesByIdent[ident];
+            }
+            types.Add(model);
             
             debugRegisteredActors.Add(id.Value, model);
             var actor = InstantiateActorFromModel(model);
             
+            if (actor)
+                actor.transform.position = position;
+            
             SRMP.Debug($"Spawned actor - ID:{id.Value} TYPE:{ident.name} POSITION:({position}) ROTATION:({rotation.ToEuler()}) SCENEGROUP:{sceneGroup.name}");
+
             
             return actor;
         }
@@ -353,6 +433,122 @@ namespace NewSR2MP
             => sceneContext.GameModel.CreateActorModel(id, ident, sceneGroup, position, rotation);
         
         private static Dictionary<long, ActorModel> debugRegisteredActors = new Dictionary<long, ActorModel>();
+        
+        public static void SetFromNetwork(this SlimeEmotions emotions, NetworkEmotions networkEmotions)
+        {
+            emotions.SetAll(new float4(networkEmotions.x, networkEmotions.y, networkEmotions.z, networkEmotions.w));
+        }
+        
+        
+        // POINTERS OH NO
+        /// <summary>
+        /// Not recommended for direct use! Please just use the extension methods.
+        /// </summary>
+        public static Dictionary<IntPtr, string> ammoPointersToPlotIDs = new Dictionary<IntPtr, string>();
+
+        /// <summary>
+        /// This will get the ID of the plot that uses this ammo.
+        /// </summary>
+        /// <returns>The ID of the plot that uses this.</returns>
+        public static string GetPlotID(this Ammo ammo)
+        {
+            ammoPointersToPlotIDs.TryGetValue(ammo.Pointer, out var plotID);
+            return plotID;
+        }
+        /// <summary>
+        /// This will register the ammo pointer into the lookup.
+        /// </summary>
+        public static void RegisterAmmoPointer(this SiloStorage storage)
+        {
+            ammoPointersToPlotIDs.TryAdd(storage.LocalAmmo.Pointer, storage.GetComponentInParent<LandPlotLocation>()._id);
+            
+            if (!ammoByPlotID.TryAdd(storage.GetComponentInParent<LandPlotLocation>()._id, storage.LocalAmmo))
+                ammoByPlotID[storage.GetComponentInParent<LandPlotLocation>()._id] = storage.LocalAmmo;
+        }
+        /// <summary>
+        /// This will register the ammo pointer into the lookup.
+        /// </summary>
+        public static void RegisterAmmoPointer(this Ammo ammo, string id)
+        {
+            ammoPointersToPlotIDs.Add(ammo.Pointer, id);
+            
+            ammoByPlotID.Add(id, ammo);
+        }
+
+        public static Ammo.Slot[] AmmoDataToSlotsSRMP(Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammo)
+        {
+            Ammo.Slot[] array = new Ammo.Slot[ammo.Count];
+            for (int i = 0; i < ammo.Count; i++)
+            {
+                var slot = new Ammo.Slot();
+                
+                slot.Count = ammo._items[i].Count;
+                slot._id = identifiableTypes[ammo._items[i].ID];
+                slot.Emotions = new float4(0, 0, 0, 0);
+            }
+
+            return array;
+        }
+        public static Ammo.Slot[] MultiplayerAmmoDataToSlots(List<AmmoData> ammo, int slotCount)
+        {
+            Ammo.Slot[] array = new Ammo.Slot[ammo.Count];
+            for (int i = 0; i < slotCount; i++)
+            {
+                var slot = new Ammo.Slot();
+                
+                slot.Count = ammo[i].count;
+                slot._id = identifiableTypes[ammo[i].id];
+                slot.Emotions = new float4(0, 0, 0, 0);
+            }
+
+            return array;
+        }
+        
+        public static int GetSlotIDX(this Ammo ammo, IdentifiableType id)
+        {
+            bool isSlotNull = false;
+            // bool IsIdentAllowedForAmmo = false;
+            bool isSlotEmptyOrSameType = false;
+            bool isSlotFull = false;
+            for (int j = 0; j < ammo._ammoModel.slots.Count; j++)
+            {
+                isSlotNull = ammo.Slots[j] == null;
+
+                isSlotEmptyOrSameType = ammo.Slots[j]._count == 0 || ammo.Slots[j]._id == id;
+
+                // IsIdentAllowedForAmmo = slotPreds[j](id) && potentialAmmo.Contains(id);
+
+                if (!isSlotNull)
+                    isSlotFull = ammo.Slots[j].Count >= ammo._ammoModel.GetSlotMaxCount(id, j);
+                else
+                    isSlotFull = false;
+
+                if (isSlotEmptyOrSameType && isSlotFull) break;
+
+                if (isSlotEmptyOrSameType)// && IsIdentAllowedForAmmo)
+                {
+                    return j;
+                }
+            }
+            return -1;
+        }
+
+        public static void RegisterAllSilos()
+        {
+            foreach (var silo in Resources.FindObjectsOfTypeAll<SiloStorage>())
+            {
+                if (!string.IsNullOrEmpty(silo.gameObject.scene.name))
+                {
+                    silo.RegisterAmmoPointer();
+                }
+            }
+        }
+
+        public static Ammo CreateNewPlayerAmmo()
+        {
+            var newAmmo = new Ammo(sceneContext.PlayerState._ammoSlotDefinitions);
+            newAmmo._ammoModel = new AmmoModel(sceneContext.PlayerState.Ammo._ammoModel.unitPropertyTracker);
+            return newAmmo;
+        }
     }
-    
 }

@@ -1,10 +1,13 @@
 ﻿
+using System.Collections;
 using System.Reflection;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
+using Il2CppMonomiPark.UnitPropertySystem;
 using Il2CppMonomiPark.World;
 using NewSR2MP.Networking.Patches;
 using Riptide.Utils;
@@ -19,7 +22,7 @@ namespace NewSR2MP.Networking
     public partial class MultiplayerManager : SRBehaviour
     {
         //public EOSLobbyGUI prototypeLobbyGUI;
-        
+
         public GameObject onlinePlayerPrefab;
 
 
@@ -31,15 +34,18 @@ namespace NewSR2MP.Networking
         {
             // Dont make that mistake again
             // i submitted a incorrect bug report :sob:
-            RiptideLogger.Initialize(SRMP.Debug,SRMP.Log,SRMP.Warn,SRMP.Error,false);
+            RiptideLogger.Initialize(SRMP.Debug, SRMP.Log, SRMP.Warn, SRMP.Error, false);
             Instance = this;
-
-            MelonCoroutines.Start(UpdateNetwork());
 
             Message.MaxPayloadSize = 2048000;
 
         }
 
+
+        private void FixedUpdate()
+        {
+            UpdateNetwork();
+        }
 
         private void Start()
         {
@@ -65,7 +71,8 @@ namespace NewSR2MP.Networking
             onlinePlayerPrefab.SetActive(false);
             playerModel.transform.parent = onlinePlayerPrefab.transform;
 
-            var material = Resources.FindObjectsOfTypeAll<Material>().FirstOrDefault((mat) => mat.name == "slimePinkBase");
+            var material = Resources.FindObjectsOfTypeAll<Material>()
+                .FirstOrDefault((mat) => mat.name == "slimePinkBase");
             playerFace.GetComponent<MeshRenderer>().material = material;
             playerModel.GetComponent<MeshRenderer>().material = material;
 
@@ -87,23 +94,34 @@ namespace NewSR2MP.Networking
             var found = GameObject.Find("BeatrixMainMenu");
 
             onlinePlayerPrefab = Instantiate(found);
-            
-            
+
+
             onlinePlayerPrefab.AddComponent<NetworkPlayer>();
             onlinePlayerPrefab.AddComponent<TransformSmoother>();
             onlinePlayerPrefab.GetComponent<NetworkPlayer>().enabled = false;
-            
+
             onlinePlayerPrefab.transform.localScale = Vector3.one * .85f;
-            
+
             DontDestroyOnLoad(onlinePlayerPrefab);
         }
 
         public void SetupPlayerAnimations()
         {
             var animator = sceneContext.Player.GetComponent<Animator>();
+
+            var prefabAnim = onlinePlayerPrefab.GetComponent<Animator>();
+            prefabAnim.avatar = animator.avatar;
+            prefabAnim.runtimeAnimatorController = animator.runtimeAnimatorController;
             
-            onlinePlayerPrefab.GetComponent<Animator>().avatar = animator.avatar;
-            onlinePlayerPrefab.GetComponent<Animator>().runtimeAnimatorController = animator.runtimeAnimatorController;
+            if (ClientActive())
+            {
+                foreach (var player in players)
+                {
+                    var playerAnim = player.Value.gameObject.GetComponent<Animator>();
+                    playerAnim.avatar = animator.avatar;
+                    playerAnim.runtimeAnimatorController = animator.runtimeAnimatorController;
+                }
+            }
         }
 
         public RenderTexture playerCameraPreviewImage = new RenderTexture(250, 250, 24);
@@ -118,9 +136,9 @@ namespace NewSR2MP.Networking
 
         HashSet<string> getPediaEntries()
         {
-            
+
             var pedias = sceneContext.PediaDirector._pediaModel.unlocked;
-            
+
             var ret = new HashSet<string>();
 
             foreach (var pedia in pedias)
@@ -130,11 +148,11 @@ namespace NewSR2MP.Networking
 
             return ret;
         }
-        
+
         // Hefty code
         public static void PlayerJoin(Connection nctc, Guid savingID, string username)
         {
-            SRMP.Log("connecting client.");
+            SRMP.Debug("A client is attempting to join!");
 
 
             clientToGuid.Add(nctc.Id, savingID);
@@ -369,6 +387,10 @@ namespace NewSR2MP.Networking
 
                 var money = sceneContext.PlayerState._model.currency;
 
+                var prices = new List<float>();
+                foreach (var price in sceneContext.EconomyDirector._currValueMap)
+                    prices.Add(price.value.CurrValue);
+
                 // Send save data.
                 var saveMessage = new LoadMessage()
                 {
@@ -378,17 +400,17 @@ namespace NewSR2MP.Networking
                     initGordos = gordos,
                     initPedias = pedias,
                     initAccess = access,
-                    //initMaps = GetListFromFogEvents(sceneContext.eventDirector._model.table["fogRevealed"]
-                    //    ._keys),
+                    //initMaps = GetListFromFogEvents(sceneContext.eventDirector._model.table["fogRevealed"]._keys),
                     initMaps = new List<string>(),
                     playerID = nctc.Id,
                     money = money,
                     time = time,
                     localPlayerSave = localPlayerData,
                     upgrades = upgrades,
+                    marketPrices = prices
                 };
                 NetworkSend(saveMessage, ServerSendOptions.SendToPlayer(nctc.Id));
-                SRMP.Log("sent world");
+                SRMP.Debug("The world data has been sent to the client!");
 
             }
             catch (Exception ex)
@@ -399,11 +421,9 @@ namespace NewSR2MP.Networking
 
             try
             {
-                Ammo currentHostAmmo = sceneContext.PlayerState.Ammo;
-                NetworkAmmo netAmmo = new NetworkAmmo($"player_{savingID}",
-                    sceneContext.PlayerState._ammoSlotDefinitions);
-
-                netAmmo._ammoModel.slots = NetworkAmmo.SRMPAmmoDataToSlots(playerData.ammo);
+                var newAmmo = CreateNewPlayerAmmo();
+                newAmmo.RegisterAmmoPointer($"player_{savingID}");
+                newAmmo._ammoModel.slots = new Il2CppReferenceArray<Ammo.Slot>(AmmoDataToSlotsSRMP(playerData.ammo));
             }
             catch (Exception ex)
             {
@@ -420,7 +440,7 @@ namespace NewSR2MP.Networking
         {
             ShowErrors = true;
         }
-        
+
         public static void ClientLeave()
         {
             systemContext.SceneLoader.LoadSceneGroup(systemContext.SceneLoader._mainMenuSceneGroup);
@@ -430,19 +450,21 @@ namespace NewSR2MP.Networking
         {
             if (ServerActive())
             {
-                SRMP.Error("You can't join a server while hosting!");     
-                return;          
+                SRMP.Error("You can't join a server while hosting!");
+                return;
             }
-            
+
             client = new Client();
             client.Connect($"{ip}:{port}");
 
             client.Connected += OnConnectionSuccessful;
+            client.ConnectionFailed += OnClientConnectionFail;
             client.Disconnected += OnClientDisconnect;
         }
 
         bool waitingForSave = false;
         bool waitingForSceneLoad = false;
+
         bool WaitForSaveData()
         {
             if (!waitingForSave) return false;
@@ -451,9 +473,11 @@ namespace NewSR2MP.Networking
             {
                 if (latestSaveJoined.localPlayerSave == null)
                 {
-                    MelonLogger.Error("latestSaveJoined.localPlayerSave == null");
+                    SRMP.Error("Failed to get the client's player data from save!");
+                    Shutdown();
                     return false;
                 }
+
                 systemContext.SceneLoader.LoadSceneGroup(sceneGroups[latestSaveJoined.localPlayerSave.sceneGroup]);
                 waitingForSceneLoad = true;
                 return false;
@@ -463,19 +487,19 @@ namespace NewSR2MP.Networking
 
 
             isJoiningAsClient = true;
-            
 
-            SRMP.Debug("recieved save");
+
+            SRMP.Debug("Received the save data!");
 
             if (ServerActive())
             {
                 server.Stop();
                 server = null;
             }
-            
-            ammos.Clear();
-            
-            Main.OnSaveLoaded(SceneContext.Instance);
+
+            ammoByPlotID.Clear();
+
+            MelonCoroutines.Start(Main.OnSaveLoaded());
 
             if (systemContext.SceneLoader.IsCurrentSceneGroupDefault())
             {
@@ -484,12 +508,14 @@ namespace NewSR2MP.Networking
 
             isJoiningAsClient = false;
             waitingForSceneLoad = false;
-            
+
             return true;
         }
-        
+
         public void OnConnectionSuccessful(object? sender, EventArgs args)
         {
+            client.TimeoutTime = 10000;
+
             client.Connection.MaxSendAttempts = 75;
             var saveRequestPacket = new ClientUserMessage()
             {
@@ -501,39 +527,51 @@ namespace NewSR2MP.Networking
             AutoSaveDirectorSaveGame.isClient = true;
             waitingForSave = true;
         }
-        
+
         public void OnClientDisconnect(object? sender, EventArgs args)
         {
             systemContext.SceneLoader.LoadMainMenuSceneGroup();
+            Shutdown();
         }
-        
+        public void OnClientConnectionFail(object? sender, EventArgs args)
+        {
+            Shutdown();
+        }
+
         public void Host(ushort port)
         {
-            
+            if (!SystemContext.Instance.SceneLoader.IsCurrentSceneGroupGameplay())
+            {
+                SRMP.Error("You can't host a server while not being in a world!");
+                return;
+            }
+
             if (ClientActive())
             {
                 SRMP.Error("You can't host a server while in one!");
                 return;
             }
+
             server = new Server();
-            server.Start(port,10); 
+            server.Start(port, 10);
+
+            server.TimeoutTime = 10000;
+
+            RegisterAllSilos();
+
             StartHosting();
         }
 
-        System.Collections.IEnumerator UpdateNetwork()
+        private void UpdateNetwork()
         {
-            while (true)
+            try
             {
-                try
-                {
-                    if (ServerActive()) server.Update();
-                    if (ClientActive()) client.Update();
-                }
-                catch (Exception ex)
-                {
-                    SRMP.Error($"Network loop error!\n{ex}");
-                }
-                yield return null;
+                if (ServerActive()) server.Update();
+                if (ClientActive()) client.Update();
+            }
+            catch (Exception ex)
+            {
+                SRMP.Error($"Network error!\n{ex}");
             }
         }
 

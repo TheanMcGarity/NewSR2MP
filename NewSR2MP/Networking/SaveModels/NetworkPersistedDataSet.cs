@@ -1,12 +1,13 @@
-using Il2CppMonomiPark.SlimeRancher.Persist;
 using Il2CppSystem.Text;
-using Stream = Il2CppSystem.IO.Stream;
+using Il2CppSystem.IO;
+
 namespace NewSR2MP.Networking.SaveModels
 {
-    [RegisterTypeInIl2Cpp(false)]
-    public class NetworkPersistedDataSet : PersistedDataSet
+    public class NetworkPersistedDataSet
     {
-        public override void Write(Stream stream)
+        public virtual uint Version => 0;
+        public virtual string Identifier => "";
+        public void Write(Il2CppSystem.IO.Stream stream)
         {
             
             Encoding utf = Encoding.UTF8;
@@ -19,14 +20,29 @@ namespace NewSR2MP.Networking.SaveModels
             binaryWriter.Dispose();
         }
 
-        public override void LoadData(GameBinaryReader reader)
+        public virtual void WriteData(GameBinaryWriter binaryWriter)
         {
-            base.LoadData(reader);
+            SRMP.Debug("Encountered unoverridden WriteData() function!");
         }
 
-        public override void WriteData(GameBinaryWriter writer)
+        public virtual void LoadData(GameBinaryReader binaryWriter)
         {
-            base.WriteData(writer);
+            SRMP.Debug("Encountered unoverridden WriteData() function!");
+        }
+        public void Load(Il2CppSystem.IO.Stream stream)
+        {
+            Encoding encoding = Encoding.UTF8;
+            GameBinaryReader reader = new GameBinaryReader(stream, encoding);
+
+            var identifier = reader.ReadString();
+            var ver = reader.ReadUInt32();
+            
+            if (ver != Version)
+                SRMP.Warn("Version mismatch on loading save data!");
+            if (identifier != Identifier)
+                SRMP.Warn("Save component identifier mismatch on loading save data!");
+            
+            LoadData(reader);
         }
     }
 }
