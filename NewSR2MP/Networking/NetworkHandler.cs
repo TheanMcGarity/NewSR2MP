@@ -314,9 +314,10 @@ namespace NewSR2MP.Networking
 
                 var time = msg.GetDouble();
 
-                var marketData = new List<float>(msg.GetInt());
+                var marketCount = msg.GetInt();
+                var marketData = new List<float>(marketCount);
 
-                for (int i = 0; i < marketData.Count; i++)
+                for (int i = 0; i < marketCount; i++)
                     marketData.Add(msg.GetFloat());
 
                 return new LoadMessage()
@@ -437,11 +438,28 @@ namespace NewSR2MP.Networking
                     slimeEmotions = emotions,
                 };
             }
-            public static EmotionsCommandMessage ReadEmotionsCommandMessage(Message msg)
+            public static KillAllCommand ReadKillAllCommandMessage(Message msg)
             {
-                var emotions = NetworkEmotions.Deserialize(msg);
-
-                return new EmotionsCommandMessage{ emotions = emotions, };
+                var sg = msg.GetInt();
+                var type = msg.GetInt();
+                
+                return new KillAllCommand
+                {
+                    sceneGroup = sg,
+                    actorType = type
+                };
+            }
+            
+            public static SwitchModifyMessage ReadSwitchModifyMessage(Message msg)
+            {
+                var id = msg.GetString();
+                var state = msg.GetByte();
+                
+                return new SwitchModifyMessage
+                {
+                    id = id,
+                    state = state
+                };
             }
 
             public static PlayerUpdateMessage ReadPlayerMessage(Message msg)
@@ -533,9 +551,10 @@ namespace NewSR2MP.Networking
             }
             public static MarketRefreshMessage ReadMarketRefreshMessage(Message msg)
             {
-                var prices = new List<float>();
-                var length = msg.GetInt();
-                for (int i = 0; i < length; i++)
+                var c = msg.GetInt();
+                var prices = new List<float>(c);
+                
+                for (int i = 0; i < c; i++)
                     prices.Add(msg.GetFloat());
 
                 return new MarketRefreshMessage()
@@ -975,6 +994,8 @@ namespace NewSR2MP.Networking
             {
                 if (!actors.TryGetValue(packet.id, out var actor)) return;
 
+                DeregisterActor(new ActorId(packet.id));
+                
                 Object.Destroy(actor.gameObject);
                 actors.Remove(packet.id);
             }
@@ -1016,6 +1037,9 @@ namespace NewSR2MP.Networking
             try
             {
                 if (!actors.TryGetValue(packet.id, out var actor)) return;
+                
+                DeregisterActor(new ActorId(packet.id));
+                
                 Object.Destroy(actor.gameObject);
                 actors.Remove(packet.id);
             }
@@ -1756,19 +1780,29 @@ namespace NewSR2MP.Networking
         public static void HandleMarketRefresh(Message msg)
         {
             var packet = Deserializer.ReadMarketRefreshMessage(msg);
-
+            
             int i = 0;
+            
+            SRMP.Debug($"Recieved Market Price Listing Count: {packet.prices.Count}");
+
             foreach (var price in sceneContext.EconomyDirector._currValueMap)
             {
-                price.Value.CurrValue = packet.prices[i];
+                try
+                {
+                    SRMP.Debug($"Market price listing {i}: {packet.prices[i]}");
+                    price.Value.CurrValue = packet.prices[i];
+                }
+                catch { }
                 i++;
             }
+            
+            marketUI?.EconUpdate();
         }
 
-        [MessageHandler((ushort)PacketType.EmotionsCommand)]
+        [MessageHandler((ushort)PacketType.KillAllCommand)]
         public static void HandleEmotionsCommand(Message msg)
         {
-            var packet = Deserializer.ReadEmotionsCommandMessage(msg);
+            var packet = Deserializer.ReadKillAllCommandMessage(msg);
 
             
         }

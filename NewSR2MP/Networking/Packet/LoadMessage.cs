@@ -22,7 +22,7 @@ namespace NewSR2MP.Networking.Packet
         public Il2CppSystem.Collections.Generic.Dictionary<int, int> upgrades; // Needs to be Il2Cpp so it can be moved right into the player upgrades model.
         public double time;
         
-        public List<float> marketPrices = new List<float>();
+        public List<float> marketPrices = new();
         
         public Message Serialize()
         {

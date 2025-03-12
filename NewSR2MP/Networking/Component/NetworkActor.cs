@@ -34,11 +34,13 @@ namespace NewSR2MP.Networking.Component
         }
 
         private Identifiable identComp;
+        private Rigidbody rigidbody;
         void Awake()
         {
             try
             {
                 identComp = GetComponent<Identifiable>();
+                rigidbody = GetComponent<Rigidbody>();
             }
             catch { }
         }
@@ -106,6 +108,7 @@ namespace NewSR2MP.Networking.Component
                         id = identComp.GetActorId().Value,
                         position = transform.position,
                         rotation = transform.eulerAngles,
+                        velocity = rigidbody.velocity,
                     };
                     
                     if (TryGetComponent<SlimeEmotions>(out var emotions))
@@ -127,6 +130,7 @@ namespace NewSR2MP.Networking.Component
                         id = identComp.GetActorId().Value,
                         position = transform.position,
                         rotation = transform.eulerAngles,
+                        velocity = rigidbody.velocity,
                     };
                     
                     if (TryGetComponent<SlimeEmotions>(out var emotions))

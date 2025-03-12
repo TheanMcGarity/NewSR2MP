@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Reflection;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
+using Il2CppMonomiPark.SlimeRancher.DataModel;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,6 +11,8 @@ using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.UnitPropertySystem;
 using Il2CppMonomiPark.World;
 using NewSR2MP.Networking.Patches;
+using Riptide.Transports.Tcp;
+using Riptide.Transports.Udp;
 using Riptide.Utils;
 using SR2E;
 using SR2E.Managers;
@@ -42,10 +45,6 @@ namespace NewSR2MP.Networking
         }
 
 
-        private void FixedUpdate()
-        {
-            UpdateNetwork();
-        }
 
         private void Start()
         {
@@ -148,7 +147,7 @@ namespace NewSR2MP.Networking
 
             return ret;
         }
-
+        
         // Hefty code
         public static void PlayerJoin(Connection nctc, Guid savingID, string username)
         {
@@ -335,7 +334,7 @@ namespace NewSR2MP.Networking
                     }
                     catch (Exception ex)
                     {
-                        SRMP.Error($"Lsndplot failed to send! This will cause major desync.\n{ex}");
+                        SRMP.Error($"Landplot failed to send! This will cause major desync.\n{ex}");
                     }
                 }
 
@@ -376,13 +375,16 @@ namespace NewSR2MP.Networking
 
                 // First time ever coding a local function.... its not good, shouldve just used a normal one
                 List<string> GetListFromFogEvents(
-                    Il2CppSystem.Collections.Generic.Dictionary<string, EventRecordModel.Entry>.KeyCollection events)
+                    Il2CppSystem.Collections.Generic.Dictionary<string, EventRecordModel.Entry> events)
                 {
                     var ret = new List<string>();
                     foreach (var e in events)
-                        ret.Add(e);
+                        ret.Add(e.key);
                     return ret;
                 }
+                List<string> fogEvents = new List<string>();
+                if (sceneContext.eventDirector._model.table.TryGetValue("fogRevealed", out var table))
+                    fogEvents = GetListFromFogEvents(table);
 
 
                 var money = sceneContext.PlayerState._model.currency;
@@ -400,8 +402,7 @@ namespace NewSR2MP.Networking
                     initGordos = gordos,
                     initPedias = pedias,
                     initAccess = access,
-                    //initMaps = GetListFromFogEvents(sceneContext.eventDirector._model.table["fogRevealed"]._keys),
-                    initMaps = new List<string>(),
+                    initMaps = fogEvents,
                     playerID = nctc.Id,
                     money = money,
                     time = time,
@@ -409,6 +410,7 @@ namespace NewSR2MP.Networking
                     upgrades = upgrades,
                     marketPrices = prices
                 };
+                
                 NetworkSend(saveMessage, ServerSendOptions.SendToPlayer(nctc.Id));
                 SRMP.Debug("The world data has been sent to the client!");
 
@@ -429,7 +431,7 @@ namespace NewSR2MP.Networking
             {
                 SRMP.Error($"Post join error!\n{ex}");
             }
-
+            
         }
 
 
@@ -454,9 +456,13 @@ namespace NewSR2MP.Networking
                 return;
             }
 
-            client = new Client();
+            var transport = new TcpClient();
+            
+            client = new Client(transport);
             client.Connect($"{ip}:{port}");
 
+            client.TimeoutTime = 30000;
+            
             client.Connected += OnConnectionSuccessful;
             client.ConnectionFailed += OnClientConnectionFail;
             client.Disconnected += OnClientDisconnect;
@@ -477,6 +483,8 @@ namespace NewSR2MP.Networking
                     Shutdown();
                     return false;
                 }
+
+                gameContext.AutoSaveDirector.SavedGame.CreateNew("SR2MPLatestSave", "Multiplayer", -1, CreateEmptyGameSettingsModel());
 
                 systemContext.SceneLoader.LoadSceneGroup(sceneGroups[latestSaveJoined.localPlayerSave.sceneGroup]);
                 waitingForSceneLoad = true;
@@ -552,16 +560,20 @@ namespace NewSR2MP.Networking
                 return;
             }
 
-            server = new Server();
+            var transport = new TcpServer();
+            
+            server = new Server(transport);
             server.Start(port, 10);
 
-            server.TimeoutTime = 10000;
+            server.TimeoutTime = 30000;
 
             RegisterAllSilos();
 
             StartHosting();
         }
 
+        public bool loadingZone = false;
+        
         private void UpdateNetwork()
         {
             try
@@ -575,22 +587,94 @@ namespace NewSR2MP.Networking
             }
         }
 
+        private float networkUpdateInterval = .15f;
+        private float nextNetworkUpdate = -1f;
+
+        public int sceneLoadingFrameCounter = -1;
+        
         void Update()
         {
+            if (nextNetworkUpdate <= Time.unscaledTime)
+            {
+                UpdateNetwork();
+                nextNetworkUpdate = Time.unscaledTime + networkUpdateInterval;
+            }
+            
             if (WaitForSaveData())
             {
                 waitingForSave = false;
             }
+            
+            if (WaitForZoneLoad())
+            {
+                loadingZone = false;
+            }
+            
+            if (systemContext.SceneLoader.IsSceneLoadInProgress)
+                if (sceneLoadingFrameCounter >= 8)
+                    loadingZone = true;
+                else
+                    sceneLoadingFrameCounter++;
+            else
+                sceneLoadingFrameCounter = 0;
         }
-        
+
+        bool WaitForZoneLoad()
+        {
+            if (!loadingZone)
+                return false;
+            if (systemContext.SceneLoader.IsSceneLoadInProgress)
+                return false;
+            if (!systemContext.SceneLoader._previousGroup._isGameplay)
+                return false;
+            if (!systemContext.SceneLoader._currentSceneGroup._isGameplay)
+                return false;
+
+            IEnumerable<Il2CppSystem.Collections.Generic.Dictionary<ActorId, IdentifiableModel>.Entry> actors = null;
+            
+            if (ClientActive())
+                actors = sceneContext.GameModel.identifiables._entries.Where(x =>
+                    x != null &&
+                    x.value != null &&
+                    x.value.TryCast<ActorModel>() != null && 
+                    x.value.sceneGroup == systemContext.SceneLoader._currentSceneGroup);
+            else if (ServerActive())
+                actors = sceneContext.GameModel.identifiables._entries.Where(x =>
+                    x != null &&
+                    x.value != null &&
+                    x.value.TryCast<ActorModel>() != null && 
+                    x.value.sceneGroup == systemContext.SceneLoader._currentSceneGroup &&
+                    multiplayerSpawnedActorsIDs.Contains(x.key.Value));
+            else
+                return true;
+            
+            MelonCoroutines.Start(LoadZoneActors(actors.ToList()));
+            
+            return true;
+        }
+
+        IEnumerator LoadZoneActors(List<Il2CppSystem.Collections.Generic.Dictionary<ActorId, IdentifiableModel>.Entry> actorEntries)
+        {
+            int yeildCounter = 0;
+            for (int i = 0; i < actorEntries.Count; i++)
+            {
+                InstantiateActorFromModel(actorEntries[i].value.Cast<ActorModel>());
+                yeildCounter++;
+                if (yeildCounter == 50)
+                {
+                    yeildCounter = 0;
+                    yield return null;
+                }
+            }
+        }
         public static void Shutdown()
         {
-            // How do i shut them down?????
             if (ServerActive()) server.Stop();
             if (ClientActive()) client.Disconnect();
             
             server = null;
             client = null;
+            
             EraseValues();
         }
     }

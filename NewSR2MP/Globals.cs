@@ -5,12 +5,16 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Il2CppAssets.Script.Util.Extensions;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.SlimeRancher.Persist;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.SlimeRancher.Slime;
+using Il2CppMonomiPark.SlimeRancher.UI;
+using Il2CppMonomiPark.SlimeRancher.UI.MainMenu;
 using Il2CppMonomiPark.SlimeRancher.Weather;
+using Il2CppMonomiPark.UnitPropertySystem;
 using Il2CppSystem.Net.WebSockets;
 using NewSR2MP.Networking.SaveModels;
 using SR2E;
@@ -131,9 +135,20 @@ namespace NewSR2MP
             NavigationMarkerRemove,
             WeatherUpdate,
             MarketRefresh,
-            EmotionsCommand,
+            KillAllCommand,
+            SwitchModify,
         }
 
+        public static GameSettingsModel CreateEmptyGameSettingsModel()
+        {
+            var ui = Resources.FindObjectsOfTypeAll<NewGameRootUI>().First();
+            var optionsList = ui._optionsItemDefinitionsProvider.defaultAsset;
+            
+            return new GameSettingsModel(optionsList.GameBasedDefinitions);
+        }
+        
+        public static MarketUI? marketUI;
+        
         private static bool TryParseFloat(string input, out float value, float min, bool inclusive)
         {
             value = 0;
@@ -418,11 +433,39 @@ namespace NewSR2MP
             
             if (actor)
                 actor.transform.position = position;
+            var savedGame2 = gameContext.AutoSaveDirector.SavedGame;
+
+            var data = CreateActorDataFromModel(
+                model,
+                gameContext.AutoSaveDirector.SavedGame._statusEffectTranslation,
+                savedGame2.identifiableTypeToPersistenceId);
+            
+            savedGame2.gameState.Actors.Add(data);
             
             SRMP.Debug($"Spawned actor - ID:{id.Value} TYPE:{ident.name} POSITION:({position}) ROTATION:({rotation.ToEuler()}) SCENEGROUP:{sceneGroup.name}");
 
+            multiplayerSpawnedActorsIDs.Add(id.Value);
             
             return actor;
+        }
+        public static void DeregisterActor(ActorId id)
+        {
+            sceneContext.GameModel.DestroyIdentifiableModel(sceneContext.GameModel.identifiables[id]);
+
+            int idx = 0;
+            bool found = false;
+            foreach (var actor in gameContext.AutoSaveDirector.SavedGame.gameState.Actors)
+            {
+                if (actor.ActorId == id.Value)
+                {
+                    found = true;
+                    break;
+                }
+                idx++;
+            }
+            
+            if (found)
+                gameContext.AutoSaveDirector.SavedGame.gameState.Actors.RemoveAt(idx);
         }
         public static ActorModel? CreateActorModel(
             ActorId id,
@@ -433,7 +476,82 @@ namespace NewSR2MP
             => sceneContext.GameModel.CreateActorModel(id, ident, sceneGroup, position, rotation);
         
         private static Dictionary<long, ActorModel> debugRegisteredActors = new Dictionary<long, ActorModel>();
-        
+
+        public static ActorDataV02 CreateActorDataFromModel(
+            ActorModel actorModel,
+            SavedGame.PersistenceIDTranslation<StatusEffectDefinition> statusEffectToPersistenceIdTranslation,
+            IdentifiableTypePersistenceIdLookupTable identTable)
+        {
+            var statusEffectToPersistenceId = statusEffectToPersistenceIdTranslation.InstanceLookupTable;
+            ActorDataV02 actorDataV = new ActorDataV02();
+
+            IdentifiableType ident = actorModel.ident;
+            actorDataV.TypeId = identTable.GetPersistenceId(ident);
+
+            actorDataV.ActorId = actorModel.actorId.Value;
+
+            Vector3V01 position = new Vector3V01();
+            position.Value = actorModel.lastPosition;
+            actorDataV.Pos = position;
+
+            Vector3V01 rotation = new Vector3V01();
+            rotation.Value = actorModel.lastRotation.eulerAngles;
+            actorDataV.Rot = rotation;
+
+            actorDataV.SceneGroup = sceneGroupsReverse[actorModel.SceneGroup.name];
+
+            var emotions = new SlimeEmotionDataV01();
+            emotions.EmotionData = new Il2CppSystem.Collections.Generic.Dictionary<SlimeEmotions.Emotion, float>();
+            emotions.EmotionData.Add(SlimeEmotions.Emotion.FEAR,
+                actorModel.TryCast<SlimeModel>() != null ? actorModel.Cast<SlimeModel>().Emotions.x : 0f);
+            emotions.EmotionData.Add(SlimeEmotions.Emotion.HUNGER,
+                actorModel.TryCast<SlimeModel>() != null ? actorModel.Cast<SlimeModel>().Emotions.y : 0f);
+            emotions.EmotionData.Add(SlimeEmotions.Emotion.AGITATION,
+                actorModel.TryCast<SlimeModel>() != null ? actorModel.Cast<SlimeModel>().Emotions.z : 0f);
+            emotions.EmotionData.Add(SlimeEmotions.Emotion.SLEEPINESS,
+                actorModel.TryCast<SlimeModel>() != null ? actorModel.Cast<SlimeModel>().Emotions.w : 0f);
+            actorDataV.Emotions = emotions;
+
+
+            Il2CppSystem.Collections.Generic.List<StatusEffectV01> statusEffects =
+                new Il2CppSystem.Collections.Generic.List<StatusEffectV01>();
+            foreach (var effect in actorModel.statusEffects)
+            {
+                var effectV01 = new StatusEffectV01()
+                {
+                    ExpirationTime = effect.value.ExpirationTime,
+                    ID = statusEffectToPersistenceId.GetPersistenceId(effect.key)
+                };
+                statusEffects.Add(effectV01);
+            }
+
+            actorDataV.StatusEffects = statusEffects;
+
+            actorDataV.CycleData = new ResourceCycleDataV01();
+
+            if (actorModel is SlimeModel slimeModel)
+            {
+                slimeModel.Pull(ref actorDataV, identTable);
+            }
+            else if (actorModel is AnimalModel animalModel)
+            {
+                animalModel.Pull(ref actorDataV, identTable);
+            }
+            else if (actorModel is ProduceModel produceModel)
+            {
+                produceModel.Pull(out var state, out var time);
+                actorDataV.CycleData.State = state;
+                actorDataV.CycleData.ProgressTime = time;
+            }
+            else if (actorModel is StatueFormModel statueFormModel)
+            {
+                actorDataV.IsStatue = true;
+            }
+
+            return actorDataV;
+        }
+
+
         public static void SetFromNetwork(this SlimeEmotions emotions, NetworkEmotions networkEmotions)
         {
             emotions.SetAll(new float4(networkEmotions.x, networkEmotions.y, networkEmotions.z, networkEmotions.w));
@@ -472,7 +590,8 @@ namespace NewSR2MP
         {
             ammoPointersToPlotIDs.Add(ammo.Pointer, id);
             
-            ammoByPlotID.Add(id, ammo);
+            if (!ammoByPlotID.TryAdd(id, ammo))
+                ammoByPlotID[id] = ammo;
         }
 
         public static Ammo.Slot[] AmmoDataToSlotsSRMP(Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammo)
@@ -539,11 +658,20 @@ namespace NewSR2MP
             {
                 if (!string.IsNullOrEmpty(silo.gameObject.scene.name))
                 {
-                    silo.RegisterAmmoPointer();
+                    try
+                    {
+                        silo.RegisterAmmoPointer();
+                    }
+                    catch (Exception e)
+                    {
+                        SRMP.Error($"Error registering ammo pointer!\n{e}");
+                    }
                 }
             }
         }
 
+        public static List<long> multiplayerSpawnedActorsIDs = new List<long>();
+        
         public static Ammo CreateNewPlayerAmmo()
         {
             var newAmmo = new Ammo(sceneContext.PlayerState._ammoSlotDefinitions);

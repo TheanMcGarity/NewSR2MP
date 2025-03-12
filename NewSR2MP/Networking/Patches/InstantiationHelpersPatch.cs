@@ -39,7 +39,7 @@ namespace NewSR2MP.Networking.Patches
                 var ts = __result.GetComponent<TransformSmoother>();
                 var id = __result.GetComponent<IdentifiableActor>().GetActorId().Value;
                 if (actors.TryAdd(id, __result.GetComponent<NetworkActor>()))
-                    SRMP.Error("An actor has already been added ");
+                    actors[id] = __result.GetComponent<NetworkActor>();
 
 
                 ts.interpolPeriod = 0.15f;

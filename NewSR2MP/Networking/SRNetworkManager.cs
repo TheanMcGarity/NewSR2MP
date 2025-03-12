@@ -128,10 +128,12 @@ namespace NewSR2MP.Networking
             players.Remove(args.Client.Id);
             Destroy(player.gameObject);
             
-            var packet = new PlayerLeaveMessage()
+            var packet = new PlayerLeaveMessage
             {
                 id = args.Client.Id,
             };
+            
+            NetworkSend(packet);
         }
         
         public void StopHosting()

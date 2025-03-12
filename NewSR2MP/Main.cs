@@ -6,6 +6,7 @@ using Main = NewSR2MP.Main;
 
 
 using Il2CppMonomiPark.SlimeRancher.DataModel;
+using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.Options;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.SlimeRancher.Player.CharacterController;
@@ -427,8 +428,33 @@ namespace NewSR2MP
                     {
                         price.Value.CurrValue = save.marketPrices[marketPriceCount];
                         marketPriceCount++;
+                    } catch { }
+                }
+                marketUI?.EconUpdate();
+                
+                bool completedMaps = false;
+
+                if (!completedMaps)
+                {
+                    var eventDirModel = sceneContext.eventDirector._model;
+                    foreach (var map in save.initMaps)
+                    {
+                        if (!eventDirModel.table.TryGetValue("fogRevealed", out var table))
+                        {
+                            eventDirModel.table.Add("fogRevealed", new Il2CppSystem.Collections.Generic.Dictionary<string, EventRecordModel.Entry>());
+                            table = eventDirModel.table["fogRevealed"];
+                        }
+                        table.Add(map, new EventRecordModel.Entry
+                        {
+                            count = 1,
+                            createdRealTime = 0,
+                            createdGameTime = 0,
+                            dataKey = map,
+                            eventKey = "fogRevealed",
+                            updatedRealTime = 0,
+                            updatedGameTime = 0,
+                        });
                     }
-                    catch { }
                 }
                 
                 var ammo = sceneContext.PlayerState.Ammo;

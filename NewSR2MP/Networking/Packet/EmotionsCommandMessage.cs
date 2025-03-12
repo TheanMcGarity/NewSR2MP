@@ -2,14 +2,16 @@
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class EmotionsCommandMessage : ICustomMessage
+    public class KillAllCommand : ICustomMessage
     {
-        public NetworkEmotions emotions;
+        public int sceneGroup;
+        public int actorType = -1;
         public Message Serialize()
         {
-            var msg = Message.Create(MessageSendMode.Unreliable, PacketType.EmotionsCommand);
+            var msg = Message.Create(MessageSendMode.Unreliable, PacketType.KillAllCommand);
             
-            emotions.Serialize(msg);
+            msg.AddInt(sceneGroup);
+            msg.AddInt(actorType);
             
             return msg;
         }

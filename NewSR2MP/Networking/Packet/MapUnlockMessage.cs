@@ -9,6 +9,7 @@ namespace NewSR2MP.Networking.Packet
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.MapUnlock);
+            
             msg.AddString(id);
 
             return msg;
