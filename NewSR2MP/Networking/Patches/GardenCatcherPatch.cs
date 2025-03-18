@@ -10,7 +10,7 @@ namespace NewSR2MP.Networking.Patches
         public static void Postfix(GardenCatcher __instance, IdentifiableType cropId, bool isReplacement)
         {
             // Check if it is being planted by a network handler.
-            if (!__instance.GetComponent<HandledDummy>())
+            if (!handlingPacket)
             {
                 SRMP.Log("Garden Debug");
                 // Get landplot ID.

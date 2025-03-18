@@ -11,7 +11,7 @@ namespace NewSR2MP.Networking.Packet
         
         public Message Serialize()
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.TempClientActorSpawn);
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.SwitchModify);
             
             msg.AddString(id);
             msg.AddByte(state);

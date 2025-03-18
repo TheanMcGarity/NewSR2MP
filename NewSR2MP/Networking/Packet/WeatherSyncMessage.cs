@@ -25,7 +25,7 @@ namespace NewSR2MP.Networking.Packet
 
                 foreach (var f in zone.Value.Forecast)
                 {
-                    if (f.Started)
+                    if (f.StartTime < sceneContext.TimeDirector._worldModel.worldTime && f.EndTime > sceneContext.TimeDirector._worldModel.worldTime)
                     {
                         var networkForcast = new NetworkWeatherForcast();
 

@@ -8,6 +8,7 @@ namespace NewSR2MP.Networking.Packet
     {
         public string id;
         public int count;
+        public int ident;
         
         
         public Message Serialize()
@@ -15,6 +16,7 @@ namespace NewSR2MP.Networking.Packet
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.GordoFeed);
             msg.AddString(id);
             msg.AddInt(count);
+            msg.AddInt(ident);
 
             return msg;
         }
@@ -22,11 +24,14 @@ namespace NewSR2MP.Networking.Packet
     public class GordoBurstMessage : ICustomMessage
     {
         public string id;
+        public int ident;
 
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.GordoExplode);
-            msg.AddString(id);
+            msg.AddString(id);      
+            msg.AddInt(ident);
+
             return msg;
         }
     }

@@ -172,6 +172,7 @@ namespace NewSR2MP.Networking
                 HashSet<InitGordoData> gordos = new HashSet<InitGordoData>();
                 List<InitPlayerData> initPlayers = new List<InitPlayerData>();
                 List<InitPlotData> plots = new List<InitPlotData>();
+                List<InitSwitchData> switches = new List<InitSwitchData>();
                 List<string> pedias = new List<string>();
 
 
@@ -393,6 +394,13 @@ namespace NewSR2MP.Networking
                 foreach (var price in sceneContext.EconomyDirector._currValueMap)
                     prices.Add(price.value.CurrValue);
 
+                foreach (var sw in sceneContext.GameModel.switches)
+                    switches.Add(new InitSwitchData
+                    {
+                        id = sw.Key,
+                        state = (byte)sw.Value.state,
+                    });
+                
                 // Send save data.
                 var saveMessage = new LoadMessage()
                 {
@@ -408,7 +416,8 @@ namespace NewSR2MP.Networking
                     time = time,
                     localPlayerSave = localPlayerData,
                     upgrades = upgrades,
-                    marketPrices = prices
+                    marketPrices = prices,
+                    initSwitches = switches
                 };
                 
                 NetworkSend(saveMessage, ServerSendOptions.SendToPlayer(nctc.Id));
@@ -656,10 +665,16 @@ namespace NewSR2MP.Networking
         IEnumerator LoadZoneActors(List<Il2CppSystem.Collections.Generic.Dictionary<ActorId, IdentifiableModel>.Entry> actorEntries)
         {
             int yeildCounter = 0;
-            for (int i = 0; i < actorEntries.Count; i++)
+            int i = 0;
+            foreach (var t in actorEntries)
             {
-                InstantiateActorFromModel(actorEntries[i].value.Cast<ActorModel>());
+                var actor = InstantiateActorFromModel(t.value.Cast<ActorModel>());
+                actor.transform.position = t.value.lastPosition;
+                
                 yeildCounter++;
+                i++;
+                if (i >= actorEntries.Count)
+                    break;
                 if (yeildCounter == 50)
                 {
                     yeildCounter = 0;

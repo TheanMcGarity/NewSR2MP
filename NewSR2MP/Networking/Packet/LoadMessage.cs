@@ -9,6 +9,7 @@ namespace NewSR2MP.Networking.Packet
         public List<InitPlotData> initPlots;
         //public List<InitGadgetData> initGadgets;
         public List<InitAccessData> initAccess;
+        public List<InitSwitchData> initSwitches;
 
         public List<string> initPedias;
         public List<string> initMaps;
@@ -67,6 +68,7 @@ namespace NewSR2MP.Networking.Packet
             {
                 msg.AddString(gordo.id);
                 msg.AddInt(gordo.eaten);
+                msg.AddInt(gordo.ident);
             }
             msg.AddInt(initPedias.Count);
             foreach (var pedia in initPedias)
@@ -111,6 +113,13 @@ namespace NewSR2MP.Networking.Packet
 
             foreach (var price in marketPrices)
                 msg.AddFloat(price);
+
+            msg.AddInt(initSwitches.Count);
+            foreach (var _switch in initSwitches)
+            {
+                msg.AddString(_switch.id);
+                msg.AddByte(_switch.state);
+            }
             
             return msg;
         }
@@ -128,6 +137,7 @@ namespace NewSR2MP.Networking.Packet
     {
         public string id;
         public int eaten;
+        public int ident;
     }
     /*public class InitGadgetData
     {
@@ -169,6 +179,11 @@ namespace NewSR2MP.Networking.Packet
     public class InitPlayerData
     {
         public int id;
+    }
+    public class InitSwitchData
+    {
+        public string id;
+        public byte state;
     }
     public class LocalPlayerData
     {

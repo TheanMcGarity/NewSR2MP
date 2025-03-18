@@ -11,13 +11,15 @@ using Il2CppMonomiPark.SlimeRancher.UI.Map;
 
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(MapNodeActivator), nameof(MapNodeActivator.Start))]
+    [HarmonyPatch(typeof(MapNodeActivator), nameof(MapNodeActivator.Activate))]
     public class MapDataEntryStart
     {
-        public static List<MapNodeActivator> entries = new List<MapNodeActivator>();
         public static void Postfix(MapNodeActivator __instance)
         {
-            entries.Add(__instance);
+            MultiplayerManager.NetworkSend(new MapUnlockMessage
+            {
+                id = __instance._fogRevealEvent._dataKey
+            });
         }
     }
 }

@@ -19,7 +19,7 @@ namespace NewSR2MP.Networking.Patches
         {
             try
             {
-                if ((ServerActive() || ClientActive()) && !__instance.GetComponent<HandledDummy>())
+                if ((ServerActive() || ClientActive()) && !handlingPacket)
                 {
                     var packet = new GordoEatMessage()
                     {
@@ -41,7 +41,7 @@ namespace NewSR2MP.Networking.Patches
         {
             try
             {
-                if ((ServerActive() || ClientActive()) && !__instance.GetComponent<HandledDummy>())
+                if ((ServerActive() || ClientActive()) && !handlingPacket)
                 {
                     var packet = new GordoBurstMessage()
                     {

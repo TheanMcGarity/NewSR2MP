@@ -32,7 +32,7 @@ namespace NewSR2MP.Networking.Component
                     scene = sceneGroupsReverse[systemContext.SceneLoader.CurrentSceneGroup.name]
                 };
                 MultiplayerManager.NetworkSend(packet);
-                gameObject.AddComponent<HandledDummy>();
+                handlingPacket = true;
                 Destroyer.DestroyActor(gameObject, "SR2MP.SpawnActorClient");
             }
             frame++;

@@ -1,5 +1,6 @@
 ﻿using Il2CppMonomiPark.SlimeRancher.Analytics.Event;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
+using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.Map;
 using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
 using Il2CppMonomiPark.SlimeRancher.Slime;
@@ -7,6 +8,7 @@ using Il2CppMonomiPark.SlimeRancher.UI.Map;
 using Il2CppMonomiPark.SlimeRancher.Weather;
 using Il2CppMonomiPark.SlimeRancher.World;
 using Il2CppMonomiPark.World;
+using Il2CppXGamingRuntime.Interop;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -79,18 +81,20 @@ namespace NewSR2MP.Networking
 
             public static GordoEatMessage ReadGordoEatMessage(Message msg)
             {
-                return new GordoEatMessage()
+                return new GordoEatMessage
                 {
                     id = msg.GetString(),
-                    count = msg.GetInt()
+                    count = msg.GetInt(),
+                    ident = msg.GetInt(),
                 };
             }
 
             public static GordoBurstMessage ReadGordoBurstMessage(Message msg)
             {
-                return new GordoBurstMessage()
+                return new GordoBurstMessage
                 {
-                    id = msg.GetString()
+                    id = msg.GetString(),
+                    ident = msg.GetInt(),
                 };
             }
 
@@ -240,10 +244,12 @@ namespace NewSR2MP.Networking
                 {
                     string id = msg.GetString();
                     int eaten = msg.GetInt();
+                    int ident = msg.GetInt();
                     gordos.Add(new InitGordoData()
                     {
                         id = id,
                         eaten = eaten,
+                        ident = ident,
                     });
                 }
 
@@ -320,6 +326,15 @@ namespace NewSR2MP.Networking
                 for (int i = 0; i < marketCount; i++)
                     marketData.Add(msg.GetFloat());
 
+                List<InitSwitchData> switches = new List<InitSwitchData>();
+                var switchCount = msg.GetInt();
+                for (int i = 0; i < switchCount; i++)
+                    switches.Add(new InitSwitchData
+                    {
+                        id = msg.GetString(),
+                        state = msg.GetByte()
+                    });
+                
                 return new LoadMessage()
                 {
                     initActors = actors,
@@ -335,6 +350,7 @@ namespace NewSR2MP.Networking
                     upgrades = pUpgrades,
                     time = time,
                     marketPrices = marketData,
+                    initSwitches = switches,
                 };
             }
 
@@ -1147,23 +1163,23 @@ namespace NewSR2MP.Networking
 
                 if (packet.messageType == LandplotUpdateType.SET)
                 {
-                    plot.AddComponent<HandledDummy>();
+                    handlingPacket = true;
 
                     plot.GetComponent<LandPlotLocation>().Replace(plot.GetComponentInChildren<LandPlot>(),
                         GameContext.Instance.LookupDirector._plotPrefabDict[packet.type]);
 
-                    Object.Destroy(plot.GetComponent<HandledDummy>());
+                    handlingPacket = false;
                 }
                 else
                 {
 
                     var lp = plot.GetComponentInChildren<LandPlot>();
 
-                    lp.gameObject.AddComponent<HandledDummy>();
+                    handlingPacket = true;
 
                     lp.AddUpgrade(packet.upgrade);
 
-                    lp.gameObject.RemoveComponent<HandledDummy>();
+                    handlingPacket = false;
 
                 }
             }
@@ -1193,26 +1209,26 @@ namespace NewSR2MP.Networking
                 if (packet.ident != 9)
                 {
                     // Add handled component.
-                    lp.gameObject.AddComponent<HandledDummy>();
+                    handlingPacket = true;
 
                     // Plant
                     if (g.CanAccept(identifiableTypes[packet.ident]))
                         g.Plant(identifiableTypes[packet.ident], false);
 
                     // Remove handled component.
-                    lp.gameObject.RemoveComponent<HandledDummy>();
+                    handlingPacket = false;
                 }
                 else
                 {
                     // Add handled component.
 
-                    lp.gameObject.AddComponent<HandledDummy>();
+                    handlingPacket = true;
 
                     // UnPlant.
                     lp.DestroyAttached();
 
                     // Remove handled component.
-                    lp.gameObject.RemoveComponent<HandledDummy>();
+                    handlingPacket = false;
 
 
                 }
@@ -1235,22 +1251,22 @@ namespace NewSR2MP.Networking
 
                 if (packet.messageType == LandplotUpdateType.SET)
                 {
-                    plot.AddComponent<HandledDummy>();
+                    handlingPacket = true;
 
                     plot.GetComponent<LandPlotLocation>().Replace(plot.transform.GetChild(0).GetComponent<LandPlot>(),
                         GameContext.Instance.LookupDirector._plotPrefabDict[packet.type]);
 
-                    Object.Destroy(plot.GetComponent<HandledDummy>());
+                    handlingPacket = false;
                 }
                 else
                 {
 
                     var lp = plot.transform.GetChild(0).GetComponent<LandPlot>();
-                    lp.gameObject.AddComponent<HandledDummy>();
+                    handlingPacket = true;
 
                     lp.AddUpgrade(packet.upgrade);
 
-                    Object.Destroy(lp.GetComponent<HandledDummy>());
+                    handlingPacket = false;
 
                 }
             }
@@ -1282,26 +1298,26 @@ namespace NewSR2MP.Networking
                 if (packet.ident != 9)
                 {
                     // Add handled component.
-                    lp.gameObject.AddComponent<HandledDummy>();
+                    handlingPacket = true;
 
                     // Plant
                     if (g.CanAccept(identifiableTypes[packet.ident]))
                         g.Plant(identifiableTypes[packet.ident], false);
 
                     // Remove handled component.
-                    lp.gameObject.RemoveComponent<HandledDummy>();
+                    handlingPacket = false;
                 }
                 else
                 {
                     // Add handled component.
 
-                    lp.gameObject.AddComponent<HandledDummy>();
+                    handlingPacket = true;
 
                     // UnPlant.
                     lp.DestroyAttached();
 
                     // Remove handled component.
-                    lp.gameObject.RemoveComponent<HandledDummy>();
+                    handlingPacket = false;
 
 
                 }
@@ -1322,12 +1338,23 @@ namespace NewSR2MP.Networking
 
             try
             {
-                sceneContext.GameModel.gordos[packet.id].gordoEatCount = packet.count;
+                if (!sceneContext.GameModel.gordos.TryGetValue(packet.id, out var gordo))
+                    sceneContext.GameModel.gordos.Add(packet.id, new GordoModel()
+                    {
+                        fashions = new Il2CppSystem.Collections.Generic.List<IdentifiableType>(),
+                        gordoEatCount = packet.count,
+                        gordoSeen = true,
+                        identifiableType = identifiableTypes[packet.ident],
+                        gameObj = null,
+                        GordoEatenCount = packet.count,
+                        targetCount = gameContext.LookupDirector._gordoDict[identifiableTypes[packet.ident]]
+                            .GetComponent<GordoEat>().TargetCount,
+                    });
+                gordo.gordoEatCount = packet.count;
             }
             catch (Exception e)
             {
-                if (ShowErrors)
-                    SRMP.Log($"Exception in feeding gordo({packet.id})! Stack Trace:\n{e}");
+                SRMP.Log($"Exception in feeding gordo({packet.id})! Stack Trace:\n{e}");
             }
         }
 
@@ -1336,9 +1363,9 @@ namespace NewSR2MP.Networking
         {
             var packet = Deserializer.ReadPediaMessage(msg);
 
-            sceneContext.gameObject.AddComponent<HandledDummy>();
+            handlingPacket = true;
             sceneContext.PediaDirector.Unlock(pediaEntries[packet.id]);
-            Object.Destroy(sceneContext.gameObject.GetComponent<HandledDummy>());
+            handlingPacket = false;
         }
 
         [MessageHandler((ushort)PacketType.GordoExplode)]
@@ -1348,10 +1375,25 @@ namespace NewSR2MP.Networking
 
             try
             {
-                var gordo = sceneContext.GameModel.gordos[packet.id].gameObj;
-                gordo.AddComponent<HandledDummy>();
-                gordo.GetComponent<GordoEat>().ImmediateReachedTarget();
-                Object.Destroy(gordo.GetComponent<HandledDummy>());
+                var target = gameContext.LookupDirector._gordoDict[identifiableTypes[packet.ident]].GetComponent<GordoEat>().TargetCount;
+                if (!sceneContext.GameModel.gordos.TryGetValue(packet.id, out var gordo))
+                    sceneContext.GameModel.gordos.Add(packet.id, new GordoModel()
+                    {
+                        fashions = new Il2CppSystem.Collections.Generic.List<IdentifiableType>(),
+                        gordoEatCount = target,
+                        gordoSeen = true,
+                        identifiableType = identifiableTypes[packet.ident],
+                        gameObj = null,
+                        GordoEatenCount = target,
+                        targetCount = gameContext.LookupDirector._gordoDict[identifiableTypes[packet.ident]].GetComponent<GordoEat>().TargetCount,
+                    });
+                else
+                {
+                    var gordoObj = gordo.gameObj;
+                    handlingPacket = true;
+                    gordoObj.GetComponent<GordoEat>().ImmediateReachedTarget();
+                    handlingPacket = false;
+                }
             }
             catch (Exception e)
             {
@@ -1369,7 +1411,19 @@ namespace NewSR2MP.Networking
 
             try
             {
-                sceneContext.GameModel.gordos[packet.id].gordoEatCount = packet.count;
+                if (!sceneContext.GameModel.gordos.TryGetValue(packet.id, out var gordo))
+                    sceneContext.GameModel.gordos.Add(packet.id, new GordoModel()
+                    {
+                        fashions = new Il2CppSystem.Collections.Generic.List<IdentifiableType>(),
+                        gordoEatCount = packet.count,
+                        gordoSeen = true,
+                        identifiableType = identifiableTypes[packet.ident],
+                        gameObj = null,
+                        GordoEatenCount = packet.count,
+                        targetCount = gameContext.LookupDirector._gordoDict[identifiableTypes[packet.ident]]
+                            .GetComponent<GordoEat>().TargetCount,
+                    });
+                gordo.gordoEatCount = packet.count;
             }
             catch (Exception e)
             {
@@ -1386,9 +1440,9 @@ namespace NewSR2MP.Networking
         {
             var packet = Deserializer.ReadPediaMessage(msg);
 
-            sceneContext.gameObject.AddComponent<HandledDummy>();
+            handlingPacket = true;
             sceneContext.PediaDirector.Unlock(pediaEntries[packet.id]);
-            Object.Destroy(sceneContext.gameObject.GetComponent<HandledDummy>());
+            handlingPacket = false;
 
             ForwardMessage(packet, client);
         }
@@ -1401,9 +1455,9 @@ namespace NewSR2MP.Networking
             try
             {
                 var gordo = sceneContext.GameModel.gordos[packet.id].gameObj;
-                gordo.AddComponent<HandledDummy>();
+                handlingPacket = true;
                 gordo.GetComponent<GordoEat>().ImmediateReachedTarget();
-                Object.Destroy(gordo.GetComponent<HandledDummy>());
+                handlingPacket = false;
             }
             catch (Exception e)
             {
@@ -1647,9 +1701,9 @@ namespace NewSR2MP.Networking
                     break;
             }
 
-            sceneContext.gameObject.AddComponent<HandledDummy>();
+            handlingPacket = true;
             sceneContext.MapDirector.SetPlayerNavigationMarker(packet.position, map, 0);
-            sceneContext.gameObject.RemoveComponent<HandledDummy>();
+            handlingPacket = false;
 
             ForwardMessage(packet, client);
         }
@@ -1657,9 +1711,9 @@ namespace NewSR2MP.Networking
         [MessageHandler((ushort)PacketType.NavigationMarkerRemove)]
         public static void HandleNavRemove(ushort client, Message joinInfo)
         {
-            sceneContext.gameObject.AddComponent<HandledDummy>();
+            handlingPacket = true;
             sceneContext.MapDirector.ClearPlayerNavigationMarker();
-            sceneContext.gameObject.RemoveComponent<HandledDummy>();
+            handlingPacket = false;
 
             ForwardMessage(new RemoveNavMarkerNessage(), client);
         }
@@ -1681,99 +1735,25 @@ namespace NewSR2MP.Networking
                     break;
             }
 
-            sceneContext.gameObject.AddComponent<HandledDummy>();
+            handlingPacket = true;
             sceneContext.MapDirector.SetPlayerNavigationMarker(packet.position, map, 0);
-            sceneContext.gameObject.RemoveComponent<HandledDummy>();
+            handlingPacket = false;
         }
 
         [MessageHandler((ushort)PacketType.NavigationMarkerRemove)]
         public static void HandleNavRemove(Message joinInfo)
         {
-            sceneContext.gameObject.AddComponent<HandledDummy>();
+            handlingPacket = true;
             sceneContext.MapDirector.ClearPlayerNavigationMarker();
-            sceneContext.gameObject.RemoveComponent<HandledDummy>();
+            handlingPacket = false;
         }
 
 
 
         [MessageHandler((ushort)PacketType.WeatherUpdate)]
-        public static void HandleWeather(Message joinInfo)
+        public static void HandleWeather(Message msg)
         {
-
-            var dir2 = Resources.FindObjectsOfTypeAll<WeatherDirector>().First();
-            var packet = Deserializer.ReadWeatherMessage(joinInfo);
-
-            var dir = sceneContext.WeatherRegistry;
-
-            var zones = new Dictionary<byte, ZoneDefinition>();
-            byte b = 0;
-            foreach (var zone in dir._model._zoneDatas)
-            {
-                zones.Add(b, zone.key);
-                b++;
-            }
-
-            var zoneDatas = new Il2CppSystem.Collections.Generic.Dictionary<ZoneDefinition, WeatherModel.ZoneData>();
-            var zoneDatas2 =
-                new Il2CppSystem.Collections.Generic.Dictionary<ZoneDefinition, WeatherRegistry.ZoneWeatherData>();
-
-            foreach (var zone in packet.sync.zones)
-            {
-                if (!zones.ContainsKey(zone.Key)) continue;
-
-                var forcastRunCheck = new List<string>();
-
-                var forecast = new Il2CppSystem.Collections.Generic.List<WeatherModel.ForecastEntry>();
-                foreach (var f in zone.Value.forcast)
-                {
-                    var forcastEntry = new WeatherModel.ForecastEntry()
-                    {
-                        StartTime = 0.0,
-                        EndTime = double.MaxValue,
-                        State = f.state.Cast<IWeatherState>(),
-                        Pattern = weatherPatternsFromStateNames[f.state.name],
-                        Started = true
-                    };
-                    forecast.Add(forcastEntry);
-                    forcastRunCheck.Add(f.state.GetName());
-
-                    // TODO: make it so it wont run if its already running
-                    dir.RunPatternState(zones[zone.Key], weatherPatternsFromStateNames[f.state.name].CreatePattern(),
-                        f.state.Cast<IWeatherState>(), true);
-                }
-
-                var runningStates =
-                    dir2._runningStates; // There is a bug where the foreach loop implodes on the collection being modified. it is my fault for not adding this variable.
-
-                foreach (var running in dir2._runningStates)
-                {
-                    if (!forcastRunCheck.Contains(running.GetName()))
-                        dir.StopPatternState(zones[zone.Key],
-                            weatherPatternsFromStateNames[running.Cast<WeatherStateDefinition>().name].CreatePattern(),
-                            running);
-                }
-
-                WeatherModel.ZoneData data = new WeatherModel.ZoneData()
-                {
-                    Forecast = forecast,
-                    Parameters = new WeatherModel.ZoneWeatherParameters()
-                    {
-                        WindDirection = zone.Value.windSpeed
-                    }
-                };
-                WeatherRegistry.ZoneWeatherData data2 =
-                    new WeatherRegistry.ZoneWeatherData(dir.ZoneConfigList._items[zone.Key], data);
-                zoneDatas.Add(zones[zone.Key], data);
-                zoneDatas2.Add(zones[zone.Key], data2);
-            }
-
-            dir._zones = zoneDatas2;
-            dir._model = new WeatherModel()
-            {
-                _participant = sceneContext.WeatherRegistry.Cast<WeatherModel.Participant>(),
-                _zoneDatas = zoneDatas,
-            };
-
+            MelonCoroutines.Start(WeatherHandlingCoroutine(Deserializer.ReadWeatherMessage(msg)));
         }
 
         [MessageHandler((ushort)PacketType.MarketRefresh)]
@@ -1800,13 +1780,168 @@ namespace NewSR2MP.Networking
         }
 
         [MessageHandler((ushort)PacketType.KillAllCommand)]
-        public static void HandleEmotionsCommand(Message msg)
+        public static void HandleKillAllCommand(Message msg)
         {
             var packet = Deserializer.ReadKillAllCommandMessage(msg);
 
-            
+            if (packet.actorType == -1)
+            {
+                foreach (var ident in sceneContext.GameModel.identifiables)
+                {
+                    if (ident.value.ident.name != "Player")
+                    {
+                        var model = ident.value.TryCast<ActorModel>();
+                        if (model != null)
+                        {
+                            if (model.transform != null)
+                                Object.Destroy(model.transform.gameObject);
+                            SceneContext.Instance.GameModel.identifiables.Remove(model.actorId);
+                        }
+                    } 
+                }
+            }
+            else
+            {
+
+                var type = identifiableTypes[packet.actorType];
+                
+                foreach (var ident in sceneContext.GameModel.identifiables)
+                {
+                    if (ident.value.ident != type)
+                    {
+                        var model = ident.value.TryCast<ActorModel>();
+                        if (model != null)
+                        {
+                            if (model.transform != null)
+                                Object.Destroy(model.transform.gameObject);
+                            SceneContext.Instance.GameModel.identifiables.Remove(model.actorId);
+                        }
+                    } 
+                }
+            }
         }
-        
+
+        [MessageHandler((ushort)PacketType.SwitchModify)]
+        public static void HandleSwitchModify(Message msg)
+        {
+            var packet = Deserializer.ReadSwitchModifyMessage(msg);
+
+            if (sceneContext.GameModel.switches.TryGetValue(packet.id, out var model))
+            {
+                model.state = (SwitchHandler.State)packet.state;
+                if (model.gameObj)
+                {
+                    handlingPacket = true;
+                    
+                    if (model.gameObj.TryGetComponent<WorldStatePrimarySwitch>(out var primary))
+                        primary.SetStateForAll((SwitchHandler.State)packet.state, false);
+                    
+                    if (model.gameObj.TryGetComponent<WorldStateSecondarySwitch>(out var secondary))
+                        secondary.SetState((SwitchHandler.State)packet.state, false);
+                    
+                    if (model.gameObj.TryGetComponent<WorldStateInvisibleSwitch>(out var invisible))
+                        invisible.SetStateForAll((SwitchHandler.State)packet.state, false);
+                    
+                    handlingPacket = false;
+                }
+            }
+            else
+            {
+                model = new WorldSwitchModel()
+                {
+                    gameObj = null,
+                    state = (SwitchHandler.State)packet.state,
+                };
+                sceneContext.GameModel.switches.Add(packet.id, model);
+            }
+        }
+        [MessageHandler((ushort)PacketType.SwitchModify)]
+        public static void HandleSwitchModify(ushort client, Message msg)
+        {
+            var packet = Deserializer.ReadSwitchModifyMessage(msg);
+
+            if (sceneContext.GameModel.switches.TryGetValue(packet.id, out var model))
+            {
+                model.state = (SwitchHandler.State)packet.state;
+                if (model.gameObj)
+                {
+                    handlingPacket = true;
+                    
+                    if (model.gameObj.TryGetComponent<WorldStatePrimarySwitch>(out var primary))
+                        primary.SetStateForAll((SwitchHandler.State)packet.state, false);
+                    
+                    if (model.gameObj.TryGetComponent<WorldStateSecondarySwitch>(out var secondary))
+                        secondary.SetState((SwitchHandler.State)packet.state, false);
+                    
+                    if (model.gameObj.TryGetComponent<WorldStateInvisibleSwitch>(out var invisible))
+                        invisible.SetStateForAll((SwitchHandler.State)packet.state, false);
+                    
+                    handlingPacket = false;
+                }
+            }
+            else
+            {
+                model = new WorldSwitchModel()
+                {
+                    gameObj = null,
+                    state = (SwitchHandler.State)packet.state,
+                };
+                sceneContext.GameModel.switches.Add(packet.id, model);
+            }
+            
+            ForwardMessage(packet, client);
+        }
+        [MessageHandler((ushort)PacketType.MapUnlock)]
+        public static void HandleMapUnlock(Message msg)
+        {
+            var packet = Deserializer.ReadMapUnlockMessage(msg);
+
+            sceneContext.MapDirector.NotifyZoneUnlocked(GetGameEvent(packet.id), false, 0);
+            
+            var eventDirModel = sceneContext.eventDirector._model;
+            if (!eventDirModel.table.TryGetValue("fogRevealed", out var table))
+            {
+                eventDirModel.table.Add("fogRevealed", new Il2CppSystem.Collections.Generic.Dictionary<string, EventRecordModel.Entry>());
+                table = eventDirModel.table["fogRevealed"];
+            }
+            table.Add(packet.id, new EventRecordModel.Entry
+            {
+                count = 1,
+                createdRealTime = 0,
+                createdGameTime = 0,
+                dataKey = packet.id,
+                eventKey = "fogRevealed",
+                updatedRealTime = 0,
+                updatedGameTime = 0,
+            });
+        }
+        [MessageHandler((ushort)PacketType.MapUnlock)]
+        public static void HandleMapUnlock(ushort client, Message msg)
+        {
+            var packet = Deserializer.ReadMapUnlockMessage(msg);
+
+            sceneContext.MapDirector.NotifyZoneUnlocked(GetGameEvent(packet.id), false, 0);
+            
+            var eventDirModel = sceneContext.eventDirector._model;
+            if (!eventDirModel.table.TryGetValue("fogRevealed", out var table))
+            {
+                eventDirModel.table.Add("fogRevealed", new Il2CppSystem.Collections.Generic.Dictionary<string, EventRecordModel.Entry>());
+                table = eventDirModel.table["fogRevealed"];
+            }
+            table.Add(packet.id, new EventRecordModel.Entry
+            {
+                count = 1,
+                createdRealTime = 0,
+                createdGameTime = 0,
+                dataKey = packet.id,
+                eventKey = "fogRevealed",
+                updatedRealTime = 0,
+                updatedGameTime = 0,
+            });
+            
+            ForwardMessage(packet, client);
+        }
+
         /// <summary>
         /// Shortcut for forwarding messages.
         /// </summary>

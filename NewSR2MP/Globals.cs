@@ -1,5 +1,6 @@
 ﻿using Il2CppMonomiPark.ScriptedValue;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -7,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Il2CppAssets.Script.Util.Extensions;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
+using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.SlimeRancher.Persist;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
@@ -14,6 +16,7 @@ using Il2CppMonomiPark.SlimeRancher.Slime;
 using Il2CppMonomiPark.SlimeRancher.UI;
 using Il2CppMonomiPark.SlimeRancher.UI.MainMenu;
 using Il2CppMonomiPark.SlimeRancher.Weather;
+using Il2CppMonomiPark.SlimeRancher.World;
 using Il2CppMonomiPark.UnitPropertySystem;
 using Il2CppSystem.Net.WebSockets;
 using NewSR2MP.Networking.SaveModels;
@@ -32,14 +35,16 @@ namespace NewSR2MP
             msg.AddFloat(vector.y);
             msg.AddFloat(vector.z);
         }
+
         public static Vector3 GetVector3(this Message msg)
         {
             var x = msg.GetFloat();
             var y = msg.GetFloat();
             var z = msg.GetFloat();
-            
+
             return new Vector3(x, y, z);
         }
+
         public static void AddQuaternion(this Message msg, Quaternion quaternion)
         {
             msg.AddFloat(quaternion.x);
@@ -47,31 +52,36 @@ namespace NewSR2MP
             msg.AddFloat(quaternion.z);
             msg.AddFloat(quaternion.w);
         }
+
         public static Quaternion GetQuaternion(this Message msg)
         {
             var x = msg.GetFloat();
             var y = msg.GetFloat();
             var z = msg.GetFloat();
             var w = msg.GetFloat();
-            
+
             return new Quaternion(x, y, z, w);
         }
+
         public static void AddGuid(this Message msg, Guid guid)
         {
             msg.AddString(guid.ToString());
         }
+
         public static Guid GetGuid(this Message msg)
         {
             var str = msg.GetString();
 
             return new Guid(str);
         }
+
         public static void AddAmmoData(this Message msg, AmmoData data)
         {
             msg.AddInt(data.count);
             msg.AddInt(data.slot);
             msg.AddInt(data.id);
         }
+
         public static AmmoData GetAmmoData(this Message msg)
         {
             var count = msg.GetInt();
@@ -86,19 +96,20 @@ namespace NewSR2MP
             };
         }
     }
+
     public static class Globals
     {
         /// <summary>
         /// Auto host port in options. can be 0/off, 7777, 16500
         /// </summary>
         public static int autoHostPort => scriptedAutoHostPort ? scriptedAutoHostPort.Value : 0;
-        
+
         /// <summary>
         /// Do not manually edit this.
         /// </summary>
         internal static ScriptedInt? scriptedAutoHostPort;
-        
-        
+
+
         /// <summary>
         /// Built in packet IDs, use a custom packet enum or an ushort to make custom packets.
         /// </summary>
@@ -143,61 +154,66 @@ namespace NewSR2MP
         {
             var ui = Resources.FindObjectsOfTypeAll<NewGameRootUI>().First();
             var optionsList = ui._optionsItemDefinitionsProvider.defaultAsset;
-            
+
             return new GameSettingsModel(optionsList.GameBasedDefinitions);
         }
-        
+
         public static MarketUI? marketUI;
-        
+
         private static bool TryParseFloat(string input, out float value, float min, bool inclusive)
         {
             value = 0;
-            try { value = float.Parse(input); }
-            catch { return false; }
+            try
+            {
+                value = float.Parse(input);
+            }
+            catch
+            {
+                return false;
+            }
+
             if (inclusive)
             {
                 if (value < min) return false;
             }
             else if (value <= min) return false;
+
             return true;
+        }
+        internal static IdentifiableType getIdentByName(string name)
+        {
+            if (String.IsNullOrWhiteSpace(name)) return null;
+            if (name.ToLower() == "none" || name.ToLower() == "player") return null;
+            foreach (var type in identifiableTypes)
+                if (type.Value.name.ToUpper() == name.ToUpper()) return type.Value;
+            foreach (var type in identifiableTypes) 
+                try { if (type.Value.LocalizedName.GetLocalizedString().ToUpper().Replace(" ","").Replace("_","") == name.Replace("_","").ToUpper()) return type.Value; }catch {}
+            return null;
         }
         public static void InitializeCommandExtensions()
         {
-            SR2ECommandManager.RegisterCommandAddon("emotions", new(args =>
+            SR2ECommandManager.RegisterCommandAddon("killall", args =>
             {
-                SlimeEmotions.Emotion emotion;
-                switch (args[0])
+                int actorType = -1;
+                
+                if (args != null)
+                    if (args.Length == 1)
+                        actorType = GetIdentID(getIdentByName(args[0]));
+                
+                MultiplayerManager.NetworkSend(new KillAllCommand
                 {
-                    case "hunger": emotion = SlimeEmotions.Emotion.HUNGER; break;
-                    case "agitation": emotion = SlimeEmotions.Emotion.AGITATION; break;
-                    case "fear": emotion = SlimeEmotions.Emotion.FEAR; break;
-                    case "sleepiness": emotion = SlimeEmotions.Emotion.SLEEPINESS; break;
-                    default: return;
-                }
-                Camera cam = Camera.main; if (cam == null) return;
-                if (Physics.Raycast(new Ray(cam.transform.position, cam.transform.forward), out var hit,Mathf.Infinity,defaultMask))
-                {
-                    var slime = hit.collider.gameObject.GetComponent<SlimeEmotions>();
-                    if (slime != null)
-                    {
-                        if (args.Length == 2)
-                        {
-                            if (!TryParseFloat(args[1], out float newValue, 0,true)) return;
-                            if (newValue > 1) newValue = 1;
-                            slime.Set(emotion, newValue);
-                        }
-
-                    }
-                }
-            }));
+                    actorType = actorType,
+                    sceneGroup = sceneGroupsReverse[systemContext.SceneLoader._currentSceneGroup.name]
+                });
+            });
         }
-        
+
         public static bool isJoiningAsClient = false;
-        
+
         public static bool ServerActive() => MultiplayerManager.server != null;
         public static bool ClientActive() => MultiplayerManager.client != null;
-        
-        
+
+
         public static void InitEmbeddedDLL(string name)
         {
             Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"NewSR2MP.{name}");
@@ -207,7 +223,7 @@ namespace NewSR2MP
                 Assembly.Load(ms.ToArray());
             }
         }
-        
+
         /// <summary>
         /// Generates a 7 digit random string containing capital letters (A - Z), and numbers (0 - 9). This string is used for an easily sharable server code.
         /// </summary>
@@ -225,12 +241,12 @@ namespace NewSR2MP
 
             return new string(result);
         }
-        
+
         /// <summary>
         /// Set this to true to enable error logging. It should be set to true by a console command however.
         /// </summary>
-        public static bool ShowErrors = false; 
-        
+        public static bool ShowErrors = false;
+
         public static int Version;
 
         /// <summary>
@@ -242,24 +258,25 @@ namespace NewSR2MP
         {
             return gameContext.AutoSaveDirector.SavedGame.identifiableTypeToPersistenceId.GetPersistenceId(ident);
         }
-        
+
         /// <summary>
         /// Identifiable type persistence ID lookup table. Use id 9 for identifiable type "None"
         /// </summary>
         public static Dictionary<int, IdentifiableType> identifiableTypes = new Dictionary<int, IdentifiableType>();
-        
+
         /// <summary>
         /// Pedia name table
         /// </summary>
         public static Dictionary<string, PediaEntry> pediaEntries = new Dictionary<string, PediaEntry>();
-        
-        public static Dictionary<string, UpgradeDefinition> playerUpgrades = new Dictionary<string, UpgradeDefinition>();
-        
+
+        public static Dictionary<string, UpgradeDefinition>
+            playerUpgrades = new Dictionary<string, UpgradeDefinition>();
+
         /// <summary>
         /// Scene Group persistence ID lookup table. Use id 1 for the ranch's scene group.
         /// </summary>
         public static Dictionary<int, SceneGroup> sceneGroups = new Dictionary<int, SceneGroup>();
-        
+
         /// <summary>
         /// Scene Group reverse persistence ID lookup table. Use SceneGroup.name for the keys.
         /// </summary>
@@ -269,23 +286,23 @@ namespace NewSR2MP
         /// Weather persistence ID lookup table. Use hash codes for the keys. not to be confused with SR2EUtils.weatherStates
         /// </summary>
         public static Dictionary<int, WeatherStateDefinition> mpWeatherStates;
-        
+
         /// <summary>
         /// State name to weather pattern object table.
         /// </summary>
         public static Dictionary<string, WeatherPatternDefinition> weatherPatternsFromStateNames;
-        
+
         /// <summary>
         /// Reverse of the weather persistence ID lookup table. Use weather state names for the keys.
         /// </summary>
         public static Dictionary<string, int> weatherStatesReverseLookup;
 
         public static Dictionary<int, NetworkPlayer> players = new Dictionary<int, NetworkPlayer>();
-        
+
         public static Dictionary<int, Guid> clientToGuid = new Dictionary<int, Guid>();
-        
+
         public static Dictionary<long, NetworkActor> actors = new Dictionary<long, NetworkActor>();
-        
+
         internal static List<NetworkActorOwnerToggle> activeActors = new List<NetworkActorOwnerToggle>();
 
         public static List<NetworkActorOwnerToggle> GetActorsInBounds(Bounds bounds)
@@ -293,7 +310,7 @@ namespace NewSR2MP
             List<NetworkActorOwnerToggle> found = new List<NetworkActorOwnerToggle>();
 
             List<NetworkActorOwnerToggle> toRemove = new List<NetworkActorOwnerToggle>();
-            
+
             foreach (var actor in activeActors)
             {
                 if (!actor)
@@ -301,14 +318,14 @@ namespace NewSR2MP
                     toRemove.Add(actor);
                     continue;
                 }
-                
+
                 if (bounds.Contains(actor.transform.position))
                     found.Add(actor);
             }
 
             foreach (var remove in toRemove)
                 activeActors.Remove(remove);
-            
+
             return found;
         }
 
@@ -320,33 +337,35 @@ namespace NewSR2MP
                 foreach (var add in toAdd)
                     original.Add(add);
             }
+
             List<NetworkActorOwnerToggle> DifferenceOf(List<NetworkActorOwnerToggle> a, List<NetworkActorOwnerToggle> b)
             {
                 List<NetworkActorOwnerToggle> result = new List<NetworkActorOwnerToggle>();
-                
+
                 foreach (var val1 in a)
                     if (!b.Contains(val1))
                         result.Add(val1);
-                
+
                 return result;
             }
+
             // Main Function
             List<NetworkActorOwnerToggle> found = new List<NetworkActorOwnerToggle>();
             List<NetworkActorOwnerToggle> owned = new List<NetworkActorOwnerToggle>();
             List<NetworkActorOwnerToggle> unowned = new List<NetworkActorOwnerToggle>();
 
             Vector3 size = new Vector3(50, 200, 50);
-            
-            foreach(var player in players.Values)
+
+            foreach (var player in players.Values)
                 AddList(GetActorsInBounds(new Bounds(player.transform.position, size)), owned);
 
             found = GetActorsInBounds(new Bounds(sceneContext.player.transform.position, size));
-            
+
             unowned = DifferenceOf(found, owned);
-            
+
             return unowned;
         }
-        
+
         public static NetworkV01 savedGame;
         public static string savedGamePath;
 
@@ -355,7 +374,7 @@ namespace NewSR2MP
         public static Ammo GetNetworkAmmo(string name)
         {
             ammoByPlotID.TryGetValue(name, out Ammo ammo);
-            
+
             return ammo;
         }
 
@@ -371,7 +390,7 @@ namespace NewSR2MP
                 return false;
             }
         }
-        
+
         public static LoadMessage? latestSaveJoined;
 
         public static int currentPlayerID;
@@ -387,7 +406,7 @@ namespace NewSR2MP
                 states2.Add(state.value.Cast<WeatherStateDefinition>().name, i);
                 i++;
             }
-            
+
             mpWeatherStates = states;
             weatherStatesReverseLookup = states2;
         }
@@ -396,16 +415,16 @@ namespace NewSR2MP
         public static void CreateWeatherPatternLookup(WeatherRegistry dir)
         {
             var list = new Dictionary<string, WeatherPatternDefinition>();
-            
+
             foreach (var config in dir.ZoneConfigList)
-                foreach (var pattern in config.Patterns)
-                {
-                    pattern.GetAllStates();
-                    foreach (var state in pattern._stateList)
-                        if (state)
-                            list.TryAdd(state.name,pattern);
-                }
-            
+            foreach (var pattern in config.Patterns)
+            {
+                pattern.GetAllStates();
+                foreach (var state in pattern._stateList)
+                    if (state)
+                        list.TryAdd(state.name, pattern);
+            }
+
             weatherPatternsFromStateNames = list;
         }
 
@@ -417,37 +436,41 @@ namespace NewSR2MP
             SceneGroup sceneGroup)
         {
             sceneContext.GameModel._actorIdProvider._nextActorId++;
-            
+
             var model = CreateActorModel(id, ident, position, rotation, sceneGroup);
-            
+
             sceneContext.GameModel.identifiables.Add(id, model);
             if (!sceneContext.GameModel.identifiablesByIdent.TryGetValue(ident, out var types))
-            {  
-                sceneContext.GameModel.identifiablesByIdent.Add(ident, new Il2CppSystem.Collections.Generic.List<IdentifiableModel>(0));
+            {
+                sceneContext.GameModel.identifiablesByIdent.Add(ident,
+                    new Il2CppSystem.Collections.Generic.List<IdentifiableModel>(0));
                 types = sceneContext.GameModel.identifiablesByIdent[ident];
             }
+
             types.Add(model);
-            
+
             debugRegisteredActors.Add(id.Value, model);
             var actor = InstantiateActorFromModel(model);
-            
             if (actor)
                 actor.transform.position = position;
+            
             var savedGame2 = gameContext.AutoSaveDirector.SavedGame;
 
             var data = CreateActorDataFromModel(
                 model,
                 gameContext.AutoSaveDirector.SavedGame._statusEffectTranslation,
                 savedGame2.identifiableTypeToPersistenceId);
-            
+
             savedGame2.gameState.Actors.Add(data);
-            
-            SRMP.Debug($"Spawned actor - ID:{id.Value} TYPE:{ident.name} POSITION:({position}) ROTATION:({rotation.ToEuler()}) SCENEGROUP:{sceneGroup.name}");
+
+            SRMP.Debug(
+                $"Spawned actor - ID:{id.Value} TYPE:{ident.name} POSITION:({position}) ROTATION:({rotation.ToEuler()}) SCENEGROUP:{sceneGroup.name}");
 
             multiplayerSpawnedActorsIDs.Add(id.Value);
-            
+
             return actor;
         }
+
         public static void DeregisterActor(ActorId id)
         {
             sceneContext.GameModel.DestroyIdentifiableModel(sceneContext.GameModel.identifiables[id]);
@@ -461,12 +484,14 @@ namespace NewSR2MP
                     found = true;
                     break;
                 }
+
                 idx++;
             }
-            
+
             if (found)
                 gameContext.AutoSaveDirector.SavedGame.gameState.Actors.RemoveAt(idx);
         }
+
         public static ActorModel? CreateActorModel(
             ActorId id,
             IdentifiableType ident,
@@ -474,7 +499,7 @@ namespace NewSR2MP
             Quaternion rotation,
             SceneGroup sceneGroup)
             => sceneContext.GameModel.CreateActorModel(id, ident, sceneGroup, position, rotation);
-        
+
         private static Dictionary<long, ActorModel> debugRegisteredActors = new Dictionary<long, ActorModel>();
 
         public static ActorDataV02 CreateActorDataFromModel(
@@ -556,8 +581,8 @@ namespace NewSR2MP
         {
             emotions.SetAll(new float4(networkEmotions.x, networkEmotions.y, networkEmotions.z, networkEmotions.w));
         }
-        
-        
+
+
         // POINTERS OH NO
         /// <summary>
         /// Not recommended for direct use! Please just use the extension methods.
@@ -573,23 +598,26 @@ namespace NewSR2MP
             ammoPointersToPlotIDs.TryGetValue(ammo.Pointer, out var plotID);
             return plotID;
         }
+
         /// <summary>
         /// This will register the ammo pointer into the lookup.
         /// </summary>
         public static void RegisterAmmoPointer(this SiloStorage storage)
         {
-            ammoPointersToPlotIDs.TryAdd(storage.LocalAmmo.Pointer, storage.GetComponentInParent<LandPlotLocation>()._id);
-            
+            ammoPointersToPlotIDs.TryAdd(storage.LocalAmmo.Pointer,
+                storage.GetComponentInParent<LandPlotLocation>()._id);
+
             if (!ammoByPlotID.TryAdd(storage.GetComponentInParent<LandPlotLocation>()._id, storage.LocalAmmo))
                 ammoByPlotID[storage.GetComponentInParent<LandPlotLocation>()._id] = storage.LocalAmmo;
         }
+
         /// <summary>
         /// This will register the ammo pointer into the lookup.
         /// </summary>
         public static void RegisterAmmoPointer(this Ammo ammo, string id)
         {
             ammoPointersToPlotIDs.Add(ammo.Pointer, id);
-            
+
             if (!ammoByPlotID.TryAdd(id, ammo))
                 ammoByPlotID[id] = ammo;
         }
@@ -600,7 +628,7 @@ namespace NewSR2MP
             for (int i = 0; i < ammo.Count; i++)
             {
                 var slot = new Ammo.Slot();
-                
+
                 slot.Count = ammo._items[i].Count;
                 slot._id = identifiableTypes[ammo._items[i].ID];
                 slot.Emotions = new float4(0, 0, 0, 0);
@@ -608,13 +636,14 @@ namespace NewSR2MP
 
             return array;
         }
+
         public static Ammo.Slot[] MultiplayerAmmoDataToSlots(List<AmmoData> ammo, int slotCount)
         {
             Ammo.Slot[] array = new Ammo.Slot[ammo.Count];
             for (int i = 0; i < slotCount; i++)
             {
                 var slot = new Ammo.Slot();
-                
+
                 slot.Count = ammo[i].count;
                 slot._id = identifiableTypes[ammo[i].id];
                 slot.Emotions = new float4(0, 0, 0, 0);
@@ -622,7 +651,7 @@ namespace NewSR2MP
 
             return array;
         }
-        
+
         public static int GetSlotIDX(this Ammo ammo, IdentifiableType id)
         {
             bool isSlotNull = false;
@@ -644,11 +673,12 @@ namespace NewSR2MP
 
                 if (isSlotEmptyOrSameType && isSlotFull) break;
 
-                if (isSlotEmptyOrSameType)// && IsIdentAllowedForAmmo)
+                if (isSlotEmptyOrSameType) // && IsIdentAllowedForAmmo)
                 {
                     return j;
                 }
             }
+
             return -1;
         }
 
@@ -671,12 +701,124 @@ namespace NewSR2MP
         }
 
         public static List<long> multiplayerSpawnedActorsIDs = new List<long>();
-        
+
         public static Ammo CreateNewPlayerAmmo()
         {
             var newAmmo = new Ammo(sceneContext.PlayerState._ammoSlotDefinitions);
             newAmmo._ammoModel = new AmmoModel(sceneContext.PlayerState.Ammo._ammoModel.unitPropertyTracker);
             return newAmmo;
         }
+
+        /// <summary>
+        /// The instance of the currently loaded weather director.
+        /// </summary>
+        public static WeatherDirector? weatherDirectorInstance;
+
+        public static IEnumerator WeatherHandlingCoroutine(WeatherSyncMessage packet)
+        {
+            if (sceneContext == null || weatherDirectorInstance == null)
+                yield break;
+            
+            var reg = sceneContext.WeatherRegistry;
+            var dir = weatherDirectorInstance;
+
+            var zones = new Dictionary<byte, ZoneDefinition>();
+            bool completedZonesDict = false;
+            if (!completedZonesDict)
+            {
+                byte b = 0;
+                foreach (var zone in reg._model._zoneDatas)
+                {
+                    zones.Add(b, zone.key);
+                    b++;
+                }
+
+                completedZonesDict = true;
+                yield return null;
+            }
+
+            var zoneDatas = new Il2CppSystem.Collections.Generic.Dictionary<ZoneDefinition, WeatherModel.ZoneData>();
+            var zoneDatas2 =
+                new Il2CppSystem.Collections.Generic.Dictionary<ZoneDefinition, WeatherRegistry.ZoneWeatherData>();
+
+            bool completedZoneDataDict = false;
+            if (!completedZoneDataDict)
+            {
+                foreach (var zone in packet.sync.zones)
+                {
+                    if (!zones.ContainsKey(zone.Key))
+                    {
+                        continue;
+                    }
+
+                    var forcastRunCheck = new List<string>();
+
+                    var forecast = new Il2CppSystem.Collections.Generic.List<WeatherModel.ForecastEntry>();
+                    for (var forecastIDX = 0; forecastIDX < zone.Value.forcast.Count; forecastIDX++)
+                    {
+                        var f = zone.Value.forcast[forecastIDX];
+                        var forcastEntry = new WeatherModel.ForecastEntry()
+                        {
+                            StartTime = 0.0,
+                            EndTime = double.MaxValue,
+                            State = f.state.Cast<IWeatherState>(),
+                            Pattern = weatherPatternsFromStateNames[f.state.name],
+                            Started = true
+                        };
+                        forecast.Add(forcastEntry);
+
+                        try
+                        {
+                            
+                            reg._model._zoneDatas[zones[zone.Key]].Forecast._items
+                                .First(x => x.Pattern.name == f.state.name);
+                            
+                            reg.RunPatternState(zones[zone.Key],
+                                weatherPatternsFromStateNames[f.state.name].CreatePattern(),
+                                f.state.Cast<IWeatherState>(),
+                                true);
+                        } catch { }
+
+                        yield return null;
+                    }
+                    
+                    foreach (var running in dir._runningStates)
+                    {
+                        if (!forcastRunCheck.Contains(running.GetName()))
+                            reg.StopPatternState(zones[zone.Key],
+                                weatherPatternsFromStateNames[running.Cast<WeatherStateDefinition>().name]
+                                    .CreatePattern(),
+                                running);
+                    }
+
+                    WeatherModel.ZoneData data = new WeatherModel.ZoneData()
+                    {
+                        Forecast = forecast,
+                        Parameters = new WeatherModel.ZoneWeatherParameters()
+                        {
+                            WindDirection = zone.Value.windSpeed
+                        }
+                    };
+                    WeatherRegistry.ZoneWeatherData data2 =
+                        new WeatherRegistry.ZoneWeatherData(reg.ZoneConfigList._items[zone.Key], data);
+                    zoneDatas.Add(zones[zone.Key], data);
+                    zoneDatas2.Add(zones[zone.Key], data2);
+                    
+                    yield return null;
+                }
+            }
+
+
+            reg._zones = zoneDatas2;
+            reg._model = new WeatherModel()
+            {
+                _participant = sceneContext.WeatherRegistry.Cast<WeatherModel.Participant>(),
+                _zoneDatas = zoneDatas,
+            };
+        }
+        
+        public static bool handlingPacket = false;
+
+        public static StaticGameEvent GetGameEvent(string dataKey) => Resources.FindObjectsOfTypeAll<StaticGameEvent>().FirstOrDefault(x => x._dataKey == dataKey);
     }
 }

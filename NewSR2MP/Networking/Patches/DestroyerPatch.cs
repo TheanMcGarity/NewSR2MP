@@ -27,7 +27,7 @@ namespace NewSR2MP.Networking.Patches
             // Moved here because it would spam testers melonloader logs and lag the game because it didnt destroy (^^^^) but it sent the packet anyways.
             if (isJoiningAsClient) return true;
 
-            if ((ServerActive() || ClientActive()) && !actorObj.GetComponent<HandledDummy>() && actorObj)
+            if ((ServerActive() || ClientActive()) && !handlingPacket && actorObj)
             {
                 var packet = new ActorDestroyGlobalMessage()
                 {

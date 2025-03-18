@@ -21,7 +21,11 @@ namespace NewSR2MP
         
         public static void Log(string message)
         {
-            SR2ELogManager.SendMessage(message);
+            Log(message, 100);
+        }
+        public static void Log(string message, int size)
+        {
+            SR2ELogManager.SendMessage($"<size={size}%>{message}</size>");
             logger.Msg(message);
         }
         

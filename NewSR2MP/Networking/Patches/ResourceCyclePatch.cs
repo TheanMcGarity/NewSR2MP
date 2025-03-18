@@ -11,7 +11,7 @@ namespace NewSR2MP.Networking.Patches
         public static void Postfix(ResourceCycle __instance)
         {
             if (!ServerActive()) return;
-            if (__instance.GetComponent<HandledDummy>()) return;
+            if (handlingPacket) return;
             var message = new ResourceStateMessage()
             {
                 state = ResourceCycle.State.RIPE,
@@ -41,7 +41,7 @@ namespace NewSR2MP.Networking.Patches
         {
 
             if (!ServerActive()) return;
-            if (__instance.GetComponent<HandledDummy>()) return;
+            if (handlingPacket) return;
             var message = new ResourceStateMessage()
             {
                 state = ResourceCycle.State.ROTTEN,
@@ -58,7 +58,7 @@ namespace NewSR2MP.Networking.Patches
         {
 
             if (!ServerActive()) return;
-            if (__instance.GetComponent<HandledDummy>()) return;
+            if (handlingPacket) return;
             var message = new ResourceStateMessage()
             {
                 state = ResourceCycle.State.EDIBLE,

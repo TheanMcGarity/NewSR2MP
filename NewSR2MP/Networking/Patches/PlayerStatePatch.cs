@@ -13,6 +13,8 @@ namespace NewSR2MP.Networking.Patches
     [HarmonyPatch(typeof(PlayerState), nameof(PlayerState.AddCurrency))]
     internal class PlayerStateAddCurrency
     {
+        public static bool Prefix(PlayerState __instance, int adjust, PlayerState.CoinsType coinsType) => Time.unscaledTime >= SceneContextNoteGameFullyLoaded.loadTime + 4f;
+        
         public static void Postfix(PlayerState __instance, int adjust, PlayerState.CoinsType coinsType)
         {
 

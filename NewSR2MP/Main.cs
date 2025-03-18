@@ -11,6 +11,7 @@ using Il2CppMonomiPark.SlimeRancher.Options;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.SlimeRancher.Player.CharacterController;
 using Il2CppMonomiPark.SlimeRancher.Util.Extensions;
+using Il2CppMonomiPark.SlimeRancher.World;
 using Il2CppMonomiPark.World;
 using Newtonsoft.Json;
 using SR2E;
@@ -174,11 +175,11 @@ namespace NewSR2MP
                 try
                 {
                     var model = sceneContext.GameModel.landPlots[plot.id];
-                    model.gameObj.AddComponent<HandledDummy>();
+                    handlingPacket = true;
                     model.gameObj.GetComponent<LandPlotLocation>().Replace(
                         model.gameObj.GetComponentInChildren<LandPlot>(),
                         GameContext.Instance.LookupDirector._plotPrefabDict[plot.type]);
-                    model.gameObj.RemoveComponent<HandledDummy>();
+                    handlingPacket = false;
                     var lp = model.gameObj.GetComponentInChildren<LandPlot>();
                     lp.ApplyUpgrades(ConvertToIEnumerable(plot.upgrades), false);
                     var silo = model.gameObj.GetComponentInChildren<SiloStorage>();
@@ -212,10 +213,10 @@ namespace NewSR2MP
                                 : gc._plantableDict[identifiableTypes[plot.cropIdent]], lp.transform.position,
                             lp.transform.rotation);
 
-                        gc.gameObject.AddComponent<HandledDummy>();
+                        handlingPacket = true;
                         if (gc.CanAccept(identifiableTypes[plot.cropIdent]))
                             lp.Attach(cropObj, true, true);
-                        gc.gameObject.RemoveComponent<HandledDummy>();
+                        handlingPacket = false;
 
                     }
                 }
@@ -257,7 +258,7 @@ namespace NewSR2MP
                         {
                             if (!a.identType.IsSceneObject && !a.identType.IsPlayer)
                             {
-                                a.gameObject.AddComponent<HandledDummy>();
+                                handlingPacket = true;
                                 sceneContext.GameModel.identifiables.Remove(a.GetActorId());
                                 UnityEngine.Object.Destroy(a.gameObject);
                             }
@@ -354,7 +355,17 @@ namespace NewSR2MP
                     {
                         try
                         {
-                            GordoModel gm = sceneContext.GameModel.gordos[gordo.id];
+                            if (!sceneContext.GameModel.gordos.TryGetValue(gordo.id, out var gm))
+                                sceneContext.GameModel.gordos.Add(gordo.id, new GordoModel()
+                                {
+                                    fashions = new Il2CppSystem.Collections.Generic.List<IdentifiableType>(),
+                                    gordoEatCount = gordo.eaten,
+                                    gordoSeen = true,
+                                    identifiableType = identifiableTypes[gordo.ident],
+                                    gameObj = null,
+                                    GordoEatenCount = gordo.eaten,
+                                    targetCount = gameContext.LookupDirector._gordoDict[identifiableTypes[gordo.ident]].GetComponent<GordoEat>().TargetCount,
+                                });
 
                             if (gordo.eaten <= -1 || gordo.eaten >= gm.targetCount)
                             {
@@ -363,8 +374,9 @@ namespace NewSR2MP
 
                             gm.gordoEatCount = gordo.eaten;
                         }
-                        catch
+                        catch (Exception e)
                         {
+                            SRMP.Error($"Error while loading gordo from save data!\n{e}");
                         }
                     }
 
@@ -456,7 +468,46 @@ namespace NewSR2MP
                         });
                     }
                 }
-                
+                bool completedSwitches = false;
+
+                if (!completedSwitches)
+                {
+                    foreach (var sw in save.initSwitches)
+                    {
+                        if (sceneContext.GameModel.switches.TryGetValue(sw.id, out var model))
+                        {
+                            model.state = (SwitchHandler.State)sw.state;
+                            if (model.gameObj)
+                            {
+                                handlingPacket = true;
+                    
+                                if (model.gameObj.TryGetComponent<WorldStatePrimarySwitch>(out var primary))
+                                    primary.SetStateForAll((SwitchHandler.State)sw.state, false);
+                    
+                                if (model.gameObj.TryGetComponent<WorldStateSecondarySwitch>(out var secondary))
+                                    secondary.SetState((SwitchHandler.State)sw.state, false);
+                    
+                                if (model.gameObj.TryGetComponent<WorldStateInvisibleSwitch>(out var invisible))
+                                    invisible.SetStateForAll((SwitchHandler.State)sw.state, false);
+                    
+                                handlingPacket = false;
+                            }
+                        }
+                        else
+                        {
+                            model = new WorldSwitchModel()
+                            {
+                                gameObj = null,
+                                state = (SwitchHandler.State)sw.state,
+                            };
+                            sceneContext.GameModel.switches.Add(sw.id, model);
+                        }
+                    }
+                    
+                    completedSwitches = true;
+                    yield return null;
+                }
+
                 var ammo = sceneContext.PlayerState.Ammo;
 
                 ammo.RegisterAmmoPointer($"player_{data.Player}");
@@ -483,6 +534,8 @@ namespace NewSR2MP
                     Initialize();
                     break;
                 case "MainMenuEnvironment":
+                    SRMP.Log("Discord server invite:");
+                    SRMP.Log("https://discord.gg/a7wfBw5feU", 175);
                     MultiplayerManager.Instance.GeneratePlayerModel();
                     break;
                 case "PlayerCore":        

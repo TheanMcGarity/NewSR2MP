@@ -13,7 +13,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(PediaDirector __instance,  PediaEntry entry, bool showPopup)
         {
-            if (__instance.GetComponent<HandledDummy>())
+            if (handlingPacket)
                 return;
             
             if (ClientActive() || ServerActive())
