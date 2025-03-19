@@ -35,6 +35,8 @@ namespace NewSR2MP.Networking
 
         public void Awake()
         {
+            InitializeCommandExtensions();
+            
             // Dont make that mistake again
             // i submitted a incorrect bug report :sob:
             RiptideLogger.Initialize(SRMP.Debug, SRMP.Log, SRMP.Warn, SRMP.Error, false);
@@ -323,7 +325,7 @@ namespace NewSR2MP.Networking
 
                             var p = new InitPlotData()
                             {
-                                id = plot.gameObj.GetComponent<LandPlotLocation>().Id,
+                                id = landplot.key,
                                 type = plot.typeId,
                                 upgrades = plot.upgrades,
                                 cropIdent = cropIdent,
@@ -653,7 +655,7 @@ namespace NewSR2MP.Networking
                     x.value != null &&
                     x.value.TryCast<ActorModel>() != null && 
                     x.value.sceneGroup == systemContext.SceneLoader._currentSceneGroup &&
-                    multiplayerSpawnedActorsIDs.Contains(x.key.Value));
+                    x.value.Transform == null);
             else
                 return true;
             

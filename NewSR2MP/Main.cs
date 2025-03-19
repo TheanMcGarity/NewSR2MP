@@ -507,6 +507,8 @@ namespace NewSR2MP
                     completedSwitches = true;
                     yield return null;
                 }
+                
+                sceneContext.PlayerState._model.upgradeModel.upgradeLevels = save.upgrades;
 
                 var ammo = sceneContext.PlayerState.Ammo;
 
@@ -534,8 +536,10 @@ namespace NewSR2MP
                     Initialize();
                     break;
                 case "MainMenuEnvironment":
+                    SRMP.Log("Join the discord server for help and updates!");
                     SRMP.Log("Discord server invite:");
                     SRMP.Log("https://discord.gg/a7wfBw5feU", 175);
+                    
                     MultiplayerManager.Instance.GeneratePlayerModel();
                     break;
                 case "PlayerCore":        

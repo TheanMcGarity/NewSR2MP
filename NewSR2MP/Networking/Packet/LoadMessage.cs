@@ -10,6 +10,7 @@ namespace NewSR2MP.Networking.Packet
         //public List<InitGadgetData> initGadgets;
         public List<InitAccessData> initAccess;
         public List<InitSwitchData> initSwitches;
+        //public List<InitResourceNodeData> initResourceNodes;
 
         public List<string> initPedias;
         public List<string> initMaps;
@@ -184,6 +185,11 @@ namespace NewSR2MP.Networking.Packet
     {
         public string id;
         public byte state;
+    }
+    public class InitResourceNodeData
+    {
+        public string id;
+        public byte definition;
     }
     public class LocalPlayerData
     {

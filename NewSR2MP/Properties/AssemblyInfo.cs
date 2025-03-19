@@ -16,13 +16,13 @@ using System.Resources;
 
 // Version information 
 // SCRIPT_RUN_BELOW
-[assembly: AssemblyVersion("0.0.0.369")]
+[assembly: AssemblyVersion("0.0.0.374")]
 // SCRIPT_RUN_BELOW
-[assembly: AssemblyFileVersion("0.0.0.369")]
+[assembly: AssemblyFileVersion("0.0.0.374")]
 [assembly: NeutralResourcesLanguage( "en-US" )]
 
 [assembly: MelonGame("MonomiPark", "SlimeRancher2")]
 [assembly: MelonInfo(typeof(NewSR2MP.Main),"New SR2MP", // SCRIPT_RUN_BELOW
-    "369",
+    "374",
     "PinkTarr")]
 [assembly: SR2E.Expansion.SR2EExpansion]
