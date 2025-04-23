@@ -20,6 +20,13 @@ namespace NewSR2MP.Networking.Packet
 
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetString();
+            count = msg.GetInt();
+            ident = msg.GetInt();
+        }
     }
     public class GordoBurstMessage : ICustomMessage
     {
@@ -33,6 +40,12 @@ namespace NewSR2MP.Networking.Packet
             msg.AddInt(ident);
 
             return msg;
+        }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetString();
+            ident = msg.GetInt();
         }
     }
 }

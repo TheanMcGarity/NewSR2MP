@@ -26,6 +26,14 @@ namespace NewSR2MP.Networking.Packet
 
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            ident = msg.GetInt();
+            slot = msg.GetInt();
+            count = msg.GetInt();
+            id = msg.GetString();
+        }
     }
     public class AmmoAddMessage : ICustomMessage
     {
@@ -39,6 +47,12 @@ namespace NewSR2MP.Networking.Packet
             msg.AddString(id);
 
             return msg;
+        }
+
+        public void Deserialize(Message msg)
+        {
+            ident = msg.GetInt();
+            id = msg.GetString();
         }
     }
     public class AmmoRemoveMessage : ICustomMessage
@@ -55,6 +69,13 @@ namespace NewSR2MP.Networking.Packet
             msg.AddInt(count);
 
             return msg;
+        }
+
+        public void Deserialize(Message msg)
+        {
+            index = msg.GetInt();
+            id = msg.GetString();
+            count = msg.GetInt();
         }
     }
 }

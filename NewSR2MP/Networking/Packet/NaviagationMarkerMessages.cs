@@ -22,6 +22,12 @@ namespace NewSR2MP.Networking.Packet
             
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            map = (MapType)msg.GetByte();
+            position = msg.GetVector3();
+        }
     }
     
     public class RemoveNavMarkerNessage : ICustomMessage
@@ -33,6 +39,11 @@ namespace NewSR2MP.Networking.Packet
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.NavigationMarkerRemove);
             
             return msg;
+        }
+
+        public void Deserialize(Message msg)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -42,11 +42,6 @@ namespace NewSR2MP.Networking.Packet
                 b++;
             }
         }
-        public WeatherSyncMessage(Message reader)
-        {
-            sync = new NetworkWeatherModel();
-            sync.Read(reader);
-        }
         
         public NetworkWeatherModel sync;
         
@@ -57,6 +52,12 @@ namespace NewSR2MP.Networking.Packet
             sync.Write(msg);
             
             return msg;
+        }
+
+        public void Deserialize(Message msg)
+        {
+            sync = new NetworkWeatherModel();
+            sync.Read(msg);
         }
     }
     public struct NetworkWeatherModel

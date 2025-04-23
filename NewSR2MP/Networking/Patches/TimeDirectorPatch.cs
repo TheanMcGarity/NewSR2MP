@@ -19,7 +19,7 @@ namespace NewSR2MP.Networking.Patches
             {
                 var packet = new SleepMessage()
                 {
-                    time = fastForwardUntil
+                    targetTime = fastForwardUntil
                 };
                 MultiplayerManager.NetworkSend(packet);
                 return false;

@@ -24,6 +24,7 @@ using SR2E;
 using SR2E.Managers;
 using Unity.Mathematics;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace NewSR2MP
 {
@@ -125,6 +126,7 @@ namespace NewSR2MP
             ActorDestroy,
             ActorHeldOwner,
             ActorBecomeOwner,
+            ActorVelocitySet,
             ActorSetOwner,
             GordoExplode,
             GordoFeed,
@@ -148,6 +150,8 @@ namespace NewSR2MP
             MarketRefresh,
             KillAllCommand,
             SwitchModify,
+            RefineryItem,
+            PlayerUpgrade,
         }
 
         public static GameSettingsModel CreateEmptyGameSettingsModel()
@@ -200,7 +204,7 @@ namespace NewSR2MP
                     if (args.Length == 1)
                         actorType = GetIdentID(getIdentByName(args[0]));
                 
-                MultiplayerManager.NetworkSend(new KillAllCommand
+                MultiplayerManager.NetworkSend(new KillAllCommandMessage
                 {
                     actorType = actorType,
                     sceneGroup = sceneGroupsReverse[systemContext.SceneLoader._currentSceneGroup.name]
@@ -269,9 +273,6 @@ namespace NewSR2MP
         /// </summary>
         public static Dictionary<string, PediaEntry> pediaEntries = new Dictionary<string, PediaEntry>();
 
-        public static Dictionary<string, UpgradeDefinition>
-            playerUpgrades = new Dictionary<string, UpgradeDefinition>();
-
         /// <summary>
         /// Scene Group persistence ID lookup table. Use id 1 for the ranch's scene group.
         /// </summary>
@@ -302,6 +303,7 @@ namespace NewSR2MP
         public static Dictionary<int, Guid> clientToGuid = new Dictionary<int, Guid>();
 
         public static Dictionary<long, NetworkActor> actors = new Dictionary<long, NetworkActor>();
+        public static Dictionary<long, Gadget> gadgets = new Dictionary<long, Gadget>();
 
         internal static List<NetworkActorOwnerToggle> activeActors = new List<NetworkActorOwnerToggle>();
 
@@ -329,8 +331,13 @@ namespace NewSR2MP
             return found;
         }
 
-        public static List<NetworkActorOwnerToggle> GetUnownedActors()
+        internal static List<NetworkActorOwnerToggle> unownedActors; 
+        
+        public static IEnumerator GetUnownedActors()
         {
+            // Null check
+            if (sceneContext == null || sceneContext.player == null) yield break;
+            
             // Local Functions
             void AddList(List<NetworkActorOwnerToggle> toAdd, List<NetworkActorOwnerToggle> original)
             {
@@ -352,18 +359,31 @@ namespace NewSR2MP
             // Main Function
             List<NetworkActorOwnerToggle> found = new List<NetworkActorOwnerToggle>();
             List<NetworkActorOwnerToggle> owned = new List<NetworkActorOwnerToggle>();
-            List<NetworkActorOwnerToggle> unowned = new List<NetworkActorOwnerToggle>();
 
-            Vector3 size = new Vector3(50, 200, 50);
+            Dictionary<int, List<NetworkActorOwnerToggle>> playersActors =
+                new Dictionary<int, List<NetworkActorOwnerToggle>>();
+            
+            Vector3 size = new Vector3(150, 600, 150);
 
-            foreach (var player in players.Values)
-                AddList(GetActorsInBounds(new Bounds(player.transform.position, size)), owned);
+            foreach (var player in players)
+            {            
+                playersActors.Add(player.Key, GetActorsInBounds(new Bounds(player.Value.transform.position, size)));
+                yield return null;
+            }
 
             found = GetActorsInBounds(new Bounds(sceneContext.player.transform.position, size));
+            yield return null;
 
-            unowned = DifferenceOf(found, owned);
-
-            return unowned;
+            foreach (var player in playersActors)
+            {
+                if (player.Key < currentPlayerID)
+                {
+                    AddList(player.Value, owned);
+                    yield return null;
+                }
+            }
+            
+            unownedActors = DifferenceOf(found, owned);
         }
 
         public static NetworkV01 savedGame;
@@ -435,48 +455,125 @@ namespace NewSR2MP
             Quaternion rotation,
             SceneGroup sceneGroup)
         {
-            sceneContext.GameModel._actorIdProvider._nextActorId++;
-
-            var model = CreateActorModel(id, ident, position, rotation, sceneGroup);
-
-            sceneContext.GameModel.identifiables.Add(id, model);
-            if (!sceneContext.GameModel.identifiablesByIdent.TryGetValue(ident, out var types))
+            if (ClientActive())
+                sceneContext.GameModel._actorIdProvider._nextActorId = long.MinValue;
+            
+            SRMP.Debug("Spawning actor -" +
+                       $" ID:{id.Value}" +
+                       $" TYPE:{ident.name}" +
+                       $" POSITION:({position})" +
+                       $" ROTATION:({rotation.ToEuler()})" +
+                       $" SCENEGROUP:{sceneGroup.name}");
+            
+            IdentifiableModel model;
+            GameObject actor = null;
+            var gadget = ident.TryCast<GadgetDefinition>() != null;
+            if (gadget)
             {
-                sceneContext.GameModel.identifiablesByIdent.Add(ident,
-                    new Il2CppSystem.Collections.Generic.List<IdentifiableModel>(0));
-                types = sceneContext.GameModel.identifiablesByIdent[ident];
+                var modelGadget = sceneContext.GameModel.CreateGadgetModel(ident.Cast<GadgetDefinition>(), id, sceneGroup, position);
+                
+                modelGadget.eulerRotation = rotation.ToEuler();
+                
+                if (modelGadget != null)
+                {           
+                    handlingPacket = true;
+                    actor = SpawnGadgetFromModel(modelGadget);
+                    handlingPacket = false;
+                    if (actor)
+                    {
+                        gadgets.Add(id.Value, actor.GetComponent<Gadget>());
+                    }
+                }
+                else
+                {
+                    SRMP.Error("Null Gadget Model!");
+                }
+                model = modelGadget;
+            }
+            else
+            {
+
+                model = sceneContext.GameModel.CreateActorModel(id, ident, sceneGroup, position, rotation).TryCast<ActorModel>();
+
+                if (model != null)
+                {
+                    actor = InstantiateActorFromModel(model.Cast<ActorModel>());
+                    if (actor)
+                        actor.transform.position = position;
+                }
             }
 
-            types.Add(model);
+            if (model != null)
+            {
+                if (!sceneContext.GameModel.identifiables.TryGetValue(id, out _))
+                {
+                    sceneContext.GameModel.identifiables.Add(id, model);
+                    if (!sceneContext.GameModel.identifiablesByIdent.TryGetValue(ident, out var types))
+                    {
+                        sceneContext.GameModel.identifiablesByIdent.Add(ident,
+                            new Il2CppSystem.Collections.Generic.List<IdentifiableModel>(0));
+                        types = sceneContext.GameModel.identifiablesByIdent[ident];
+                    }
+                    
+                    types.Add(model);
+                }
 
-            debugRegisteredActors.Add(id.Value, model);
-            var actor = InstantiateActorFromModel(model);
-            if (actor)
-                actor.transform.position = position;
+
+                debugRegisteredActors.Add(id.Value, model);
+
+                var savedGame2 = gameContext.AutoSaveDirector.SavedGame;
+
+                var data = CreateActorDataFromModel(
+                    model,
+                    gameContext.AutoSaveDirector.SavedGame._statusEffectTranslation,
+                    savedGame2.identifiableTypeToPersistenceId);
+
+                savedGame2.gameState.Actors.Add(data);
+
+                
+
+                multiplayerSpawnedActorsIDs.Add(id.Value);
+
+            }
+
+            if (gadget)
+            {
+                actor.TryRemoveComponent<NetworkActor>();
+                actor.TryRemoveComponent<TransformSmoother>();
+                actor.TryRemoveComponent<NetworkActorOwnerToggle>();
+            }
+
+            sceneContext.GameModel._actorIdProvider._nextActorId++;
             
-            var savedGame2 = gameContext.AutoSaveDirector.SavedGame;
-
-            var data = CreateActorDataFromModel(
-                model,
-                gameContext.AutoSaveDirector.SavedGame._statusEffectTranslation,
-                savedGame2.identifiableTypeToPersistenceId);
-
-            savedGame2.gameState.Actors.Add(data);
-
-            SRMP.Debug(
-                $"Spawned actor - ID:{id.Value} TYPE:{ident.name} POSITION:({position}) ROTATION:({rotation.ToEuler()}) SCENEGROUP:{sceneGroup.name}");
-
-            multiplayerSpawnedActorsIDs.Add(id.Value);
-
             return actor;
         }
 
+        public static GameObject SpawnGadgetFromModel(GadgetModel gadgetModel)
+        {
+            /*
+            var obj = Object.Instantiate(gadgetModel.ident.prefab);
+            
+            gadgetModel.Init(obj);
+            gadgetModel.NotifyParticipants(obj);
+            
+            DynamicObjectContainer.Instance.RegisterDynamicObject(obj);
+            
+            obj.transform.position = gadgetModel.lastPosition;
+            obj.transform.eulerAngles = gadgetModel.eulerRotation;
+            
+            return obj;*/
+            return GadgetDirector.InstantiateGadgetFromModel(gadgetModel);
+                        
+        }
+        
         public static void DeregisterActor(ActorId id)
         {
-            sceneContext.GameModel.DestroyIdentifiableModel(sceneContext.GameModel.identifiables[id]);
+            if (sceneContext.GameModel.identifiables.TryGetValue(id, out _))
+                sceneContext.GameModel.DestroyIdentifiableModel(sceneContext.GameModel.identifiables[id]);
 
             int idx = 0;
             bool found = false;
+            
             foreach (var actor in gameContext.AutoSaveDirector.SavedGame.gameState.Actors)
             {
                 if (actor.ActorId == id.Value)
@@ -500,75 +597,92 @@ namespace NewSR2MP
             SceneGroup sceneGroup)
             => sceneContext.GameModel.CreateActorModel(id, ident, sceneGroup, position, rotation);
 
-        private static Dictionary<long, ActorModel> debugRegisteredActors = new Dictionary<long, ActorModel>();
+        private static Dictionary<long, IdentifiableModel> debugRegisteredActors = new Dictionary<long, IdentifiableModel>();
 
         public static ActorDataV02 CreateActorDataFromModel(
-            ActorModel actorModel,
+            IdentifiableModel model,
             SavedGame.PersistenceIDTranslation<StatusEffectDefinition> statusEffectToPersistenceIdTranslation,
             IdentifiableTypePersistenceIdLookupTable identTable)
         {
+            var actorModel = model.TryCast<ActorModel>();
+            var gadgetModel = model.TryCast<GadgetModel>();
+            
             var statusEffectToPersistenceId = statusEffectToPersistenceIdTranslation.InstanceLookupTable;
             ActorDataV02 actorDataV = new ActorDataV02();
 
-            IdentifiableType ident = actorModel.ident;
+            IdentifiableType ident = model.ident;
             actorDataV.TypeId = identTable.GetPersistenceId(ident);
 
-            actorDataV.ActorId = actorModel.actorId.Value;
+            actorDataV.ActorId = model.actorId.Value;
 
             Vector3V01 position = new Vector3V01();
-            position.Value = actorModel.lastPosition;
+            position.Value = model.lastPosition;
             actorDataV.Pos = position;
 
             Vector3V01 rotation = new Vector3V01();
-            rotation.Value = actorModel.lastRotation.eulerAngles;
+            if (actorModel != null)
+                rotation.Value = actorModel.lastRotation.eulerAngles;
+            else if (gadgetModel != null)
+                rotation.Value = gadgetModel.eulerRotation;
+            else
+                rotation.Value = Vector3.zero;
             actorDataV.Rot = rotation;
 
-            actorDataV.SceneGroup = sceneGroupsReverse[actorModel.SceneGroup.name];
+            actorDataV.SceneGroup = sceneGroupsReverse[model.SceneGroup.name];
 
             var emotions = new SlimeEmotionDataV01();
             emotions.EmotionData = new Il2CppSystem.Collections.Generic.Dictionary<SlimeEmotions.Emotion, float>();
+            
             emotions.EmotionData.Add(SlimeEmotions.Emotion.FEAR,
-                actorModel.TryCast<SlimeModel>() != null ? actorModel.Cast<SlimeModel>().Emotions.x : 0f);
+                model.TryCast<SlimeModel>() != null ? model.Cast<SlimeModel>().Emotions.x : 0f);
+            
             emotions.EmotionData.Add(SlimeEmotions.Emotion.HUNGER,
-                actorModel.TryCast<SlimeModel>() != null ? actorModel.Cast<SlimeModel>().Emotions.y : 0f);
+                model.TryCast<SlimeModel>() != null ? model.Cast<SlimeModel>().Emotions.y : 0f);
+            
             emotions.EmotionData.Add(SlimeEmotions.Emotion.AGITATION,
-                actorModel.TryCast<SlimeModel>() != null ? actorModel.Cast<SlimeModel>().Emotions.z : 0f);
+                model.TryCast<SlimeModel>() != null ? model.Cast<SlimeModel>().Emotions.z : 0f);
+            
             emotions.EmotionData.Add(SlimeEmotions.Emotion.SLEEPINESS,
-                actorModel.TryCast<SlimeModel>() != null ? actorModel.Cast<SlimeModel>().Emotions.w : 0f);
+                model.TryCast<SlimeModel>() != null ? model.Cast<SlimeModel>().Emotions.w : 0f);
+            
             actorDataV.Emotions = emotions;
 
 
             Il2CppSystem.Collections.Generic.List<StatusEffectV01> statusEffects =
                 new Il2CppSystem.Collections.Generic.List<StatusEffectV01>();
-            foreach (var effect in actorModel.statusEffects)
+            if (actorModel != null)
             {
-                var effectV01 = new StatusEffectV01()
+                foreach (var effect in actorModel.statusEffects)
                 {
-                    ExpirationTime = effect.value.ExpirationTime,
-                    ID = statusEffectToPersistenceId.GetPersistenceId(effect.key)
-                };
-                statusEffects.Add(effectV01);
+                    var effectV01 = new StatusEffectV01()
+                    {
+                        ExpirationTime = effect.value.ExpirationTime,
+                        ID = statusEffectToPersistenceId.GetPersistenceId(effect.key)
+                    };
+                    statusEffects.Add(effectV01);
+                }
             }
+            
 
             actorDataV.StatusEffects = statusEffects;
 
             actorDataV.CycleData = new ResourceCycleDataV01();
 
-            if (actorModel is SlimeModel slimeModel)
+            if (model.TryCast<SlimeModel>() != null)
             {
-                slimeModel.Pull(ref actorDataV, identTable);
+                model.TryCast<SlimeModel>().Pull(ref actorDataV, identTable);
             }
-            else if (actorModel is AnimalModel animalModel)
+            else if (model.TryCast<AnimalModel>() != null)
             {
-                animalModel.Pull(ref actorDataV, identTable);
+                model.TryCast<AnimalModel>().Pull(ref actorDataV, identTable);
             }
-            else if (actorModel is ProduceModel produceModel)
+            else if (model.TryCast<ProduceModel>() != null)
             {
-                produceModel.Pull(out var state, out var time);
+                model.TryCast<ProduceModel>().Pull(out var state, out var time);
                 actorDataV.CycleData.State = state;
                 actorDataV.CycleData.ProgressTime = time;
             }
-            else if (actorModel is StatueFormModel statueFormModel)
+            else if (model is StatueFormModel statueFormModel)
             {
                 actorDataV.IsStatue = true;
             }
@@ -684,13 +798,14 @@ namespace NewSR2MP
 
         public static void RegisterAllSilos()
         {
-            foreach (var silo in Resources.FindObjectsOfTypeAll<SiloStorage>())
+            foreach (var plot in sceneContext.GameModel.landPlots)
             {
-                if (!string.IsNullOrEmpty(silo.gameObject.scene.name))
+                var silo = plot.Value.gameObj.GetComponentInChildren<SiloStorage>();
+                if (silo != null)
                 {
                     try
                     {
-                        silo.RegisterAmmoPointer();
+                        silo.LocalAmmo.RegisterAmmoPointer($"plot{plot.key}");
                     }
                     catch (Exception e)
                     {
@@ -819,6 +934,12 @@ namespace NewSR2MP
         
         public static bool handlingPacket = false;
 
+        public static bool handlingNavPacket = false;
+        
         public static StaticGameEvent GetGameEvent(string dataKey) => Resources.FindObjectsOfTypeAll<StaticGameEvent>().FirstOrDefault(x => x._dataKey == dataKey);
+        
+        public const bool DEBUG_MODE = true;
+
+        public static long NextMultiplayerActorID => ++sceneContext.GameModel._actorIdProvider._nextActorId;
     }
 }

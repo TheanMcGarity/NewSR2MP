@@ -2,7 +2,7 @@
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class KillAllCommand : ICustomMessage
+    public class KillAllCommandMessage : ICustomMessage
     {
         public int sceneGroup;
         public int actorType = -1;
@@ -14,6 +14,12 @@ namespace NewSR2MP.Networking.Packet
             msg.AddInt(actorType);
             
             return msg;
+        }
+
+        public void Deserialize(Message msg)
+        {
+            sceneGroup = msg.GetInt();
+            actorType = msg.GetInt();
         }
     }
 }

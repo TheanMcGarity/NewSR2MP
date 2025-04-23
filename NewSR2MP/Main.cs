@@ -10,6 +10,7 @@ using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.Options;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.SlimeRancher.Player.CharacterController;
+using Il2CppMonomiPark.SlimeRancher.UI.Refinery;
 using Il2CppMonomiPark.SlimeRancher.Util.Extensions;
 using Il2CppMonomiPark.SlimeRancher.World;
 using Il2CppMonomiPark.World;
@@ -78,6 +79,19 @@ namespace NewSR2MP
     public static class Extentions
     {
         public static void RemoveComponent<T>(this GameObject go) where T : Component => UnityEngine.Object.Destroy(go.GetComponent<T>());
+
+        public static bool TryRemoveComponent<T>(this GameObject go) where T : Component
+        {
+            try
+            {
+                go.RemoveComponent<T>();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
     
     public class Main : SR2EExpansionV1
@@ -183,19 +197,20 @@ namespace NewSR2MP
                     var lp = model.gameObj.GetComponentInChildren<LandPlot>();
                     lp.ApplyUpgrades(ConvertToIEnumerable(plot.upgrades), false);
                     var silo = model.gameObj.GetComponentInChildren<SiloStorage>();
+                    silo.RegisterAmmoPointer();
                     foreach (var ammo in plot.siloData.ammo)
                     {
                         try
                         {
                             if (!(ammo.count == 0 || ammo.id == 9))
                             {
-                                silo.Ammo.Slots[ammo.slot]._count = ammo.count;
-                                silo.Ammo.Slots[ammo.slot]._id = identifiableTypes[ammo.id];
+                                silo.LocalAmmo.Slots[ammo.slot]._count = ammo.count;
+                                silo.LocalAmmo.Slots[ammo.slot]._id = identifiableTypes[ammo.id];
                             }
                             else
                             {
-                                silo.Ammo.Slots[ammo.slot]._count = 0;
-                                silo.Ammo.Slots[ammo.slot]._id = null;
+                                silo.LocalAmmo.Slots[ammo.slot]._count = 0;
+                                silo.LocalAmmo.Slots[ammo.slot]._id = null;
                             }
                         }
                         catch
@@ -231,8 +246,8 @@ namespace NewSR2MP
         {
             if (ClientActive() && !ServerActive())
             {
-                if (sceneContext.gameObject.GetComponent<TimeSyncer>())
-                    sceneContext.gameObject.RemoveComponent<TimeSyncer>();
+                if (sceneContext.gameObject.GetComponent<NetworkTimeDirector>())
+                    sceneContext.gameObject.RemoveComponent<NetworkTimeDirector>();
 
                 LoadMessage save = latestSaveJoined;
 
@@ -250,7 +265,7 @@ namespace NewSR2MP
                 if (!destroyedExistingActors)
                 {
                     
-                    foreach (var a in Resources.FindObjectsOfTypeAll<IdentifiableActor>())
+                    foreach (var a in Resources.FindObjectsOfTypeAll<Identifiable>())
                     {
                         if (string.IsNullOrEmpty(a.gameObject.scene.name)) continue;
 
@@ -259,8 +274,9 @@ namespace NewSR2MP
                             if (!a.identType.IsSceneObject && !a.identType.IsPlayer)
                             {
                                 handlingPacket = true;
-                                sceneContext.GameModel.identifiables.Remove(a.GetActorId());
+                                sceneContext.GameModel.DestroyIdentifiableModel(sceneContext.GameModel.identifiables[a.GetActorId()]);
                                 UnityEngine.Object.Destroy(a.gameObject);
+                                handlingPacket = false;
                             }
                         }
                         catch
@@ -274,7 +290,7 @@ namespace NewSR2MP
                 int actorYieldCounter = 0;
                 int actorTotalCounter = 0;
                 
-                for (;actorTotalCounter < save.initActors.Count;)
+                while (actorTotalCounter < save.initActors.Count)
                 {
                     try
                     {
@@ -288,13 +304,13 @@ namespace NewSR2MP
 
                         if (!ident.IsSceneObject && !ident.IsPlayer)
                         {
+                            handlingPacket = true;
                             var obj = ident.prefab;
                             if (!obj.GetComponent<NetworkActor>())
                                 obj.AddComponent<NetworkActor>();
                             if (!obj.GetComponent<TransformSmoother>())
                                 obj.AddComponent<TransformSmoother>();
-                            var obj2 = RegisterActor(new ActorId(newActor.id), identifiableTypes[newActor.ident],
-                                newActor.pos, Quaternion.identity, sceneGroups[newActor.scene]);
+                            var obj2 = RegisterActor(new ActorId(newActor.id), ident, newActor.pos, Quaternion.identity, sceneGroups[newActor.scene]);
 
                             UnityEngine.Object.Destroy(obj.GetComponent<NetworkActor>());
                             UnityEngine.Object.Destroy(obj.GetComponent<TransformSmoother>());
@@ -305,6 +321,8 @@ namespace NewSR2MP
 
                             if (!actors.TryAdd(newActor.id, obj2.GetComponent<NetworkActor>()))
                                 UnityEngine.Object.Destroy(obj2);
+                            
+                            handlingPacket = false;
                         }
                     }
                     catch (Exception e)
@@ -482,13 +500,13 @@ namespace NewSR2MP
                                 handlingPacket = true;
                     
                                 if (model.gameObj.TryGetComponent<WorldStatePrimarySwitch>(out var primary))
-                                    primary.SetStateForAll((SwitchHandler.State)sw.state, false);
+                                    primary.SetStateForAll((SwitchHandler.State)sw.state, true);
                     
                                 if (model.gameObj.TryGetComponent<WorldStateSecondarySwitch>(out var secondary))
-                                    secondary.SetState((SwitchHandler.State)sw.state, false);
+                                    secondary.SetState((SwitchHandler.State)sw.state, true);
                     
                                 if (model.gameObj.TryGetComponent<WorldStateInvisibleSwitch>(out var invisible))
-                                    invisible.SetStateForAll((SwitchHandler.State)sw.state, false);
+                                    invisible.SetStateForAll((SwitchHandler.State)sw.state, true);
                     
                                 handlingPacket = false;
                             }
@@ -508,8 +526,44 @@ namespace NewSR2MP
                     yield return null;
                 }
                 
-                sceneContext.PlayerState._model.upgradeModel.upgradeLevels = save.upgrades;
+                bool completedRefinery = false;
 
+                if (!completedRefinery)
+                {
+                    Il2CppSystem.Collections.Generic.Dictionary<IdentifiableType, int> refineryItems = new();
+                    foreach (var item in save.refineryItems)
+                    {
+                        var gotIdent = identifiableTypes.TryGetValue(item.Key, out var ident);
+                        if (gotIdent)
+                        {
+                            SRMP.Debug($"Refinery item: {ident.name} - Count: {item.Value}");
+                            refineryItems.Add(ident, item.Value);
+                        }
+                    }
+                    sceneContext.GadgetDirector._model._itemCounts = refineryItems;
+                    
+                    completedRefinery = true;
+                    
+                    yield return null;
+                }
+                
+                bool completedUpgrades = false;
+
+                if (!completedUpgrades)
+                {
+                    var playerUpgrades = new Il2CppSystem.Collections.Generic.Dictionary<int, int>();
+
+                    foreach (var upgrade in save.upgrades)
+                        playerUpgrades.Add(upgrade.Key, upgrade.Value);
+                
+                    sceneContext.PlayerState._model.upgradeModel.upgradeLevels = playerUpgrades;
+
+                    completedUpgrades = true;
+                    
+                    yield return null;
+                }
+
+                handlingPacket = false;
                 var ammo = sceneContext.PlayerState.Ammo;
 
                 ammo.RegisterAmmoPointer($"player_{data.Player}");

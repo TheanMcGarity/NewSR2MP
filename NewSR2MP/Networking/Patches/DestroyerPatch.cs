@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Il2CppMonomiPark.SlimeRancher.World;
+using UnityEngine;
 
 namespace NewSR2MP.Networking.Patches
 {
@@ -24,8 +25,7 @@ namespace NewSR2MP.Networking.Patches
             }
             catch { }
 
-            // Moved here because it would spam testers melonloader logs and lag the game because it didnt destroy (^^^^) but it sent the packet anyways.
-            if (isJoiningAsClient) return true;
+            // Moved here because it would spam testers' melonloader logs and lag the game because it didnt destroy (^^^^) but it sent the packet anyways.
 
             if ((ServerActive() || ClientActive()) && !handlingPacket && actorObj)
             {
@@ -36,6 +36,24 @@ namespace NewSR2MP.Networking.Patches
                 MultiplayerManager.NetworkSend(packet);
             }
             return true;
+        }
+    }
+    [HarmonyPatch(typeof(Destroyer), nameof(DestroyGadget), typeof(GameObject), typeof(string))]
+    public class DestroyerDestroy
+    {
+        public static void Prefix(GameObject gadgetObj, string source)
+        {
+            if (isJoiningAsClient) return;
+            
+            if ((ServerActive() || ClientActive()) && !handlingPacket && gadgetObj) 
+            {
+                SRMP.Debug("Destroyed Gadget!");
+                var packet = new ActorDestroyGlobalMessage()
+                {
+                    id = gadgetObj.GetComponent<Gadget>().GetActorId().Value,
+                };
+                MultiplayerManager.NetworkSend(packet);
+            }
         }
     }
 }

@@ -31,5 +31,15 @@ namespace NewSR2MP.Networking.Packet
 
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetLong();
+            ident = msg.GetInt();
+            position = msg.GetVector3();
+            rotation = msg.GetVector3();
+            scene = msg.GetInt();
+            player = msg.GetInt();
+        }
     }
 }

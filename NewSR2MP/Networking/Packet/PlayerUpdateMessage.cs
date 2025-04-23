@@ -43,5 +43,22 @@ namespace NewSR2MP.Networking.Packet
             
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetInt();
+
+            scene = msg.GetByte();
+            pos = msg.GetVector3();
+            rot = msg.GetQuaternion();
+
+            airborneState = msg.GetInt();
+            moving = msg.GetBool();
+            horizontalSpeed = msg.GetFloat();
+            forwardSpeed = msg.GetFloat();
+            horizontalMovement = msg.GetFloat();
+            forwardMovement = msg.GetFloat();
+            yaw = msg.GetFloat();
+        }
     }
 }

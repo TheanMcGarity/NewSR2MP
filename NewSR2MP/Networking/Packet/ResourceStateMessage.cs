@@ -21,5 +21,11 @@ namespace NewSR2MP.Networking.Packet
 
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            state = (ResourceCycle.State)msg.GetByte();
+            id = msg.GetLong();
+        }
     }
 }

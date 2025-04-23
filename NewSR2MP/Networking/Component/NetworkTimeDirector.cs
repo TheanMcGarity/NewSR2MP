@@ -11,7 +11,7 @@ using UnityEngine;
 namespace NewSR2MP.Networking.Component
 {
     [RegisterTypeInIl2Cpp(false)]
-    public class TimeSyncer : MonoBehaviour
+    public class NetworkTimeDirector : MonoBehaviour
     {
         TimeDirector dir;
         void Start()

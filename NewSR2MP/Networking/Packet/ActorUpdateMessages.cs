@@ -65,6 +65,15 @@ namespace NewSR2MP.Networking.Packet
             
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetLong();
+            position = msg.GetVector3();
+            rotation = msg.GetVector3();
+            velocity = msg.GetVector3();
+            slimeEmotions = NetworkEmotions.Deserialize(msg);
+        }
     }
     public class ActorUpdateClientMessage : ICustomMessage // Remind me to merge this with the main message
     {
@@ -89,6 +98,15 @@ namespace NewSR2MP.Networking.Packet
             
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetLong();
+            position = msg.GetVector3();
+            rotation = msg.GetVector3();
+            velocity = msg.GetVector3();
+            slimeEmotions = NetworkEmotions.Deserialize(msg);
+        }
     }
     public class ActorUpdateOwnerMessage : ICustomMessage // Owner update message.
     {
@@ -102,6 +120,36 @@ namespace NewSR2MP.Networking.Packet
             msg.AddInt(player);
 
             return msg;
+        }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetLong();
+            player = msg.GetInt();
+        }
+    }
+    public class ActorVelocityMessage : ICustomMessage // Set velocity for new actor owner.
+    {   
+        public Vector3 velocity;
+        public bool isOwner;
+        public long id;
+
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorVelocitySet);
+            msg.AddVector3(velocity);
+            msg.AddLong(id);
+            msg.AddBool(isOwner);
+
+            return msg;
+        }
+
+        public void Deserialize(Message msg)
+        {
+            velocity = msg.GetVector3();
+            id = msg.GetLong();
+            isOwner = msg.GetBool();
         }
     }
     public class ActorSetOwnerMessage : ICustomMessage // Host informing client to set actor
@@ -117,6 +165,12 @@ namespace NewSR2MP.Networking.Packet
             
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetLong();
+            velocity = msg.GetVector3();
+        }
     }
     public class ActorChangeHeldOwnerMessage : ICustomMessage // Largo holder change message.
     {
@@ -128,11 +182,17 @@ namespace NewSR2MP.Networking.Packet
             msg.AddLong(id);
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            // no
+        }
     }
     public class ActorDestroyGlobalMessage : ICustomMessage // Destroy message. Runs on both client and server (Global)
     {
         public long id;
-        
+        private ICustomMessage _customMessageImplementation;
+
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorDestroy);
@@ -140,6 +200,11 @@ namespace NewSR2MP.Networking.Packet
             msg.AddLong(id);
 
             return msg;
+        }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetLong();
         }
     }
 }

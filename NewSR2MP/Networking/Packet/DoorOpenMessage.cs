@@ -11,5 +11,10 @@
 
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetString();
+        }
     }
 }

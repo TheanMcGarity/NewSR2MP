@@ -23,7 +23,7 @@ namespace NewSR2MP.Networking.Patches
                 {
                     var packet = new LandPlotMessage()
                     {
-                        id = __instance._model.gameObj.GetComponent<LandPlotLocation>()._id,
+                        id = __instance.GetComponentInParent<LandPlotLocation>()._id,
                         upgrade = upgrade,
                         messageType = LandplotUpdateType.UPGRADE
                     };
@@ -31,7 +31,10 @@ namespace NewSR2MP.Networking.Patches
                     MultiplayerManager.NetworkSend(packet);
                 }
             }
-            catch { }
+            catch (Exception e)
+            {
+                SRMP.Error($"Error in upgrading landplot!\n{e}");
+            }
         }
 
     }

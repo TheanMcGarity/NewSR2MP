@@ -18,5 +18,11 @@ namespace NewSR2MP.Networking.Packet
             
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetString();
+            state = msg.GetByte();
+        }
     }
 }

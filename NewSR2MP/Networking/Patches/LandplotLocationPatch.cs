@@ -21,7 +21,7 @@ namespace NewSR2MP.Networking.Patches
             {
                 if ((ServerActive() || ClientActive()) && !handlingPacket)
                 {
-                    var packet = new LandPlotMessage()
+                    var packet = new LandPlotMessage
                     {
                         id = __instance._id,
                         type = replacementPrefab.GetComponent<LandPlot>().TypeId,

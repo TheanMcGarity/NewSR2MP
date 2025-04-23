@@ -22,7 +22,12 @@ namespace NewSR2MP.Networking.Packet
 
             return msg;
         }
-        
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetInt();
+            local = msg.GetBool();
+        }
     }
     public class ClientUserMessage : ICustomMessage
     {
@@ -37,7 +42,12 @@ namespace NewSR2MP.Networking.Packet
 
             return msg;
         }
-        
+
+        public void Deserialize(Message msg)
+        {
+            guid = msg.GetGuid();
+            name = msg.GetString();
+        }
     }
     public class PlayerLeaveMessage : ICustomMessage
     {
@@ -50,6 +60,10 @@ namespace NewSR2MP.Networking.Packet
 
             return msg;
         }
-        
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetInt();
+        }
     }
 }

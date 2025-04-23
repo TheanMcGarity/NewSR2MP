@@ -36,7 +36,7 @@ namespace NewSR2MP.Networking
         public void Awake()
         {
             InitializeCommandExtensions();
-            
+
             // Dont make that mistake again
             // i submitted a incorrect bug report :sob:
             RiptideLogger.Initialize(SRMP.Debug, SRMP.Log, SRMP.Warn, SRMP.Error, false);
@@ -54,40 +54,6 @@ namespace NewSR2MP.Networking
             SR2ECommandManager.RegisterCommand(new JoinCommand());
             SR2ECommandManager.RegisterCommand(new SplitScreenDebugCommand());
             SR2ECommandManager.RegisterCommand(new ShowSRMPErrorsCommand());
-        }
-
-        // Prototype Player model
-        public void GeneratePlayerBean()
-        {
-            onlinePlayerPrefab = new GameObject("PlayerDefault");
-            var playerModel = GameObject.CreatePrimitive(PrimitiveType.Capsule); // Prototype player.
-            var playerFace = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            playerFace.transform.parent = playerModel.transform;
-            playerFace.transform.localPosition = new Vector3(0f, 0.5f, 0.25f);
-            playerFace.transform.localScale = Vector3.one * 0.5f;
-            onlinePlayerPrefab.AddComponent<NetworkPlayer>();
-            onlinePlayerPrefab.AddComponent<TransformSmoother>();
-            onlinePlayerPrefab.GetComponent<NetworkPlayer>().enabled = false;
-            DontDestroyOnLoad(onlinePlayerPrefab);
-            onlinePlayerPrefab.SetActive(false);
-            playerModel.transform.parent = onlinePlayerPrefab.transform;
-
-            var material = Resources.FindObjectsOfTypeAll<Material>()
-                .FirstOrDefault((mat) => mat.name == "slimePinkBase");
-            playerFace.GetComponent<MeshRenderer>().material = material;
-            playerModel.GetComponent<MeshRenderer>().material = material;
-
-            Destroy(playerFace.GetComponent<BoxCollider>());
-
-            playerModel.transform.localPosition = Vector3.up;
-
-            var viewcam = new GameObject("CharaCam").AddComponent<Camera>();
-
-            viewcam.transform.parent = playerFace.transform;
-            viewcam.transform.localPosition = new Vector3(0, 0, 1.3f);
-            viewcam.enabled = false;
-
-            onlinePlayerPrefab.GetComponent<NetworkPlayer>().InitCamera();
         }
 
         public void GeneratePlayerModel()
@@ -113,7 +79,7 @@ namespace NewSR2MP.Networking
             var prefabAnim = onlinePlayerPrefab.GetComponent<Animator>();
             prefabAnim.avatar = animator.avatar;
             prefabAnim.runtimeAnimatorController = animator.runtimeAnimatorController;
-            
+
             if (ClientActive())
             {
                 foreach (var player in players)
@@ -149,7 +115,7 @@ namespace NewSR2MP.Networking
 
             return ret;
         }
-        
+
         // Hefty code
         public static void PlayerJoin(Connection nctc, Guid savingID, string username)
         {
@@ -183,7 +149,12 @@ namespace NewSR2MP.Networking
                     pedias.Add(pedia.name);
                 }
 
-                var upgrades = sceneContext.PlayerState._model.upgradeModel.upgradeLevels;
+                var upgrades = new Dictionary<byte, byte>();
+                var upgModel = sceneContext.PlayerState._model.upgradeModel;
+                foreach (var upg in upgModel.upgradeDefinitions.items)
+                {
+                    upgrades.Add((byte)upg._uniqueId, (byte)upgModel.GetUpgradeLevel(upg));
+                }
 
                 // Actors
                 foreach (var typeDict in sceneContext.GameModel.identifiablesByIdent)
@@ -198,7 +169,9 @@ namespace NewSR2MP.Networking
                             pos = a.lastPosition,
                             scene = sceneGroupsReverse[a.sceneGroup.name]
                         };
-                        actors.Add(data);
+
+                        if (actors.FirstOrDefault(x => x.id == data.id) == null)
+                            actors.Add(data);
                     }
                     catch
                     {
@@ -238,6 +211,7 @@ namespace NewSR2MP.Networking
                         var p = new InitPlayerData()
                         {
                             id = player.Key,
+                            username = ""
                         };
                         initPlayers.Add(p);
                     }
@@ -245,7 +219,8 @@ namespace NewSR2MP.Networking
 
                 var p2 = new InitPlayerData()
                 {
-                    id = 0
+                    id = 0,
+                    username = ""
                 };
                 initPlayers.Add(p2);
 
@@ -385,6 +360,7 @@ namespace NewSR2MP.Networking
                         ret.Add(e.key);
                     return ret;
                 }
+
                 List<string> fogEvents = new List<string>();
                 if (sceneContext.eventDirector._model.table.TryGetValue("fogRevealed", out var table))
                     fogEvents = GetListFromFogEvents(table);
@@ -402,7 +378,11 @@ namespace NewSR2MP.Networking
                         id = sw.Key,
                         state = (byte)sw.Value.state,
                     });
-                
+
+                Dictionary<int, int> refineryItems = new Dictionary<int, int>();
+                foreach (var item in sceneContext.GadgetDirector._model._itemCounts)
+                    refineryItems.Add(GetIdentID(item.Key), item.Value);
+
                 // Send save data.
                 var saveMessage = new LoadMessage()
                 {
@@ -419,9 +399,10 @@ namespace NewSR2MP.Networking
                     localPlayerSave = localPlayerData,
                     upgrades = upgrades,
                     marketPrices = prices,
-                    initSwitches = switches
+                    initSwitches = switches,
+                    refineryItems = refineryItems,
                 };
-                
+
                 NetworkSend(saveMessage, ServerSendOptions.SendToPlayer(nctc.Id));
                 SRMP.Debug("The world data has been sent to the client!");
 
@@ -442,7 +423,7 @@ namespace NewSR2MP.Networking
             {
                 SRMP.Error($"Post join error!\n{ex}");
             }
-            
+
         }
 
 
@@ -468,12 +449,12 @@ namespace NewSR2MP.Networking
             }
 
             var transport = new TcpClient();
-            
+
             client = new Client(transport);
             client.Connect($"{ip}:{port}");
 
             client.TimeoutTime = 30000;
-            
+
             client.Connected += OnConnectionSuccessful;
             client.ConnectionFailed += OnClientConnectionFail;
             client.Disconnected += OnClientDisconnect;
@@ -495,7 +476,8 @@ namespace NewSR2MP.Networking
                     return false;
                 }
 
-                gameContext.AutoSaveDirector.SavedGame.CreateNew("SR2MPLatestSave", "Multiplayer", -1, CreateEmptyGameSettingsModel());
+                gameContext.AutoSaveDirector.SavedGame.CreateNew("SR2MPLatestSave", "Multiplayer", -1,
+                    CreateEmptyGameSettingsModel());
 
                 systemContext.SceneLoader.LoadSceneGroup(sceneGroups[latestSaveJoined.localPlayerSave.sceneGroup]);
                 waitingForSceneLoad = true;
@@ -552,6 +534,7 @@ namespace NewSR2MP.Networking
             systemContext.SceneLoader.LoadMainMenuSceneGroup();
             Shutdown();
         }
+
         public void OnClientConnectionFail(object? sender, EventArgs args)
         {
             Shutdown();
@@ -572,7 +555,7 @@ namespace NewSR2MP.Networking
             }
 
             var transport = new TcpServer();
-            
+
             server = new Server(transport);
             server.Start(port, 10);
 
@@ -584,7 +567,7 @@ namespace NewSR2MP.Networking
         }
 
         public bool loadingZone = false;
-        
+
         private void UpdateNetwork()
         {
             try
@@ -602,7 +585,7 @@ namespace NewSR2MP.Networking
         private float nextNetworkUpdate = -1f;
 
         public int sceneLoadingFrameCounter = -1;
-        
+
         void Update()
         {
             if (nextNetworkUpdate <= Time.unscaledTime)
@@ -610,17 +593,17 @@ namespace NewSR2MP.Networking
                 UpdateNetwork();
                 nextNetworkUpdate = Time.unscaledTime + networkUpdateInterval;
             }
-            
+
             if (WaitForSaveData())
             {
                 waitingForSave = false;
             }
-            
+
             if (WaitForZoneLoad())
             {
                 loadingZone = false;
             }
-            
+
             if (systemContext.SceneLoader.IsSceneLoadInProgress)
                 if (sceneLoadingFrameCounter >= 8)
                     loadingZone = true;
@@ -642,29 +625,30 @@ namespace NewSR2MP.Networking
                 return false;
 
             IEnumerable<Il2CppSystem.Collections.Generic.Dictionary<ActorId, IdentifiableModel>.Entry> actors = null;
-            
+
             if (ClientActive())
                 actors = sceneContext.GameModel.identifiables._entries.Where(x =>
                     x != null &&
                     x.value != null &&
-                    x.value.TryCast<ActorModel>() != null && 
+                    x.value.TryCast<ActorModel>() != null &&
                     x.value.sceneGroup == systemContext.SceneLoader._currentSceneGroup);
             else if (ServerActive())
                 actors = sceneContext.GameModel.identifiables._entries.Where(x =>
                     x != null &&
                     x.value != null &&
-                    x.value.TryCast<ActorModel>() != null && 
+                    x.value.TryCast<ActorModel>() != null &&
                     x.value.sceneGroup == systemContext.SceneLoader._currentSceneGroup &&
                     x.value.Transform == null);
             else
                 return true;
-            
+
             MelonCoroutines.Start(LoadZoneActors(actors.ToList()));
-            
+
             return true;
         }
 
-        IEnumerator LoadZoneActors(List<Il2CppSystem.Collections.Generic.Dictionary<ActorId, IdentifiableModel>.Entry> actorEntries)
+        IEnumerator LoadZoneActors(
+            List<Il2CppSystem.Collections.Generic.Dictionary<ActorId, IdentifiableModel>.Entry> actorEntries)
         {
             int yeildCounter = 0;
             int i = 0;
@@ -672,7 +656,7 @@ namespace NewSR2MP.Networking
             {
                 var actor = InstantiateActorFromModel(t.value.Cast<ActorModel>());
                 actor.transform.position = t.value.lastPosition;
-                
+
                 yeildCounter++;
                 i++;
                 if (i >= actorEntries.Count)
@@ -684,14 +668,15 @@ namespace NewSR2MP.Networking
                 }
             }
         }
+
         public static void Shutdown()
         {
             if (ServerActive()) server.Stop();
             if (ClientActive()) client.Disconnect();
-            
+
             server = null;
             client = null;
-            
+
             EraseValues();
         }
     }

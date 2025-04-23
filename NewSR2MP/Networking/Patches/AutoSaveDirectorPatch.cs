@@ -87,11 +87,9 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(AutoSaveDirector __instance)
         {
-            MultiplayerManager.Instance.GeneratePlayerBean();
-            
-            foreach (var ident in __instance.identifiableTypes._memberTypes)
+            foreach (var ident in __instance.SavedGame.identifiableTypeLookup)
             {
-                identifiableTypes.Add(GetIdentID(ident), ident);
+                identifiableTypes.Add(GetIdentID(ident.Value), ident.Value);
             }
             foreach (var pedia in Resources.FindObjectsOfTypeAll<PediaEntry>()) // SavedGame's list doesnt include some pedia entries.
             {

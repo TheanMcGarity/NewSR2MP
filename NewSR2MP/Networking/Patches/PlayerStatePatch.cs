@@ -5,6 +5,7 @@ using NewSR2MP.Networking;
 using NewSR2MP.Networking.Component;
 using NewSR2MP.Networking.Packet;
 using System;
+using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.UI.Map;
 
 

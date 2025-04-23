@@ -1,6 +1,7 @@
 ﻿
 using NewSR2MP.Networking.Packet;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,32 +19,12 @@ namespace NewSR2MP.Networking.Component
             {
                 Destroy(this);
             }
+            
+            //MelonCoroutines.Start(OwnActors());
         }
         
         public int id;
         float transformTimer = 0.1f;
-        /// <summary>
-        /// Player Preview Camera
-        /// </summary>
-        public Camera cam;
-
-        /// <summary>
-        /// Last region check position. Used on host for calculating if the regions should be updated.
-        /// </summary>
-        public Vector3 lastRegionCheckPos;
-        internal void InitCamera()
-        {
-            cam = gameObject.GetComponentInChildren<Camera>();
-        }
-
-        /// <summary>
-        /// Use this to freeze the preview for this player.
-        /// </summary>
-        public void StopCamera()
-        {
-            cam.enabled = false;
-            cam.targetTexture = null;
-        }
 
         public void Update()
         {
@@ -70,12 +51,34 @@ namespace NewSR2MP.Networking.Component
                 };
                 MultiplayerManager.NetworkSend(packet);
 
-                foreach (var actor in GetUnownedActors())
+            }
+        }
+        /*IEnumerator OwnActors()
+        {
+            while (true)
+            {
+                if (!sceneContext || !sceneContext.player)
+                    yield return null;
+                
+                yield return GetUnownedActors();
+                    
+                var i = 0;
+                    
+                foreach (var actor in unownedActors)
                 {
                     actor.OwnActor();
+                    
+                    i++;
+
+                    if (i > 75)
+                    {
+                        i = 0;                        
+                        yield return null;
+                    }
                 }
+                    
+                yield return null;
             }
-            
-        }
+        }*/
     }
 }

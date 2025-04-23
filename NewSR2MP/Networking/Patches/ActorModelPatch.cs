@@ -19,15 +19,12 @@ namespace NewSR2MP.Networking.Patches
         {
             try
             {
-                __result = __instance.transform.position;
+                __result = __instance.lastPosition;
                 return false;
             }
             catch
             {
-                if (ShowErrors)
-                {
-                    SRMP.Log($"Error when getting actor position (probably during saving!)\n{StackTraceUtility.ExtractStackTrace()}");
-                }
+                SRMP.Log($"Error when getting actor position (probably during saving!)\n{StackTraceUtility.ExtractStackTrace()}");
             }
             __result = Vector3.zero;
             return false;
@@ -40,15 +37,12 @@ namespace NewSR2MP.Networking.Patches
         public static bool Prefix(ActorModel __instance, ref Quaternion __result)
         {
             try
-            {
-                __result = __instance.transform.rotation;
+            {              
+                __result = __instance.lastRotation;
             }
             catch
             {
-                if (ShowErrors)
-                {
-                    SRMP.Log($"Error when getting actor rotation (probably during saving!)\n{StackTraceUtility.ExtractStackTrace()}");
-                }
+                SRMP.Log($"Error when getting actor rotation (probably during saving!)\n{StackTraceUtility.ExtractStackTrace()}");
             }
             return false;
         }

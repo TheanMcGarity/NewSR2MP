@@ -21,7 +21,24 @@ namespace NewSR2MP.Networking.Packet
                 msg.AddByte((byte)upgrade);
 
             return msg;
-        }}
+        }
+
+        public void Deserialize(Message msg)
+        {
+            LandplotUpdateType mode = (LandplotUpdateType)msg.GetByte();
+            string id = msg.GetString();
+            LandPlotMessage message = new LandPlotMessage()
+            {
+                messageType = mode,
+                id = id,
+            };
+            if (mode == LandplotUpdateType.SET)
+                message.type = (LandPlot.Id)msg.GetByte();
+            else
+                message.upgrade = (LandPlot.Upgrade)msg.GetByte();
+
+        }
+    }
 
     public enum LandplotUpdateType : byte
     {

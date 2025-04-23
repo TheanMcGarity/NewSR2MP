@@ -6,23 +6,19 @@ using System.Resources;
 
 // General Information
 [assembly: AssemblyTitle("SRMP")]
-[assembly: AssemblyDescription("Slime Rancher Multiplayer")]
+[assembly: AssemblyDescription("*NEW* Slime Rancher 2 Multiplayer")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("SatyCreations")] 
-[assembly: AssemblyProduct("SRMP")]
-[assembly: AssemblyCopyright("2021 Saty")]
-[assembly: AssemblyTrademark("HELLO MAMA")]
+[assembly: AssemblyCompany("Pink-Tarr Modding")] 
+[assembly: AssemblyProduct("NewSR2MP")]
+[assembly: AssemblyCopyright("PinkTarr 2025")]
 [assembly: AssemblyCulture("")]
 
 // Version information 
-// SCRIPT_RUN_BELOW
-[assembly: AssemblyVersion("0.0.0.374")]
-// SCRIPT_RUN_BELOW
-[assembly: AssemblyFileVersion("0.0.0.374")]
+[assembly: AssemblyVersion("0.0.0.471")]
+[assembly: AssemblyFileVersion("0.0.0.471")]
 [assembly: NeutralResourcesLanguage( "en-US" )]
 
 [assembly: MelonGame("MonomiPark", "SlimeRancher2")]
-[assembly: MelonInfo(typeof(NewSR2MP.Main),"New SR2MP", // SCRIPT_RUN_BELOW
-    "374",
-    "PinkTarr")]
+[assembly: MelonInfo(typeof(NewSR2MP.Main),"New SR2MP", "471", "PinkTarr")]
 [assembly: SR2E.Expansion.SR2EExpansion]
+[assembly: MelonOptionalDependencies("RiptideNetworking.dll")]

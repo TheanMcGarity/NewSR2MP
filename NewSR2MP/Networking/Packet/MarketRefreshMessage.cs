@@ -17,6 +17,14 @@ namespace NewSR2MP.Networking.Packet
 
             return msg;
         }
-        
+
+        public void Deserialize(Message msg)
+        {
+            var c = msg.GetInt();
+            prices = new List<float>(c);
+
+            for (int i = 0; i < c; i++)
+                prices.Add(msg.GetFloat());
+        }
     }
 }

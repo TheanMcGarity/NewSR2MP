@@ -76,7 +76,7 @@ namespace NewSR2MP.Networking
             server.ClientConnected += OnPlayerJoined;
             server.ClientDisconnected += OnPlayerLeft;
 
-            sceneContext.gameObject.AddComponent<TimeSyncer>();
+            sceneContext.gameObject.AddComponent<NetworkTimeDirector>();
             sceneContext.gameObject.AddComponent<WeatherSyncer>();
             
             var hostNetworkPlayer = sceneContext.player.AddComponent<NetworkPlayer>();
@@ -250,11 +250,16 @@ namespace NewSR2MP.Networking
         /// </summary>
         public static void EraseValues()
         {
+            foreach (var gadget in gadgets.Values)
+            {
+                DestroyGadget(gadget.gameObject, "SRMP.EraseValuesGadget");
+            }
             foreach (var actor in actors.Values)
             {
-                Destroyer.DestroyActor(actor.gameObject, "SRMP.EraseValues");
+                DestroyActor(actor.gameObject, "SRMP.EraseValuesActor");
             }
             actors.Clear();
+            gadgets.Clear();
 
             foreach (var player in players.Values)
             {

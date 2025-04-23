@@ -24,5 +24,12 @@ namespace NewSR2MP.Networking.Packet
 
             return msg;
         }
+
+        public void Deserialize(Message msg)
+        {
+            ident = msg.GetInt();
+            replace = msg.GetBool();
+            id = msg.GetString();
+        }
     }
 }

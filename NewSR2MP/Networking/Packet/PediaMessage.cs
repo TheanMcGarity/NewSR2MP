@@ -19,5 +19,11 @@ namespace NewSR2MP.Networking.Packet
             msg.AddString(id);
 
             return msg;
-        }}
+        }
+
+        public void Deserialize(Message msg)
+        {
+            id = msg.GetString();
+        }
+    }
 }

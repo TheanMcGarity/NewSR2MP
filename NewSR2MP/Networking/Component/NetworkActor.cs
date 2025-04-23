@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Il2CppMonomiPark.SlimeRancher.Slime;
+using Il2CppMonomiPark.SlimeRancher.World;
 using MelonLoader;
 using UnityEngine;
 
@@ -79,6 +80,11 @@ namespace NewSR2MP.Networking.Component
         bool appliedCollider;
         public void Update()
         {
+            if (gameObject.TryGetComponent(out Gadget gadget))
+            {
+                gameObject.RemoveComponent<TransformSmoother>();
+                gameObject.RemoveComponent<NetworkActor>();
+            }
             try
             {
                 if (frame > 3 && !appliedLaunch)
