@@ -41,7 +41,7 @@
         <Private>False</Private>
       </Reference>
       <Reference Include="Assembly-CSharp">
-        <HintPath>..\..\..\Downloads\Cpp2IL-Netframework472-Windows\cpp2il_out\Assembly-CSharp3.dll</HintPath>
+        <HintPath>libs\Assembly-CSharp.dll</HintPath>
       </Reference>
       <Reference Include="Il2Cppcom.rlabrecque.steamworks.net">
         <HintPath>Libs\Il2Cppcom.rlabrecque.steamworks.net.dll</HintPath>
@@ -73,10 +73,6 @@
       </Reference>
       <Reference Include="Il2CppInterop.Runtime">
         <HintPath>Libs\Il2CppInterop.Runtime.dll</HintPath>
-        <Private>False</Private>
-      </Reference>
-      <Reference Include="Il2CppLogger">
-        <HintPath>Libs\Il2CppLogger.dll</HintPath>
         <Private>False</Private>
       </Reference>
       <Reference Include="Il2CppMono.Security">
