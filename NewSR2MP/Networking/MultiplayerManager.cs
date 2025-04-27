@@ -149,11 +149,11 @@ namespace NewSR2MP.Networking
                     pedias.Add(pedia.name);
                 }
 
-                var upgrades = new Dictionary<byte, byte>();
+                var upgrades = new Dictionary<byte, sbyte>();
                 var upgModel = sceneContext.PlayerState._model.upgradeModel;
                 foreach (var upg in upgModel.upgradeDefinitions.items)
                 {
-                    upgrades.Add((byte)upg._uniqueId, (byte)upgModel.GetUpgradeLevel(upg));
+                    upgrades.Add((byte)upg._uniqueId, (sbyte)upgModel.GetUpgradeLevel(upg));
                 }
 
                 // Actors

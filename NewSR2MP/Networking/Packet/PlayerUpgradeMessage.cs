@@ -2,19 +2,19 @@
 {
     public class PlayerUpgradeMessage : ICustomMessage
     {
-        public byte index;
+        public byte id;
         
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.PlayerUpgrade);
-            msg.AddByte(index);
+            msg.AddByte(id);
 
             return msg;
         }
 
         public void Deserialize(Message msg)
         {
-            index = msg.GetByte();
+            id = msg.GetByte();
         }
     }
 }

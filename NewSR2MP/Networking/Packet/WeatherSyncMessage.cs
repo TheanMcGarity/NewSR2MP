@@ -12,6 +12,9 @@ namespace NewSR2MP.Networking.Packet
 {
     public class WeatherSyncMessage : ICustomMessage
     {
+        // Only here for ICustomMessage to work
+        public WeatherSyncMessage() { }
+        
         public WeatherSyncMessage(WeatherModel model)
         {
             byte b = 0;

@@ -21,7 +21,7 @@ namespace NewSR2MP.Networking.Packet
         public int playerID;
         
         public int money;
-        public Dictionary<byte, byte> upgrades;
+        public Dictionary<byte, sbyte> upgrades;
         public double time;
         
         public List<float> marketPrices = new();
@@ -107,7 +107,7 @@ namespace NewSR2MP.Networking.Packet
             foreach (var upgrade in upgrades)
             {
                 msg.AddByte(upgrade.Key);
-                msg.AddByte(upgrade.Value);
+                msg.AddSByte(upgrade.Value);
             }
             
 
@@ -280,7 +280,7 @@ namespace NewSR2MP.Networking.Packet
             for (int i = 0; i < pUpgradesCount; i++)
             {
                 var key = msg.GetByte();
-                var val = msg.GetByte();
+                var val = msg.GetSByte();
 
                 upgrades.TryAdd(key, val);
             }

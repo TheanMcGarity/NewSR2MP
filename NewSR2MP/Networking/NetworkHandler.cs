@@ -1525,7 +1525,7 @@ public class NetworkHandler
     {
         var packet = ICustomMessage.Deserialize<PlayerUpgradeMessage>(msg);
 
-        sceneContext.PlayerState._model.upgradeModel.upgradeLevels[packet.index]++;
+        sceneContext.PlayerState._model.upgradeModel.upgradeLevels[packet.id]++;
         
         ForwardMessage(packet, client);
     }
@@ -1535,7 +1535,7 @@ public class NetworkHandler
     {
         var packet = ICustomMessage.Deserialize<PlayerUpgradeMessage>(msg);
 
-        sceneContext.PlayerState._model.upgradeModel.upgradeLevels[packet.index]++;
+        sceneContext.PlayerState._model.upgradeModel.upgradeLevels[packet.id]++;
     }
     
     /// <summary>
