@@ -306,14 +306,11 @@ namespace NewSR2MP
                         {
                             handlingPacket = true;
                             var obj = ident.prefab;
-                            if (!obj.GetComponent<NetworkActor>())
-                                obj.AddComponent<NetworkActor>();
-                            if (!obj.GetComponent<TransformSmoother>())
-                                obj.AddComponent<TransformSmoother>();
                             var obj2 = RegisterActor(new ActorId(newActor.id), ident, newActor.pos, Quaternion.identity, sceneGroups[newActor.scene]);
-
-                            UnityEngine.Object.Destroy(obj.GetComponent<NetworkActor>());
-                            UnityEngine.Object.Destroy(obj.GetComponent<TransformSmoother>());
+                            
+                            obj2.AddComponent<NetworkActor>();
+                            obj2.AddComponent<TransformSmoother>();
+                            obj2.AddComponent<NetworkActorOwnerToggle>();
 
                             obj2.transform.position = newActor.pos;
                             obj2.GetComponent<TransformSmoother>().nextPos = newActor.pos;
@@ -321,7 +318,7 @@ namespace NewSR2MP
 
                             if (!actors.TryAdd(newActor.id, obj2.GetComponent<NetworkActor>()))
                                 UnityEngine.Object.Destroy(obj2);
-                            
+
                             handlingPacket = false;
                         }
                     }

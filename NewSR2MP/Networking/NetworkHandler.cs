@@ -214,18 +214,19 @@ public class NetworkHandler
             SRMP.Debug($"[{systemContext._SceneLoader_k__BackingField.CurrentSceneGroup.name} | {sg.name}]");
 
 
-            identObj.AddComponent<NetworkActor>();
-            identObj.AddComponent<NetworkActorOwnerToggle>();
-            identObj.AddComponent<TransformSmoother>();
+            
 
             handlingPacket = true;
             var obj = RegisterActor(new ActorId(packet.id), ident, packet.position, Quaternion.identity, sg);
             handlingPacket = false;
-
-
-            identObj.RemoveComponent<NetworkActor>();
-            identObj.RemoveComponent<NetworkActorOwnerToggle>();
-            identObj.RemoveComponent<TransformSmoother>();
+            
+            obj.AddComponent<NetworkActor>();
+            obj.AddComponent<NetworkActorOwnerToggle>();
+            obj.AddComponent<TransformSmoother>();
+            
+            if (obj.TryGetComponent<NetworkActor>(out var netComp))
+                if (!actors.TryAdd(packet.id, netComp))
+                    actors[packet.id] = netComp;
             
             if (obj && !ident.TryCast<GadgetDefinition>())
             {
@@ -251,7 +252,7 @@ public class NetworkHandler
                 obj.GetComponent<NetworkActor>().IsOwned = false;
                 obj.GetComponent<TransformSmoother>().nextPos = packet.position;
 
-                actors.TryAdd(packet.id, obj.GetComponent<NetworkActor>());
+                
             }
 
         }
@@ -335,29 +336,30 @@ public class NetworkHandler
             Quaternion rot = Quaternion.Euler(packet.rotation);
             var ident = identifiableTypes[packet.ident];
             var identObj = ident.prefab;
-            if (!identObj.GetComponent<NetworkActor>())
-                identObj.AddComponent<NetworkActor>();
-            if (!identObj.GetComponent<NetworkActorOwnerToggle>())
-                identObj.AddComponent<NetworkActorOwnerToggle>();
-            if (!identObj.GetComponent<TransformSmoother>())
-                identObj.AddComponent<TransformSmoother>();
+
+
             var nextID = NextMultiplayerActorID;
+
             var obj = RegisterActor(new ActorId(nextID), ident, packet.position, rot, sg);
-            identObj.RemoveComponent<NetworkActor>();
-            identObj.RemoveComponent<NetworkActorOwnerToggle>();
-            identObj.RemoveComponent<TransformSmoother>();
+
+            obj.AddComponent<NetworkActor>();
+            obj.AddComponent<NetworkActorOwnerToggle>();
+            obj.AddComponent<TransformSmoother>();
+
             if (obj && !ident.TryCast<GadgetDefinition>())
             {
                 obj.AddComponent<NetworkResource>();
                 obj.GetComponent<TransformSmoother>().enabled = false;
                 if (obj.TryGetComponent<Rigidbody>(out var rb))
                     rb.velocity = packet.velocity;
-                obj.GetComponent<NetworkActor>().startingVel = packet.velocity;
                 obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
                 obj.GetComponent<Vacuumable>()._launched = true;
-                actors.TryAdd(nextID, obj.GetComponent<NetworkActor>());
             }
 
+            if (obj.TryGetComponent<NetworkActor>(out var netComp)
+               )
+                if (!actors.TryAdd(nextID, netComp))
+                    actors[nextID] = netComp;
 
             var forwardPacket = new ActorSpawnMessage()
             {
@@ -365,16 +367,17 @@ public class NetworkHandler
                 ident = packet.ident,
                 position = packet.position,
                 rotation = packet.rotation,
+                velocity = packet.velocity,
                 scene = packet.scene,
             };
 
             long actorID = -1;
-            
+
             if (obj.TryGetComponent<IdentifiableActor>(out var identifiableActor))
                 actorID = identifiableActor._model.actorId.Value;
             else if (obj.TryGetComponent<Gadget>(out var gadget))
                 actorID = gadget._model.actorId.Value;
-            
+
             var ownPacket = new ActorSetOwnerMessage()
             {
                 id = actorID,

@@ -501,6 +501,7 @@ namespace NewSR2MP
                     if (actor)
                         actor.transform.position = position;
                 }
+                
             }
 
             if (model != null)
@@ -545,6 +546,7 @@ namespace NewSR2MP
 
             sceneContext.GameModel._actorIdProvider._nextActorId++;
             
+
             return actor;
         }
 

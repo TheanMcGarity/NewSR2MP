@@ -53,24 +53,13 @@ namespace NewSR2MP.Networking.Component
 
         public long trueID = -1;
 
-        /// <summary>
-        /// Spawn velocity. used on server for adding velocity on spawn. Only works on actor spawn.
-        /// </summary>
-        public Vector3 startingVel = Vector3.zero;
-
-        private bool appliedVel;
-
-    
-
         void Start()
         {
             if (GetComponent<ResourceCycle>() != null)
             {
                 gameObject.AddComponent<NetworkResource>();
             }
-            if (startingVel != Vector3.zero)
-                GetComponent<Rigidbody>().velocity = startingVel;
-            appliedVel = true;
+            
             
             if (ClientActive() && !ServerActive())
                 isOwned = false;
@@ -83,13 +72,13 @@ namespace NewSR2MP.Networking.Component
             if (gameObject.TryGetComponent(out Gadget gadget))
             {
                 gameObject.RemoveComponent<TransformSmoother>();
-                gameObject.RemoveComponent<NetworkActor>();
+                Destroy(this);
             }
             try
             {
                 if (frame > 3 && !appliedLaunch)
                 {
-                    GetComponent<Vacuumable>()._launched = true;
+                    GetComponent<Vacuumable>().SetLaunched(true);
                     appliedLaunch = true;
                 }
             }

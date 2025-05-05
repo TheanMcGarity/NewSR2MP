@@ -55,7 +55,7 @@ namespace NewSR2MP.Networking
             {
                 try
                 {
-                    if (a.gameObject.scene.name == "worldGenerated")
+                    if (!string.IsNullOrEmpty(a.gameObject.scene.name))
                     {
                         var actor = a.gameObject;
                         actor.AddComponent<NetworkActor>();
