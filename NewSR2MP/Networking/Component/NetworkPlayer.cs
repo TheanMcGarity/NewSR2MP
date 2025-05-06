@@ -48,6 +48,7 @@ namespace NewSR2MP.Networking.Component
                     moving = anim.GetBool("Moving"),
                     horizontalSpeed = anim.GetFloat("HorizontalSpeed"),
                     forwardSpeed = anim.GetFloat("ForwardSpeed"),
+                    sprinting = anim.GetBool("Sprinting"),
                 };
                 MultiplayerManager.NetworkSend(packet);
 
@@ -57,7 +58,7 @@ namespace NewSR2MP.Networking.Component
         {
             while (true)
             {
-                if (!sceneContext || !sceneContext.player)
+                if (sceneContext == null || sceneContext.player == null)
                     yield return null;
                 
                 yield return GetUnownedActors();
@@ -66,7 +67,7 @@ namespace NewSR2MP.Networking.Component
                     
                 foreach (var actor in unownedActors)
                 {
-                    actor.OwnActor();
+                    try { actor.OwnActor(); } catch { }
                     
                     i++;
 

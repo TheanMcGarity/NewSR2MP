@@ -14,6 +14,17 @@ namespace NewSR2MP.Networking.Component
     [RegisterTypeInIl2Cpp(false)]
     public class NetworkActorOwnerToggle : MonoBehaviour
     {
+        void Start()
+        {
+            if (GetComponent<NetworkActor>() == null)
+            {
+                Destroy(this);
+                return;
+            }
+
+            started = true;
+        }
+        bool started = false;
         void OnEnable()
         {
             activeActors.Add(this);
@@ -51,8 +62,17 @@ namespace NewSR2MP.Networking.Component
         /// </summary>
         public void OwnActor()
         {
+            if (!started)
+                return;
+            
             NetworkActor net = GetComponent<NetworkActor>();
 
+            if (net == null)
+            {
+                Destroy(this);
+                return;
+            }
+            
             if (net.IsOwned) return;
             
             // Owner change

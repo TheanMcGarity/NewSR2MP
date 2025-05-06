@@ -376,7 +376,7 @@ namespace NewSR2MP
 
             foreach (var player in playersActors)
             {
-                if (player.Key < currentPlayerID)
+                if (player.Key < currentPlayerID && player.Key != ushort.MaxValue)
                 {
                     AddList(player.Value, owned);
                     yield return null;

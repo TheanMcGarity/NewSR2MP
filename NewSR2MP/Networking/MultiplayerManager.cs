@@ -62,6 +62,7 @@ namespace NewSR2MP.Networking
 
             onlinePlayerPrefab = Instantiate(found);
 
+            onlinePlayerPrefab.SetActive(false);
 
             onlinePlayerPrefab.AddComponent<NetworkPlayer>();
             onlinePlayerPrefab.AddComponent<TransformSmoother>();
@@ -557,9 +558,9 @@ namespace NewSR2MP.Networking
             var transport = new TcpServer();
 
             server = new Server(transport);
-            server.Start(port, 10);
+            server.Start(port, (ushort)short.MaxValue);
 
-            server.TimeoutTime = 30000;
+            server.TimeoutTime = 20000;
 
             RegisterAllSilos();
 

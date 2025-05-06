@@ -17,7 +17,7 @@ namespace NewSR2MP.Networking.Patches
             
             if (isJoiningAsClient) yield break;
 
-            if (__result.GetComponent<NetworkActor>() == null)
+            if (!handlingPacket)
             {
                 try
                 {
@@ -71,7 +71,7 @@ namespace NewSR2MP.Networking.Patches
                     actors[id] = __result.GetComponent<NetworkActor>();
 
 
-                ts.interpolPeriod = 0.15f;
+                ts.interpolPeriod = 0.245f;
                 ts.enabled = false;
 
                 Vector3 vel = Vector3.zero;

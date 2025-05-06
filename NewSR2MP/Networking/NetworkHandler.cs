@@ -236,7 +236,7 @@ public class NetworkHandler
                 {
                     actors.Add(obj.GetComponent<Identifiable>().GetActorId().Value,
                         obj.GetComponent<NetworkActor>());
-                    obj.GetComponent<TransformSmoother>().interpolPeriod = .315f;
+                    obj.GetComponent<TransformSmoother>().interpolPeriod = .245f;
                     if (obj.TryGetComponent<Vacuumable>(out var vac))
                         vac._launched = true;
                 }
@@ -244,7 +244,7 @@ public class NetworkHandler
                 {
                     if (!obj.TryGetComponent<Gadget>(out var gadget))
                         obj.GetComponent<TransformSmoother>().enabled = false;
-                    obj.GetComponent<TransformSmoother>().interpolPeriod = .315f;
+                    obj.GetComponent<TransformSmoother>().interpolPeriod = .245f;
                     if (obj.TryGetComponent<Vacuumable>(out var vac))
                         vac._launched = true;
                 }
@@ -252,7 +252,8 @@ public class NetworkHandler
                 obj.GetComponent<NetworkActor>().IsOwned = false;
                 obj.GetComponent<TransformSmoother>().nextPos = packet.position;
 
-                
+                if (obj.TryGetComponent<Rigidbody>(out var rb))
+                    rb.velocity = packet.velocity;
             }
 
         }
@@ -352,7 +353,7 @@ public class NetworkHandler
                 obj.GetComponent<TransformSmoother>().enabled = false;
                 if (obj.TryGetComponent<Rigidbody>(out var rb))
                     rb.velocity = packet.velocity;
-                obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
+                obj.GetComponent<TransformSmoother>().interpolPeriod = .245f;
                 obj.GetComponent<Vacuumable>()._launched = true;
             }
 
@@ -607,6 +608,7 @@ public class NetworkHandler
             anim.SetBool("Moving", packet.moving);
             anim.SetFloat("HorizontalSpeed", packet.horizontalSpeed);
             anim.SetFloat("ForwardSpeed", packet.forwardSpeed);
+            anim.SetBool("Sprinting", packet.sprinting);
         }
         catch
         {
@@ -637,7 +639,8 @@ public class NetworkHandler
             anim.SetInteger("AirborneState", packet.airborneState);
             anim.SetBool("Moving", packet.moving);
             anim.SetFloat("HorizontalSpeed", packet.horizontalSpeed);
-            anim.SetFloat("ForwardSpeed", packet.forwardSpeed);
+            anim.SetFloat("ForwardSpeed", packet.forwardSpeed);  
+            anim.SetBool("Sprinting", packet.sprinting);
         }
         catch
         {

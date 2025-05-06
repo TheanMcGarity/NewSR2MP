@@ -13,8 +13,10 @@ namespace NewSR2MP.Networking.Component
         public void SetRigidbodyState(bool enabled)
         {
             if (GetComponent<Rigidbody>() != null)
-                GetComponent<Rigidbody>().constraints = enabled ? RigidbodyConstraints.None : RigidbodyConstraints.FreezeAll;
+                GetComponent<Rigidbody>().constraints =
+                    enabled ? RigidbodyConstraints.None : RigidbodyConstraints.FreezeAll;
         }
+
         void Start()
         {
             SetRigidbodyState(false);
@@ -25,6 +27,7 @@ namespace NewSR2MP.Networking.Component
                 thisPlayer = GetComponent<NetworkPlayer>();
             }
         }
+
         public NetworkPlayer thisPlayer;
 
         /// <summary>
@@ -55,10 +58,12 @@ namespace NewSR2MP.Networking.Component
         {
             SetRigidbodyState(false);
         }
+
         void OnDisable()
         {
             SetRigidbodyState(true);
         }
+
         public void Update()
         {
             if (GetComponent<NetworkActor>() != null)
@@ -71,20 +76,14 @@ namespace NewSR2MP.Networking.Component
                     return;
                 }
             }
-            if (!(frame > 5))
-            {
-                frame++;
-            }
-            else
-            {
-                
-                float t = 1.0f - ((positionTime - Time.unscaledTime) / interpolPeriod);
-                transform.position = Vector3.Lerp(currPos, nextPos, t);
 
-                transform.rotation = Quaternion.Lerp(Quaternion.Euler(currRot), Quaternion.Euler(nextRot), t);
+            float t = 1.0f - ((positionTime - Time.unscaledTime) / interpolPeriod);
+            transform.position = Vector3.Lerp(currPos, nextPos, t);
 
-                positionTime = Time.unscaledTime + interpolPeriod;
-            }
+            transform.rotation = Quaternion.Lerp(Quaternion.Euler(currRot), Quaternion.Euler(nextRot), t);
+
+            positionTime = Time.unscaledTime + interpolPeriod;
+
         }
     }
 }

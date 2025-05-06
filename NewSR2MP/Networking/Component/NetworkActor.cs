@@ -72,13 +72,14 @@ namespace NewSR2MP.Networking.Component
             if (gameObject.TryGetComponent(out Gadget gadget))
             {
                 gameObject.RemoveComponent<TransformSmoother>();
+                gameObject.RemoveComponent<NetworkActorOwnerToggle>();
                 Destroy(this);
             }
             try
             {
-                if (frame > 3 && !appliedLaunch)
+                if (!appliedLaunch)
                 {
-                    GetComponent<Vacuumable>().SetLaunched(true);
+                    GetComponent<Vacuumable>().Launch(Vacuumable.LaunchSource.PLAYER);
                     appliedLaunch = true;
                 }
             }
@@ -94,7 +95,7 @@ namespace NewSR2MP.Networking.Component
             transformTimer -= Time.unscaledDeltaTime;
             if (transformTimer <= 0)
             {
-                transformTimer = .315f;
+                transformTimer = .245f;
 
                 if (MultiplayerManager.server == null && MultiplayerManager.client != null)
                 {

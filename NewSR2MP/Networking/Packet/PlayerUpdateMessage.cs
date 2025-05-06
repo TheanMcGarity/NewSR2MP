@@ -23,6 +23,7 @@ namespace NewSR2MP.Networking.Packet
         public float forwardMovement;
         public float horizontalSpeed;
         public float forwardSpeed;
+        public bool sprinting;
         
         public Message Serialize()
         {
@@ -40,6 +41,7 @@ namespace NewSR2MP.Networking.Packet
             msg.AddFloat(horizontalMovement);
             msg.AddFloat(forwardMovement);
             msg.AddFloat(yaw);
+            msg.AddBool(sprinting);
             
             return msg;
         }
@@ -59,6 +61,7 @@ namespace NewSR2MP.Networking.Packet
             horizontalMovement = msg.GetFloat();
             forwardMovement = msg.GetFloat();
             yaw = msg.GetFloat();
+            sprinting = msg.GetBool();
         }
     }
 }
