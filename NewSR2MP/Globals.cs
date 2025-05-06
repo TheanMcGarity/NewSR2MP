@@ -520,7 +520,7 @@ namespace NewSR2MP
                 }
 
 
-                debugRegisteredActors.Add(id.Value, model);
+                debugRegisteredActors.TryAdd(id.Value, model);
 
                 var savedGame2 = gameContext.AutoSaveDirector.SavedGame;
 

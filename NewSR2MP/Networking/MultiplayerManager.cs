@@ -117,12 +117,12 @@ namespace NewSR2MP.Networking
         }
 
         // Hefty code
-        public static void PlayerJoin(Connection nctc, Guid savingID, string username)
+        public static void PlayerJoin(Connection conn, Guid savingID, string username)
         {
             SRMP.Debug("A client is attempting to join!");
 
 
-            clientToGuid.Add(nctc.Id, savingID);
+            clientToGuid.Add(conn.Id, savingID);
 
             var newPlayer = !savedGame.savedPlayers.playerList.TryGetValue(savingID, out var playerData);
             if (newPlayer)
@@ -393,7 +393,7 @@ namespace NewSR2MP.Networking
                     initPedias = pedias,
                     initAccess = access,
                     initMaps = fogEvents,
-                    playerID = nctc.Id,
+                    playerID = conn.Id,
                     money = money,
                     time = time,
                     localPlayerSave = localPlayerData,
@@ -403,13 +403,13 @@ namespace NewSR2MP.Networking
                     refineryItems = refineryItems,
                 };
 
-                NetworkSend(saveMessage, ServerSendOptions.SendToPlayer(nctc.Id));
+                NetworkSend(saveMessage, ServerSendOptions.SendToPlayer(conn.Id));
                 SRMP.Debug("The world data has been sent to the client!");
 
             }
             catch (Exception ex)
             {
-                clientToGuid.Remove(nctc.Id);
+                clientToGuid.Remove(conn.Id);
                 SRMP.Error(ex.ToString());
             }
 

@@ -236,7 +236,7 @@ public class NetworkHandler
                 {
                     actors.Add(obj.GetComponent<Identifiable>().GetActorId().Value,
                         obj.GetComponent<NetworkActor>());
-                    obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
+                    obj.GetComponent<TransformSmoother>().interpolPeriod = .315f;
                     if (obj.TryGetComponent<Vacuumable>(out var vac))
                         vac._launched = true;
                 }
@@ -244,7 +244,7 @@ public class NetworkHandler
                 {
                     if (!obj.TryGetComponent<Gadget>(out var gadget))
                         obj.GetComponent<TransformSmoother>().enabled = false;
-                    obj.GetComponent<TransformSmoother>().interpolPeriod = .15f;
+                    obj.GetComponent<TransformSmoother>().interpolPeriod = .315f;
                     if (obj.TryGetComponent<Vacuumable>(out var vac))
                         vac._launched = true;
                 }

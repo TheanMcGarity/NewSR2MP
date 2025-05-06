@@ -20,7 +20,7 @@ namespace NewSR2MP.Networking.Component
                 Destroy(this);
             }
             
-            //MelonCoroutines.Start(OwnActors());
+            MelonCoroutines.Start(OwnActors());
         }
         
         public int id;
@@ -53,7 +53,7 @@ namespace NewSR2MP.Networking.Component
 
             }
         }
-        /*IEnumerator OwnActors()
+        IEnumerator OwnActors()
         {
             while (true)
             {
@@ -79,6 +79,6 @@ namespace NewSR2MP.Networking.Component
                     
                 yield return null;
             }
-        }*/
+        }
     }
 }

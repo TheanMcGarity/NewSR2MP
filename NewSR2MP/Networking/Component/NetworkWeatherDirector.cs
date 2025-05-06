@@ -12,7 +12,7 @@ using UnityEngine;
 namespace NewSR2MP.Networking.Component
 {
     [RegisterTypeInIl2Cpp(false)]
-    public class WeatherSyncer : MonoBehaviour
+    public class NetworkWeatherDirector : MonoBehaviour
     {
         WeatherRegistry dir;
         void Start()

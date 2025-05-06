@@ -25,17 +25,12 @@ namespace NewSR2MP.Networking.Packet
 
         public void Deserialize(Message msg)
         {
-            LandplotUpdateType mode = (LandplotUpdateType)msg.GetByte();
-            string id = msg.GetString();
-            LandPlotMessage message = new LandPlotMessage()
-            {
-                messageType = mode,
-                id = id,
-            };
-            if (mode == LandplotUpdateType.SET)
-                message.type = (LandPlot.Id)msg.GetByte();
+            messageType = (LandplotUpdateType)msg.GetByte();
+            id = msg.GetString();
+            if (messageType == LandplotUpdateType.SET)
+                type = (LandPlot.Id)msg.GetByte();
             else
-                message.upgrade = (LandPlot.Upgrade)msg.GetByte();
+                upgrade = (LandPlot.Upgrade)msg.GetByte();
 
         }
     }

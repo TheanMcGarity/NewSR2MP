@@ -51,7 +51,7 @@ namespace NewSR2MP.Networking
 
         public void StartHosting()
         {
-            foreach (var a in Resources.FindObjectsOfTypeAll<Identifiable>())
+            foreach (var a in Resources.FindObjectsOfTypeAll<IdentifiableActor>())
             {
                 try
                 {
@@ -77,7 +77,7 @@ namespace NewSR2MP.Networking
             server.ClientDisconnected += OnPlayerLeft;
 
             sceneContext.gameObject.AddComponent<NetworkTimeDirector>();
-            sceneContext.gameObject.AddComponent<WeatherSyncer>();
+            sceneContext.gameObject.AddComponent<NetworkWeatherDirector>();
             
             var hostNetworkPlayer = sceneContext.player.AddComponent<NetworkPlayer>();
             hostNetworkPlayer.id = ushort.MaxValue;
