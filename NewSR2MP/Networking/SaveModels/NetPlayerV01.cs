@@ -56,21 +56,8 @@ namespace NewSR2MP.Networking.SaveModels
 
             money = reader.ReadInt32();
 
-            var ammoModeC = reader.ReadInt32();
-
-
-            var ammoDataC = reader.ReadInt32();
-
-            ammo = new Il2CppSystem.Collections.Generic.List<AmmoDataV01>();
-
-            for (int x = 0; x < ammoDataC; x++)
-            {
-                var ammoSlot = new AmmoDataV01();
-                ammoSlot.LoadData(reader);
-
-                ammo.Add(ammoSlot);
-            }
-
+            ammo = PersistedDataSet.LoadList<AmmoDataV01>(reader);
+            
             var upgradeC = reader.ReadInt32();
 
             upgrades = new List<string>();
@@ -79,8 +66,6 @@ namespace NewSR2MP.Networking.SaveModels
             {
                 upgrades.Add(reader.ReadString());
             }
-
-            playerID = Guid.Parse(reader.ReadString());
         }
 
         public override void WriteData(GameBinaryWriter writer)
@@ -91,15 +76,9 @@ namespace NewSR2MP.Networking.SaveModels
             rotation.WriteData(writer);
 
             writer.Write(money);
-
-            writer.Write(ammo.Count);
-
-            writer.Write(ammo.Count);
-            foreach (var ammoSlot in ammo)
-            {
-                ammoSlot.WriteData(writer);
-            }
-
+            
+            PersistedDataSet.WriteList(writer, ammo);
+            
             writer.Write(upgrades.Count);
 
             foreach (var upgrade in upgrades)

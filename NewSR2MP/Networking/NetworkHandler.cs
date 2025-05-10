@@ -1469,6 +1469,8 @@ public class NetworkHandler
 
         sceneContext.MapDirector.NotifyZoneUnlocked(GetGameEvent(packet.id), false, 0);
 
+        return;
+        
         var eventDirModel = sceneContext.eventDirector._model;
         if (!eventDirModel.table.TryGetValue("fogRevealed", out var table))
         {
@@ -1477,7 +1479,7 @@ public class NetworkHandler
             table = eventDirModel.table["fogRevealed"];
         }
 
-        table.Add(packet.id, new EventRecordModel.Entry
+        table.TryAdd(packet.id, new EventRecordModel.Entry
         {
             count = 1,
             createdRealTime = 0,
@@ -1495,7 +1497,11 @@ public class NetworkHandler
         var packet = ICustomMessage.Deserialize<MapUnlockMessage>(msg);
 
         sceneContext.MapDirector.NotifyZoneUnlocked(GetGameEvent(packet.id), false, 0);
+        
+        ForwardMessage(packet, client);
 
+        return;
+        
         var eventDirModel = sceneContext.eventDirector._model;
         if (!eventDirModel.table.TryGetValue("fogRevealed", out var table))
         {

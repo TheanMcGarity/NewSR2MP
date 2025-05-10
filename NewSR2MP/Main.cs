@@ -49,9 +49,9 @@ namespace NewSR2MP
             if (argIndex == 0)
             {
                 var list = new List<string>();
-                foreach (var guid in clientToGuid)
+                foreach (var name in playerUsernames)
                 {
-                    list.Add(guid.Value.ToString());
+                    list.Add(name.Key.Replace(" ", ""));
                 }
                 return list;
             }
@@ -65,13 +65,13 @@ namespace NewSR2MP
 
         public override bool Execute(string[] args)
         {
-            if (!args.IsBetween(1,2)) return SendUsage();
+            if (!args.IsBetween(2,3)) return SendUsage();
             if (!inGame) return SendLoadASaveFirst();
 
             if (!ServerActive())
                 return false;
-            
-            string player = args[0];
+
+            Guid player = clientToGuid[playerUsernames.First(x => x.Key.Replace(" ", "") == args[0]).Value];
             string identifierTypeName = args[1];
             IdentifiableType type = getIdentByName(identifierTypeName);
             if (type == null) return SendNotValidIdentType(identifierTypeName);
@@ -560,10 +560,19 @@ namespace NewSR2MP
                     
                                 handlingPacket = false;
                             }
+                            else
+                            {
+                                model = new WorldSwitchModel
+                                {
+                                    gameObj = null,
+                                    state = (SwitchHandler.State)sw.state,
+                                };
+                                sceneContext.GameModel.switches.Add(sw.id, model);
+                            }
                         }
                         else
                         {
-                            model = new WorldSwitchModel()
+                            model = new WorldSwitchModel
                             {
                                 gameObj = null,
                                 state = (SwitchHandler.State)sw.state,

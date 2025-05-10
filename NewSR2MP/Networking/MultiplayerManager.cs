@@ -475,7 +475,7 @@ namespace NewSR2MP.Networking
             var transport = new TcpClient();
 
             client = new Client(transport);
-            client.Connect($"{ip}:{port}");
+            Parallel.Invoke(() => client.Connect($"{ip}:{port}"));
 
             client.TimeoutTime = 30000;
 
@@ -509,9 +509,12 @@ namespace NewSR2MP.Networking
             }
 
             clientLoading = true;
+            
+            handlingPacket = true;
 
             if (systemContext.SceneLoader.IsSceneLoadInProgress) return false;
-
+            
+            handlingPacket = false;
 
             isJoiningAsClient = true;
 
@@ -650,6 +653,9 @@ namespace NewSR2MP.Networking
             if (!systemContext.SceneLoader._currentSceneGroup._isGameplay)
                 return false;
 
+            if (systemContext.SceneLoader._currentSceneGroup.ReferenceId.Equals("SceneGroup.ConservatoryFields"))
+                Main.OnRanchSceneGroupLoaded();
+            
             IEnumerable<Il2CppSystem.Collections.Generic.Dictionary<ActorId, IdentifiableModel>.Entry> actors = null;
 
             if (ClientActive())

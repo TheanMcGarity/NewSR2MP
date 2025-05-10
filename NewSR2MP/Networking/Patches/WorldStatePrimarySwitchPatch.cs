@@ -12,6 +12,7 @@ namespace NewSR2MP.Networking.Patches
         {
             if (handlingPacket)
                 return;
+            
             MultiplayerManager.NetworkSend(new SwitchModifyMessage
             {
                 id = __instance.SwitchDefinition.ID,

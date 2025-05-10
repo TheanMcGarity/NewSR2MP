@@ -12,11 +12,12 @@ namespace NewSR2MP.Networking.SaveModels
             
             Encoding utf = Encoding.UTF8;
             GameBinaryWriter binaryWriter = new GameBinaryWriter(stream, utf);
-            string identifier = Identifier;
-            binaryWriter.Write(identifier);
-            uint version = Version;
-            binaryWriter.Write(version);
+            
+            binaryWriter.Write(Identifier);
+            binaryWriter.Write(Version);
+            
             WriteData(binaryWriter);
+            
             binaryWriter.Dispose();
         }
 

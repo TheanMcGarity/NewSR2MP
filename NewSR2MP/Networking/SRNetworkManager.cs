@@ -124,11 +124,7 @@ namespace NewSR2MP.Networking
         }
         public void OnPlayerLeft(object? sender, ServerDisconnectedEventArgs args)
         {
-            DoNetworkSave();
-
-            var player = players[args.Client.Id];
-            players.Remove(args.Client.Id);
-            Destroy(player.gameObject);
+            OnServerDisconnect(args.Client.Id);
             
             var packet = new PlayerLeaveMessage
             {
@@ -146,11 +142,15 @@ namespace NewSR2MP.Networking
 
         public void OnServerDisconnect(ushort player)
         {
-
+            DoNetworkSave();
+            
             try
             {
                 players[player].enabled = true;
                 Destroy(players[player].gameObject);
+                players.Remove(player);
+                playerUsernames.Remove(playerUsernamesReverse[player]);
+                playerUsernamesReverse.Remove(player);
                 players.Remove(player);
                 clientToGuid.Remove(player);
             }
@@ -185,26 +185,27 @@ namespace NewSR2MP.Networking
         /// </summary>
         /// <typeparam name="M">Message struct type. Ex: 'PlayerJoinMessage'</typeparam>
         /// <param name="message">The actual message itself. Should automatically set the M type paramater.</param>
-        
-        
         public static void NetworkSend<M>(M msg, ServerSendOptions serverOptions) where M : ICustomMessage
         {
-            Message message = msg.Serialize();
+            Parallel.Invoke(() =>
+            {
+                Message message = msg.Serialize();
             
-            if (client != null)
-            {
-                client.Send(message);
-            }
-            else if (server != null)
-            {
-                if (serverOptions.ignoreSpecificPlayer)
-                    server.SendToAll(message, serverOptions.player);
-                else if (serverOptions.onlySendToPlayer)          
-                    server.Send(message, serverOptions.player);
-                else
-                    server.SendToAll(message);
+                if (client != null)
+                {
+                    client.Send(message);
+                }
+                else if (server != null)
+                {
+                    if (serverOptions.ignoreSpecificPlayer)
+                        server.SendToAll(message, serverOptions.player);
+                    else if (serverOptions.onlySendToPlayer)          
+                        server.Send(message, serverOptions.player);
+                    else
+                        server.SendToAll(message);
 
-            }
+                }
+            });
         }
 
         public static void NetworkSend<M>(M msg) where M : ICustomMessage
@@ -268,6 +269,8 @@ namespace NewSR2MP.Networking
                 Destroy(player.gameObject);
             }
             players.Clear();
+            playerUsernames.Clear();
+            playerUsernamesReverse.Clear();
 
             clientToGuid.Clear();
 
@@ -287,18 +290,27 @@ namespace NewSR2MP.Networking
                 {
                     continue;
                 }
-                Guid playerID = clientToGuid[player.Key];
-                var ammo = GetNetworkAmmo($"player_{playerID}");
-                Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData = GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots, GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
-                savedGame.savedPlayers.playerList[playerID].ammo = ammoData;
-                if (player.Value)
+
+                if (clientToGuid.TryGetValue(player.Key, out var playerID))
                 {
-                    var playerPos = new Vector3V01();
-                    playerPos.Value = player.Value.transform.position;
-                    var playerRot = new Vector3V01();
-                    playerRot.Value = player.Value.transform.eulerAngles;
-                    savedGame.savedPlayers.playerList[playerID].position = playerPos;
-                    savedGame.savedPlayers.playerList[playerID].rotation = playerRot;
+                    var ammo = GetNetworkAmmo($"player_{playerID}");
+                    Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData =
+                        GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots,
+                            GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
+                    savedGame.savedPlayers.playerList[playerID].ammo = ammoData;
+                    if (player.Value)
+                    {
+                        var playerPos = new Vector3V01();
+                        playerPos.Value = player.Value.transform.position;
+                        var playerRot = new Vector3V01();
+                        playerRot.Value = player.Value.transform.eulerAngles;
+                        savedGame.savedPlayers.playerList[playerID].position = playerPos;
+                        savedGame.savedPlayers.playerList[playerID].rotation = playerRot;
+                    }
+                }
+                else
+                {
+                    SRMP.Error($"Error saving player {player.Key}, their GUID was not found.");
                 }
             }
 
