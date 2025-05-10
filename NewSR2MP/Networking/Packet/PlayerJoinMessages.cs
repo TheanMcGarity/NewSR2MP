@@ -13,12 +13,14 @@ namespace NewSR2MP.Networking.Packet
     {
         public int id;
         public bool local;
+        public string username;
     
         public Message Serialize()
         {
             Message msg = Message.Create(MessageSendMode.Reliable, PacketType.PlayerJoin);
             msg.AddInt(id);
             msg.AddBool(local);
+            msg.AddString(username);
 
             return msg;
         }
@@ -27,6 +29,7 @@ namespace NewSR2MP.Networking.Packet
         {
             id = msg.GetInt();
             local = msg.GetBool();
+            username = msg.GetString();
         }
     }
     public class ClientUserMessage : ICustomMessage

@@ -7,9 +7,11 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 using Il2CppMonomiPark.SlimeRancher.Event;
+using Il2CppMonomiPark.SlimeRancher.Persist;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.UnitPropertySystem;
 using Il2CppMonomiPark.World;
+using Il2CppTMPro;
 using NewSR2MP.Networking.Patches;
 using Riptide.Transports.Tcp;
 using Riptide.Transports.Udp;
@@ -43,7 +45,7 @@ namespace NewSR2MP.Networking
             Instance = this;
 
             Message.MaxPayloadSize = 2048000;
-
+            gameObject.AddComponent<NetworkUI>();
         }
 
 
@@ -54,6 +56,7 @@ namespace NewSR2MP.Networking
             SR2ECommandManager.RegisterCommand(new JoinCommand());
             SR2ECommandManager.RegisterCommand(new SplitScreenDebugCommand());
             SR2ECommandManager.RegisterCommand(new ShowSRMPErrorsCommand());
+            SR2ECommandManager.RegisterCommand(new GivePlayerCommand());
         }
 
         public void GeneratePlayerModel()
@@ -64,11 +67,17 @@ namespace NewSR2MP.Networking
 
             onlinePlayerPrefab.SetActive(false);
 
-            onlinePlayerPrefab.AddComponent<NetworkPlayer>();
+            var comp = onlinePlayerPrefab.AddComponent<NetworkPlayer>();
             onlinePlayerPrefab.AddComponent<TransformSmoother>();
-            onlinePlayerPrefab.GetComponent<NetworkPlayer>().enabled = false;
 
+            var text = new GameObject("Username") { transform = { parent = onlinePlayerPrefab.transform } };
             onlinePlayerPrefab.transform.localScale = Vector3.one * .85f;
+
+            comp.enabled = false;
+            comp.usernamePanel = text.AddComponent<TextMesh>();
+
+            text.transform.localPosition = Vector3.up * 3f;
+            text.transform.localEulerAngles = Vector3.up * 180f;
 
             DontDestroyOnLoad(onlinePlayerPrefab);
         }
@@ -122,6 +131,7 @@ namespace NewSR2MP.Networking
         {
             SRMP.Debug("A client is attempting to join!");
 
+            Instance.OnPlayerJoined(username, conn.Id);
 
             clientToGuid.Add(conn.Id, savingID);
 
@@ -206,13 +216,13 @@ namespace NewSR2MP.Networking
                 // Current Players
                 foreach (var player in players)
                 {
-                    if (player.Key != 0)
+                    if (player.Key != 65535)
                     {
 
                         var p = new InitPlayerData()
                         {
                             id = player.Key,
-                            username = ""
+                            username = playerUsernamesReverse[player.Key]
                         };
                         initPlayers.Add(p);
                     }
@@ -220,8 +230,8 @@ namespace NewSR2MP.Networking
 
                 var p2 = new InitPlayerData()
                 {
-                    id = 0,
-                    username = ""
+                    id = 65535,
+                    username = Main.data.Username
                 };
                 initPlayers.Add(p2);
 
@@ -233,83 +243,70 @@ namespace NewSR2MP.Networking
                     var plot = landplot.value;
                     try
                     {
-
-
-
-                        if (plot.siloAmmo._count != 0)
+                        Dictionary<string, InitSiloData> silos = new();
+                        foreach (var siloStorage in plot.gameObj.GetComponentsInChildren<SiloStorage>())
                         {
-
-                            // TODO Get multiple ammo datas
-                            string firstAmmoId = "";
-
-                            foreach (var _ in plot.siloAmmo)
-                            {
-                                firstAmmoId = _.key;
-                                break;
-                            }
-
                             // Silos
-                            InitSiloData s = new InitSiloData()
+
+                            InitSiloData s = new InitSiloData
                             {
                                 ammo = new HashSet<AmmoData>()
                             }; // Empty
 
-                            var silo = plot.siloAmmo[firstAmmoId];
 
-                            if (silo != null)
+                            HashSet<AmmoData> ammo = new HashSet<AmmoData>();
+                            var idx = 0;
+                            foreach (var slot in siloStorage.LocalAmmo.Slots)
                             {
-                                HashSet<AmmoData> ammo = new HashSet<AmmoData>();
-                                var idx = 0;
-                                foreach (var a in silo.slots)
+                                if (slot != null)
                                 {
-                                    if (a != null)
+                                    var ammoSlot = new AmmoData()
                                     {
-                                        var ammoSlot = new AmmoData()
-                                        {
-                                            slot = idx,
-                                            id = GetIdentID(a.Id),
-                                            count = a.Count,
-                                        };
-                                        ammo.Add(ammoSlot);
-                                    }
-                                    else
+                                        slot = idx,
+                                        id = GetIdentID(slot.Id),
+                                        count = slot.Count,
+                                    };
+                                    ammo.Add(ammoSlot);
+                                }
+                                else
+                                {
+                                    var ammoSlot = new AmmoData()
                                     {
-                                        var ammoSlot = new AmmoData()
-                                        {
-                                            slot = idx,
-                                            id = 9,
-                                            count = 0,
-                                        };
-                                        ammo.Add(ammoSlot);
-                                    }
-
-                                    idx++;
+                                        slot = idx,
+                                        id = 9,
+                                        count = 0,
+                                    };
+                                    ammo.Add(ammoSlot);
                                 }
 
-                                s = new InitSiloData()
-                                {
-                                    slots = silo.slots.Count,
-                                    ammo = ammo
-                                };
+                                idx++;
                             }
 
-                            int cropIdent = 9;
-                            if (plot.resourceGrowerDefinition != null)
+                            s = new InitSiloData
                             {
-                                cropIdent = GetIdentID(plot.resourceGrowerDefinition._primaryResourceType);
-                            }
-
-                            var p = new InitPlotData()
-                            {
-                                id = landplot.key,
-                                type = plot.typeId,
-                                upgrades = plot.upgrades,
-                                cropIdent = cropIdent,
-
-                                siloData = s,
+                                slots = siloStorage.LocalAmmo.Slots.Count,
+                                ammo = ammo
                             };
-                            plots.Add(p);
+                            
+                            silos.Add(siloStorage.AmmoSetReference.name, s);
                         }
+
+                        int cropIdent = 9;
+                        if (plot.resourceGrowerDefinition != null)
+                        {
+                            cropIdent = GetIdentID(plot.resourceGrowerDefinition._primaryResourceType);
+                        }
+
+                        var p = new InitPlotData()
+                        {
+                            id = landplot.key,
+                            type = plot.typeId,
+                            upgrades = plot.upgrades,
+                            cropIdent = cropIdent,
+
+                            siloData = silos,
+                        };
+                        plots.Add(p);
                     }
                     catch (Exception ex)
                     {
@@ -418,7 +415,33 @@ namespace NewSR2MP.Networking
             {
                 var newAmmo = CreateNewPlayerAmmo();
                 newAmmo.RegisterAmmoPointer($"player_{savingID}");
-                newAmmo._ammoModel.slots = new Il2CppReferenceArray<Ammo.Slot>(AmmoDataToSlotsSRMP(playerData.ammo));
+
+                var savedAmmo = playerData.ammo;
+                if (savedAmmo.Count < 7)
+                {
+                    savedAmmo = new Il2CppSystem.Collections.Generic.List<AmmoDataV01>();
+                    for (var i = 0; i < 7; i++)
+                    {
+                        savedAmmo.Add(new AmmoDataV01()
+                        {
+                            Appearance = SlimeAppearance.AppearanceSaveSet.NONE,
+                            Count = 0,
+                            ID = 9,
+                        });
+                    }
+                }
+
+                newAmmo._ammoModel.slots = new Il2CppReferenceArray<Ammo.Slot>(AmmoDataToSlotsSRMP(savedAmmo));
+                newAmmo._ammoModel.slotMaxCountFunction = sceneContext.PlayerState.Ammo._ammoModel.slotMaxCountFunction;
+
+                int slotC = 0;
+                foreach (var slot in newAmmo._ammoModel.slots)
+                {
+                    slot.Definition = newAmmo._ammoSlotDefinitions[slotC];
+                    slot._maxCountValue = sceneContext.PlayerState.Ammo.Slots[slotC]._maxCountValue;
+                    slot._isUnlockedValue = sceneContext.PlayerState.Ammo.Slots[slotC]._isUnlockedValue;
+                    slotC++;
+                }
             }
             catch (Exception ex)
             {
@@ -485,6 +508,8 @@ namespace NewSR2MP.Networking
                 return false;
             }
 
+            clientLoading = true;
+
             if (systemContext.SceneLoader.IsSceneLoadInProgress) return false;
 
 
@@ -505,7 +530,7 @@ namespace NewSR2MP.Networking
 
             if (systemContext.SceneLoader.IsCurrentSceneGroupDefault())
             {
-                Main.OnRanchSceneGroupLoaded(SceneContext.Instance);
+                Main.OnRanchSceneGroupLoaded();
             }
 
             isJoiningAsClient = false;

@@ -57,14 +57,41 @@ namespace NewSR2MP.Networking.Component
                 vac.SetHeldRad(0f);
             }
         }
+
+        public enum OwnershipTransferCause { VAC, REGION, UNSPECIFIED }
+        
         /// <summary>
         /// This is for transfering actor ownership to another player. Recommended for when you want a client to control a feature on the actor. 
         /// </summary>
-        public void OwnActor()
+        public void OwnActor(OwnershipTransferCause cause = OwnershipTransferCause.UNSPECIFIED)
         {
             if (!started)
                 return;
-            
+
+            if (cause == OwnershipTransferCause.REGION)
+            {
+                Vector3 size = new Vector3(50, 200, 50);
+                
+                bool intersects = false;
+                
+                var bounds1 = new Bounds(sceneContext.player.transform.position, size);
+                
+                foreach (var player in players)
+                {
+                    if (player.Key == currentPlayerID)
+                        continue;
+                    
+                    var bounds2 = new Bounds(player.Value.transform.position, size);
+                    
+                    if (bounds2.Intersects(bounds1))
+                    {
+                        intersects = true;
+                        break;
+                    }
+                }
+
+                if (intersects) return;
+            }
             NetworkActor net = GetComponent<NetworkActor>();
 
             if (net == null)

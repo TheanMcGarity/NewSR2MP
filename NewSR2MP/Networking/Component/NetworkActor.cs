@@ -69,6 +69,7 @@ namespace NewSR2MP.Networking.Component
         bool appliedCollider;
         public void Update()
         {
+            
             if (gameObject.TryGetComponent(out Gadget gadget))
             {
                 gameObject.RemoveComponent<TransformSmoother>();
@@ -96,50 +97,55 @@ namespace NewSR2MP.Networking.Component
             if (transformTimer <= 0)
             {
                 transformTimer = .245f;
-
-                if (MultiplayerManager.server == null && MultiplayerManager.client != null)
+                try
                 {
-                    var packet = new ActorUpdateClientMessage()
+                    if (MultiplayerManager.server == null && MultiplayerManager.client != null)
                     {
-                        id = identComp.GetActorId().Value,
-                        position = transform.position,
-                        rotation = transform.eulerAngles,
-                        velocity = rigidbody.velocity,
-                    };
                     
-                    if (TryGetComponent<SlimeEmotions>(out var emotions))
-                    {
-                        packet.slimeEmotions = new NetworkEmotions(
-                            emotions._emotions.x,
-                            emotions._emotions.y,
-                            emotions._emotions.z,
-                            emotions._emotions.w);
+                        var packet = new ActorUpdateClientMessage()
+                        {
+                            id = identComp.GetActorId().Value,
+                            position = transform.position,
+                            rotation = transform.eulerAngles,
+                            velocity = rigidbody.velocity,
+                        };
+                    
+                        if (TryGetComponent<SlimeEmotions>(out var emotions))
+                        {
+                            packet.slimeEmotions = new NetworkEmotions(
+                                emotions._emotions.x,
+                                emotions._emotions.y,
+                                emotions._emotions.z,
+                                emotions._emotions.w);
+                        }
+                    
+                        MultiplayerManager.NetworkSend(packet);
                     }
-                    
-                    MultiplayerManager.NetworkSend(packet);
-                }
-                else if (MultiplayerManager.server != null)
-                {
+                    else if (MultiplayerManager.server != null)
+                    {
 
-                    var packet = new ActorUpdateMessage()
-                    {
-                        id = identComp.GetActorId().Value,
-                        position = transform.position,
-                        rotation = transform.eulerAngles,
-                        velocity = rigidbody.velocity,
-                    };
+                        var packet = new ActorUpdateMessage()
+                        {
+                            id = identComp.GetActorId().Value,
+                            position = transform.position,
+                            rotation = transform.eulerAngles,
+                            velocity = rigidbody.velocity,
+                        };
                     
-                    if (TryGetComponent<SlimeEmotions>(out var emotions))
-                    {
-                        packet.slimeEmotions = new NetworkEmotions(
-                            emotions._emotions.x,
-                            emotions._emotions.y,
-                            emotions._emotions.z,
-                            emotions._emotions.w);
+                        if (TryGetComponent<SlimeEmotions>(out var emotions))
+                        {
+                            packet.slimeEmotions = new NetworkEmotions(
+                                emotions._emotions.x,
+                                emotions._emotions.y,
+                                emotions._emotions.z,
+                                emotions._emotions.w);
+                        }
+                    
+                        MultiplayerManager.NetworkSend(packet);
                     }
-                    
-                    MultiplayerManager.NetworkSend(packet);
                 }
+                catch { }
+                
 
 
             }
@@ -148,7 +154,6 @@ namespace NewSR2MP.Networking.Component
         public void OnDisable()
         {
             GetComponent<TransformSmoother>().enabled = true;
-
         }
         void OnDestroy()
         {

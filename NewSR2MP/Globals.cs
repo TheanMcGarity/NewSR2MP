@@ -140,6 +140,7 @@ namespace NewSR2MP
             AmmoAdd,
             AmmoEdit,
             AmmoRemove,
+            AmmoSelect,
             JoinSave,
             RequestJoin,
             LandPlot,
@@ -154,6 +155,9 @@ namespace NewSR2MP
             PlayerUpgrade,
         }
 
+        public static Dictionary<string, int> playerUsernames = new();
+        public static Dictionary<int, string> playerUsernamesReverse = new();
+        
         public static GameSettingsModel CreateEmptyGameSettingsModel()
         {
             var ui = Resources.FindObjectsOfTypeAll<NewGameRootUI>().First();
@@ -331,7 +335,7 @@ namespace NewSR2MP
             return found;
         }
 
-        internal static List<NetworkActorOwnerToggle> unownedActors; 
+        /*internal static List<NetworkActorOwnerToggle> unownedActors; 
         
         public static IEnumerator GetUnownedActors()
         {
@@ -363,7 +367,6 @@ namespace NewSR2MP
             Dictionary<int, List<NetworkActorOwnerToggle>> playersActors =
                 new Dictionary<int, List<NetworkActorOwnerToggle>>();
             
-            Vector3 size = new Vector3(150, 600, 150);
 
             foreach (var player in players)
             {            
@@ -376,7 +379,7 @@ namespace NewSR2MP
 
             foreach (var player in playersActors)
             {
-                if (player.Key < currentPlayerID && player.Key != ushort.MaxValue)
+                if (player.Key < currentPlayerID && player.Key != 65535)
                 {
                     AddList(player.Value, owned);
                     yield return null;
@@ -384,7 +387,7 @@ namespace NewSR2MP
             }
             
             unownedActors = DifferenceOf(found, owned);
-        }
+        }*/
 
         public static NetworkV01 savedGame;
         public static string savedGamePath;
@@ -552,20 +555,7 @@ namespace NewSR2MP
 
         public static GameObject SpawnGadgetFromModel(GadgetModel gadgetModel)
         {
-            /*
-            var obj = Object.Instantiate(gadgetModel.ident.prefab);
-            
-            gadgetModel.Init(obj);
-            gadgetModel.NotifyParticipants(obj);
-            
-            DynamicObjectContainer.Instance.RegisterDynamicObject(obj);
-            
-            obj.transform.position = gadgetModel.lastPosition;
-            obj.transform.eulerAngles = gadgetModel.eulerRotation;
-            
-            return obj;*/
             return GadgetDirector.InstantiateGadgetFromModel(gadgetModel);
-                        
         }
         
         public static void DeregisterActor(ActorId id)
@@ -721,10 +711,10 @@ namespace NewSR2MP
         public static void RegisterAmmoPointer(this SiloStorage storage)
         {
             ammoPointersToPlotIDs.TryAdd(storage.LocalAmmo.Pointer,
-                storage.GetComponentInParent<LandPlotLocation>()._id);
+                storage.GetComponentInParent<LandPlotLocation>()._id + storage.AmmoSetReference.name);
 
-            if (!ammoByPlotID.TryAdd(storage.GetComponentInParent<LandPlotLocation>()._id, storage.LocalAmmo))
-                ammoByPlotID[storage.GetComponentInParent<LandPlotLocation>()._id] = storage.LocalAmmo;
+            if (!ammoByPlotID.TryAdd(storage.GetComponentInParent<LandPlotLocation>()._id + storage.AmmoSetReference.name, storage.LocalAmmo))
+                ammoByPlotID[storage.GetComponentInParent<LandPlotLocation>()._id + storage.AmmoSetReference.name] = storage.LocalAmmo;
         }
 
         /// <summary>
@@ -743,11 +733,12 @@ namespace NewSR2MP
             Ammo.Slot[] array = new Ammo.Slot[ammo.Count];
             for (int i = 0; i < ammo.Count; i++)
             {
-                var slot = new Ammo.Slot();
-
-                slot.Count = ammo._items[i].Count;
-                slot._id = identifiableTypes[ammo._items[i].ID];
-                slot.Emotions = new float4(0, 0, 0, 0);
+                array[i] = new Ammo.Slot
+                {
+                    Count = ammo._items[i].Count,
+                    _id = identifiableTypes[ammo._items[i].ID],
+                    Emotions = new float4(0, 0, 0, 0)
+                };;
             }
 
             return array;
@@ -802,12 +793,12 @@ namespace NewSR2MP
         {
             foreach (var plot in sceneContext.GameModel.landPlots)
             {
-                var silo = plot.Value.gameObj.GetComponentInChildren<SiloStorage>();
-                if (silo != null)
+                var silos = plot.Value.gameObj.GetComponentsInChildren<SiloStorage>();
+                foreach (var silo in silos)
                 {
                     try
                     {
-                        silo.LocalAmmo.RegisterAmmoPointer($"plot{plot.key}");
+                        silo.RegisterAmmoPointer();
                     }
                     catch (Exception e)
                     {
@@ -831,117 +822,125 @@ namespace NewSR2MP
         /// </summary>
         public static WeatherDirector? weatherDirectorInstance;
 
+        internal static WeatherSyncMessage latestWeatherSyncMessage;
+
         public static IEnumerator WeatherHandlingCoroutine(WeatherSyncMessage packet)
         {
+            var run = new List<Action>();
+            latestWeatherSyncMessage = packet;
             if (sceneContext == null || weatherDirectorInstance == null)
                 yield break;
-            
+
             var reg = sceneContext.WeatherRegistry;
             var dir = weatherDirectorInstance;
 
             var zones = new Dictionary<byte, ZoneDefinition>();
-            bool completedZonesDict = false;
-            if (!completedZonesDict)
+            byte b = 0;
+            foreach (var zone in reg._model._zoneDatas)
             {
-                byte b = 0;
-                foreach (var zone in reg._model._zoneDatas)
-                {
-                    zones.Add(b, zone.key);
-                    b++;
-                }
-
-                completedZonesDict = true;
-                yield return null;
+                zones.Add(b, zone.key);
+                b++;
             }
-
+            yield return null;
+            
             var zoneDatas = new Il2CppSystem.Collections.Generic.Dictionary<ZoneDefinition, WeatherModel.ZoneData>();
-            var zoneDatas2 =
+            var zoneWeatherDatas =
                 new Il2CppSystem.Collections.Generic.Dictionary<ZoneDefinition, WeatherRegistry.ZoneWeatherData>();
 
-            bool completedZoneDataDict = false;
-            if (!completedZoneDataDict)
+            
+            
+            foreach (var zone in packet.sync.zones)
             {
-                foreach (var zone in packet.sync.zones)
+                
+                
+                
+                if (!zones.ContainsKey(zone.Key))
                 {
-                    if (!zones.ContainsKey(zone.Key))
+                    continue;
+                }
+
+                var forecast = new Il2CppSystem.Collections.Generic.List<WeatherModel.ForecastEntry>();
+                foreach (var f in zone.Value.forcast)
+                {
+                    var forcastEntry = new WeatherModel.ForecastEntry()
                     {
-                        continue;
-                    }
-
-                    var forcastRunCheck = new List<string>();
-
-                    var forecast = new Il2CppSystem.Collections.Generic.List<WeatherModel.ForecastEntry>();
-                    for (var forecastIDX = 0; forecastIDX < zone.Value.forcast.Count; forecastIDX++)
-                    {
-                        var f = zone.Value.forcast[forecastIDX];
-                        var forcastEntry = new WeatherModel.ForecastEntry()
-                        {
-                            StartTime = 0.0,
-                            EndTime = double.MaxValue,
-                            State = f.state.Cast<IWeatherState>(),
-                            Pattern = weatherPatternsFromStateNames[f.state.name],
-                            Started = true
-                        };
-                        forecast.Add(forcastEntry);
-
-                        try
-                        {
-                            
-                            reg._model._zoneDatas[zones[zone.Key]].Forecast._items
-                                .First(x => x.Pattern.name == f.state.name);
-                            
-                            reg.RunPatternState(zones[zone.Key],
-                                weatherPatternsFromStateNames[f.state.name].CreatePattern(),
-                                f.state.Cast<IWeatherState>(),
-                                true);
-                        } catch { }
-
-                        yield return null;
-                    }
-                    
-                    foreach (var running in dir._runningStates)
-                    {
-                        if (!forcastRunCheck.Contains(running.GetName()))
-                            reg.StopPatternState(zones[zone.Key],
-                                weatherPatternsFromStateNames[running.Cast<WeatherStateDefinition>().name]
-                                    .CreatePattern(),
-                                running);
-                    }
-
-                    WeatherModel.ZoneData data = new WeatherModel.ZoneData()
-                    {
-                        Forecast = forecast,
-                        Parameters = new WeatherModel.ZoneWeatherParameters()
-                        {
-                            WindDirection = zone.Value.windSpeed
-                        }
+                        StartTime = 0.0,
+                        EndTime = double.MaxValue,
+                        State = f.state.Cast<IWeatherState>(),
+                        Pattern = weatherPatternsFromStateNames[f.state.name],
+                        Started = true
                     };
-                    WeatherRegistry.ZoneWeatherData data2 =
-                        new WeatherRegistry.ZoneWeatherData(reg.ZoneConfigList._items[zone.Key], data);
-                    zoneDatas.Add(zones[zone.Key], data);
-                    zoneDatas2.Add(zones[zone.Key], data2);
+                    forecast.Add(forcastEntry);
+
+                    
+                    var f1 = f;
+                    run.Add(() =>
+                    {
+                        var zoneDefinition = zones[zone.Key];
+
+                        reg.RunPatternState(zoneDefinition,
+                            weatherPatternsFromStateNames[f1.state.name].CreatePattern(),
+                            f1.state.Cast<IWeatherState>(),
+                            true);
+
+                        if (dir.Zone == zoneDefinition)
+                            dir.RunState(f1.state.Cast<IWeatherState>(), new WeatherModel.ZoneWeatherParameters());
+
+
+                    });
+
+                    var stopList = reg._zones[zones[zone.Key]].Forecast;
+                    var stopZone = zones[zone.Key];
+                    foreach (var stop in stopList)
+                    {
+                        reg.StopPatternState(stopZone,
+                            weatherPatternsFromStateNames[f1.state.name].CreatePattern(),
+                            stop.State);
+
+                        if (dir.Zone == stopZone)
+                            dir.StopState(stop.State, new WeatherModel.ZoneWeatherParameters());
+                    }
                     
                     yield return null;
                 }
+
+                var wind = zone.Value.windSpeed;
+                WeatherModel.ZoneData data = new WeatherModel.ZoneData
+                {
+                    Forecast = forecast,
+                    Parameters = new WeatherModel.ZoneWeatherParameters
+                    {
+                        WindDirection = wind
+                    }
+                };
+                WeatherRegistry.ZoneWeatherData data2 =
+                    new WeatherRegistry.ZoneWeatherData(reg.ZoneConfigList._items[zone.Key], data);
+                zoneDatas.Add(zones[zone.Key], data);
+                zoneWeatherDatas.Add(zones[zone.Key], data2);
+
+                yield return null;
             }
-
-
-            reg._zones = zoneDatas2;
-            reg._model = new WeatherModel()
+            reg._model = new WeatherModel
             {
                 _participant = sceneContext.WeatherRegistry.Cast<WeatherModel.Participant>(),
-                _zoneDatas = zoneDatas,
+                _zoneDatas = zoneDatas
             };
+            reg._zones = zoneWeatherDatas;
+            
+            foreach (var toRun in run)
+                toRun();
         }
-        
+
         public static bool handlingPacket = false;
 
         public static bool handlingNavPacket = false;
         
         public static StaticGameEvent GetGameEvent(string dataKey) => Resources.FindObjectsOfTypeAll<StaticGameEvent>().FirstOrDefault(x => x._dataKey == dataKey);
         
-        public const bool DEBUG_MODE = true;
+        public const bool DEBUG_MODE = false;
 
         public static long NextMultiplayerActorID => ++sceneContext.GameModel._actorIdProvider._nextActorId;
+        
+        public static bool clientLoading = false;
     }
 }

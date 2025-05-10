@@ -7,7 +7,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(Ammo __instance, ref bool __result,IdentifiableType id, Identifiable identifiable, int slotIdx, int count, bool overflow)
         {
-            if (!(ClientActive() || ServerActive()))
+            if (!(ClientActive() || ServerActive()) || handlingPacket)
                 return;
             
             if (__result)
@@ -35,7 +35,7 @@ namespace NewSR2MP.Networking.Patches
         public static void Postfix(Ammo __instance, ref bool __result, IdentifiableType id, Identifiable identifiable,
             SlimeAppearance.AppearanceSaveSet appearance)
         {
-            if (!(ClientActive() || ServerActive()))
+            if (!(ClientActive() || ServerActive()) || handlingPacket)
                 return;
             
             var slotIDX = __instance.GetSlotIDX(id);
@@ -64,7 +64,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(Ammo __instance, int index, int count)
         {
-            if (!(ClientActive() || ServerActive()))
+            if (!(ClientActive() || ServerActive()) || handlingPacket)
                 return;
             
             if (__instance.Slots[index]._count <= 0) __instance.Slots[index]._id = null;
@@ -87,7 +87,7 @@ namespace NewSR2MP.Networking.Patches
     {
         public static void Postfix(Ammo __instance, int amount)
         {
-            if (!(ClientActive() || ServerActive()))
+            if (!(ClientActive() || ServerActive()) || handlingPacket)
                 return;
             
             var packet = new AmmoRemoveMessage()
@@ -97,6 +97,64 @@ namespace NewSR2MP.Networking.Patches
                 id = __instance.GetPlotID()
             };          
             
+            if (packet.id == null) return;
+
+            MultiplayerManager.NetworkSend(packet);
+        }
+    }
+
+    [HarmonyPatch(typeof(Ammo), nameof(Ammo.SetAmmoSlot), typeof(int))]
+    public class AmmoSetAmmoSlot
+    {
+        public static void Postfix(Ammo __instance, int idx)
+        {
+            if (!(ClientActive() || ServerActive()) || handlingPacket)
+                return;
+            
+            var packet = new AmmoRemoveMessage()
+            {
+                index = idx,
+                id = __instance.GetPlotID()
+            };          
+            
+            if (packet.id == null) return;
+
+            MultiplayerManager.NetworkSend(packet);
+        }
+    }
+
+    [HarmonyPatch(typeof(Ammo), nameof(Ammo.NextAmmoSlot))]
+    public class AmmoNextAmmoSlot
+    {
+        public static void Postfix(Ammo __instance)
+        {
+            if (!(ClientActive() || ServerActive()) || handlingPacket)
+                return;
+            
+            var packet = new AmmoSelectMessage()
+            {
+                index = __instance._selectedAmmoIdx + 1,
+                id = __instance.GetPlotID()
+            };          
+            
+            if (packet.id == null) return;
+
+            MultiplayerManager.NetworkSend(packet);
+        }
+    }
+    [HarmonyPatch(typeof(Ammo), nameof(Ammo.PrevAmmoSlot))]
+    public class AmmoPrevAmmoSlot
+    {
+        public static void Postfix(Ammo __instance)
+        {
+            if (!(ClientActive() || ServerActive()) || handlingPacket)
+                return;
+            
+            var packet = new AmmoSelectMessage()
+            {
+                index = __instance._selectedAmmoIdx - 1,
+                id = __instance.GetPlotID()
+            };   
             if (packet.id == null) return;
 
             MultiplayerManager.NetworkSend(packet);

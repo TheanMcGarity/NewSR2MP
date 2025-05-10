@@ -57,12 +57,18 @@ namespace NewSR2MP.Networking.Packet
                 {
                     msg.AddInt((int)upg);
                 }
-                msg.AddInt(plot.siloData.slots);
 
-                msg.AddInt(plot.siloData.ammo.Count);
-                foreach (var ammo in plot.siloData.ammo)
+                msg.AddInt(plot.siloData.Count);
+                foreach (var silo in plot.siloData)
                 {
-                    msg.AddAmmoData(ammo);
+                    msg.AddString(silo.Key);
+                    msg.AddInt(silo.Value.slots);
+
+                    msg.AddInt(silo.Value.ammo.Count);
+                    foreach (var ammo in silo.Value.ammo)
+                    {
+                        msg.AddAmmoData(ammo);
+                    }
                 }
                 msg.AddInt(plot.cropIdent);
             }
@@ -180,28 +186,33 @@ namespace NewSR2MP.Networking.Packet
                     upgrades.Add((LandPlot.Upgrade)msg.GetInt());
                 }
 
-                InitSiloData siloData;
-                int slots = msg.GetInt();
-                int ammLength = msg.GetInt();
-                HashSet<AmmoData> ammoDatas = new HashSet<AmmoData>();
-                for (int i2 = 0; i2 < ammLength; i2++)
+                Dictionary<string, InitSiloData> silos = new();
+                int inventories = msg.GetInt();
+                for (int j = 0; j < inventories; j++)
                 {
-                    var data = msg.GetAmmoData();
-                    ammoDatas.Add(data);
-                }
+                    string inventoryID = msg.GetString();
+                    int slots = msg.GetInt();
+                    int ammLength = msg.GetInt();
+                    HashSet<AmmoData> ammoDatas = new HashSet<AmmoData>();
+                    for (int i2 = 0; i2 < ammLength; i2++)
+                    {
+                        var data = msg.GetAmmoData();
+                        ammoDatas.Add(data);
+                    }
 
-                siloData = new InitSiloData()
-                {
-                    slots = slots,
-                    ammo = ammoDatas
-                };
+                    silos.Add(inventoryID, new InitSiloData
+                    {
+                        slots = slots,
+                        ammo = ammoDatas
+                    });
+                }
                 var crop = msg.GetInt();
                 initPlots.Add(new InitPlotData()
                 {
                     type = type,
                     id = id,
                     upgrades = upgrades,
-                    siloData = siloData,
+                    siloData = silos,
                     cropIdent = crop
                 });
             }
@@ -345,7 +356,7 @@ namespace NewSR2MP.Networking.Packet
         public Il2CppSystem.Collections.Generic.HashSet<LandPlot.Upgrade> upgrades;
         public int cropIdent;
 
-        public InitSiloData siloData;
+        public Dictionary<string, InitSiloData> siloData;
     }
 
     public class InitSiloData

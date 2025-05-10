@@ -1,4 +1,5 @@
 ﻿
+using System.Collections;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Weather;
 using Riptide;
@@ -12,19 +13,32 @@ namespace NewSR2MP.Networking.Packet
 {
     public class WeatherSyncMessage : ICustomMessage
     {
+        public const float BUG_CHECK = 3.5f;
+
+        public float timeStarted;
         // Only here for ICustomMessage to work
         public WeatherSyncMessage() { }
+
+        public bool initializedPacket;
         
-        public WeatherSyncMessage(WeatherModel model)
+        public IEnumerator Initialize(WeatherModel model)
         {
+            timeStarted = Time.unscaledTime;
+            
             byte b = 0;
             sync = new NetworkWeatherModel();
             sync.zones = new Dictionary<byte, NetworkWeatherZoneData>();
+            
+            yield return null;
+            
             foreach (var zone in model._zoneDatas)
             {
-                var networkZone = new NetworkWeatherZoneData();
-                networkZone.forcast = new List<NetworkWeatherForcast>();
+                var networkZone = new NetworkWeatherZoneData
+                {
+                    forcast = new List<NetworkWeatherForcast>()
+                };
 
+                yield return null;
 
                 foreach (var f in zone.Value.Forecast)
                 {
@@ -35,22 +49,35 @@ namespace NewSR2MP.Networking.Packet
                         networkForcast.state = f.State.Cast<WeatherStateDefinition>();
                         networkForcast.started = f.Started;
                         
+                        yield return null;
+                        
                         networkZone.forcast.Add(networkForcast);
                     }
+                    yield return null;
                 }
 
                 networkZone.windSpeed = zone.value.Parameters.WindDirection;
                 
+                yield return null;
+
                 sync.zones.Add(b, networkZone);
                 b++;
+                yield return null;
             }
+            
+            initializedPacket = true;
+        } 
+        
+        public WeatherSyncMessage(WeatherModel model)
+        {
+            MelonCoroutines.Start(Initialize(model));
         }
         
         public NetworkWeatherModel sync;
         
         public Message Serialize()
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.WeatherUpdate);
+            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.WeatherUpdate);
 
             sync.Write(msg);
             

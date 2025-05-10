@@ -7,6 +7,8 @@
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <Configurations>Debug;Release;Server</Configurations>
+    <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
 
 
@@ -33,6 +35,10 @@
       <DebugSymbols>true</DebugSymbols>
       <DebugType>embedded</DebugType>
       <WarningLevel>0</WarningLevel>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Server' ">
+      <DefineConstants>SERVER</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>

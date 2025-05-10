@@ -78,4 +78,24 @@ namespace NewSR2MP.Networking.Packet
             count = msg.GetInt();
         }
     }
+    public class AmmoSelectMessage : ICustomMessage
+    {
+        public int index;
+        public string id;
+        
+        public Message Serialize()
+        {
+            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.AmmoSelect);
+            msg.AddInt(index);
+            msg.AddString(id);
+
+            return msg;
+        }
+
+        public void Deserialize(Message msg)
+        {
+            index = msg.GetInt();
+            id = msg.GetString();
+        }
+    }
 }

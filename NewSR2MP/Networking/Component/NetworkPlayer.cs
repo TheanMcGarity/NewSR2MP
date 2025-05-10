@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Il2CppTMPro;
 using UnityEngine;
 
 namespace NewSR2MP.Networking.Component
@@ -19,9 +20,14 @@ namespace NewSR2MP.Networking.Component
             {
                 Destroy(this);
             }
-            
-            MelonCoroutines.Start(OwnActors());
+
+            try
+            {
+            }
+            catch { }
         }
+
+        public TextMesh usernamePanel;
         
         public int id;
         float transformTimer = 0.1f;
@@ -52,33 +58,6 @@ namespace NewSR2MP.Networking.Component
                 };
                 MultiplayerManager.NetworkSend(packet);
 
-            }
-        }
-        IEnumerator OwnActors()
-        {
-            while (true)
-            {
-                if (sceneContext == null || sceneContext.player == null)
-                    yield return null;
-                
-                yield return GetUnownedActors();
-                    
-                var i = 0;
-                    
-                foreach (var actor in unownedActors)
-                {
-                    try { actor.OwnActor(); } catch { }
-                    
-                    i++;
-
-                    if (i > 75)
-                    {
-                        i = 0;                        
-                        yield return null;
-                    }
-                }
-                    
-                yield return null;
             }
         }
     }

@@ -12,6 +12,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Il2CppMono.Security.Protocol.Ntlm;
+using Il2CppTMPro;
 using Riptide;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -72,8 +73,6 @@ namespace NewSR2MP.Networking
             }
 
             
-            
-            server.ClientConnected += OnPlayerJoined;
             server.ClientDisconnected += OnPlayerLeft;
 
             sceneContext.gameObject.AddComponent<NetworkTimeDirector>();
@@ -85,40 +84,43 @@ namespace NewSR2MP.Networking
             players.Add(ushort.MaxValue, hostNetworkPlayer);
         }
 
-        public void OnPlayerJoined(object? sender, ServerConnectedEventArgs args)
+        public void OnPlayerJoined(string username, ushort clientId)
         {
             DoNetworkSave();
-            foreach (var loadedPlayer in players)
-            {
-                // !TEMP!
-                var packet3 = new PlayerJoinMessage()
-                {
-                    id = loadedPlayer.Key,
-                    local = false
-                };
-                NetworkSend(packet3, ServerSendOptions.SendToPlayer(args.Client.Id));
-            }
+            
             var player = Instantiate(onlinePlayerPrefab);
-            player.name = $"Player{args.Client.Id}";
+            player.name = $"Player{clientId}";
             var netPlayer = player.GetComponent<NetworkPlayer>();
-            players.Add(args.Client.Id, netPlayer);
-            netPlayer.id = args.Client.Id;
+            
+            netPlayer.usernamePanel = netPlayer.transform.GetChild(1).GetComponent<TextMesh>();
+            netPlayer.usernamePanel.text = username;
+            netPlayer.usernamePanel.characterSize = 0.2f;
+            netPlayer.usernamePanel.anchor = TextAnchor.MiddleCenter;
+            netPlayer.usernamePanel.fontSize = 24;
+            
+            players.Add(clientId, netPlayer);
+            playerUsernames.Add(username, clientId);
+            playerUsernamesReverse.Add(clientId, username);
+            
+            netPlayer.id = clientId;
+            
             DontDestroyOnLoad(player);
             player.SetActive(true);
+            
             var packet = new PlayerJoinMessage()
             {
-                id = args.Client.Id,
-                local = false
+                id = clientId,
+                local = false,
+                username = username,
             };
             var packet2 = new PlayerJoinMessage()
             {
-                id = args.Client.Id,
-                local = true
+                id = clientId,
+                local = true,
+                username = username,
             };
-            NetworkSend(packet, ServerSendOptions.SendToAllExcept(args.Client.Id));
-            NetworkSend(packet2, ServerSendOptions.SendToPlayer(args.Client.Id));
-
-            args.Client.MaxSendAttempts = 750;
+            NetworkSend(packet, ServerSendOptions.SendToAllExcept(clientId));
+            NetworkSend(packet2, ServerSendOptions.SendToPlayer(clientId));
         }
         public void OnPlayerLeft(object? sender, ServerDisconnectedEventArgs args)
         {

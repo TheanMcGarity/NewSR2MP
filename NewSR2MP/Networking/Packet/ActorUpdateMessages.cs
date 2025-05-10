@@ -131,7 +131,7 @@ namespace NewSR2MP.Networking.Packet
     public class ActorVelocityMessage : ICustomMessage // Set velocity for new actor owner.
     {   
         public Vector3 velocity;
-        public bool isOwner;
+        public bool bounce;
         public long id;
 
         
@@ -140,7 +140,7 @@ namespace NewSR2MP.Networking.Packet
             Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorVelocitySet);
             msg.AddVector3(velocity);
             msg.AddLong(id);
-            msg.AddBool(isOwner);
+            msg.AddBool(bounce);
 
             return msg;
         }
@@ -149,7 +149,7 @@ namespace NewSR2MP.Networking.Packet
         {
             velocity = msg.GetVector3();
             id = msg.GetLong();
-            isOwner = msg.GetBool();
+            bounce = msg.GetBool();
         }
     }
     public class ActorSetOwnerMessage : ICustomMessage // Host informing client to set actor

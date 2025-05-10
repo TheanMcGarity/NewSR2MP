@@ -12,9 +12,9 @@ namespace NewSR2MP.Networking.Component
     {
         public void SetRigidbodyState(bool enabled)
         {
-            if (GetComponent<Rigidbody>() != null)
-                GetComponent<Rigidbody>().constraints =
-                    enabled ? RigidbodyConstraints.None : RigidbodyConstraints.FreezeAll;
+            //if (GetComponent<Rigidbody>() != null)
+            //    GetComponent<Rigidbody>().constraints =
+            //        enabled ? RigidbodyConstraints.None : RigidbodyConstraints.FreezeAll;
         }
 
         void Start()

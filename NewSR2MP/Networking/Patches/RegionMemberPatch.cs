@@ -15,13 +15,15 @@ using UnityEngine.UIElements;
 
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(RegionMember), nameof(RegionMember.UpdateRegionMembership))]
-    public class UpdateRegionMembership
+    [HarmonyPatch(typeof(RegionMember), nameof(RegionMember.Unhibernate))]
+    public class RegionMemberUnhibernate
     {
-        // Used to be RegionSetId patch, but that doesn't exist in SR2
-        public static bool Prefix(RegionMember __instance)
+        public static void Postfix(RegionMember __instance)
         {
-            return true;
+            if (__instance.TryGetComponent<NetworkActorOwnerToggle>(out var netActorOwnerToggle))
+            {
+                netActorOwnerToggle.OwnActor(NetworkActorOwnerToggle.OwnershipTransferCause.REGION);
+            }
         }
     }
 }

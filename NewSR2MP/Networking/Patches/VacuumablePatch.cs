@@ -22,7 +22,7 @@ namespace NewSR2MP.Networking.Patches
                 var actor = __instance.GetComponent<NetworkActorOwnerToggle>();
                 if (actor != null)
                 {
-                    actor.OwnActor();
+                    actor.OwnActor(NetworkActorOwnerToggle.OwnershipTransferCause.VAC);
                 }
             }
         }
@@ -40,7 +40,7 @@ namespace NewSR2MP.Networking.Patches
                 var actor = __instance.GetComponent<NetworkActorOwnerToggle>();
                 if (actor != null)
                 {
-                    actor.OwnActor();
+                    actor.OwnActor(NetworkActorOwnerToggle.OwnershipTransferCause.VAC);
                 }
             }
         }

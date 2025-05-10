@@ -39,6 +39,54 @@ namespace NewSR2MP
         public override string ID => "host";
         public override string Usage => "host <port>";
     }
+    public class GivePlayerCommand : SR2ECommand
+    {
+        public override string ID => "playergive";
+        public override string Usage => "playergive <playerid> <item> <count>";
+        
+        public override List<string> GetAutoComplete(int argIndex, string[] args)
+        {
+            if (argIndex == 0)
+            {
+                var list = new List<string>();
+                foreach (var guid in clientToGuid)
+                {
+                    list.Add(guid.Value.ToString());
+                }
+                return list;
+            }
+            if (argIndex == 1)
+                return getVaccableListByPartialName(args == null ? null : args[0], true);
+            if (argIndex == 2)
+                return new List<string> { "1", "5", "10", "20", "30", "50" };
+
+            return null;
+        }
+
+        public override bool Execute(string[] args)
+        {
+            if (!args.IsBetween(1,2)) return SendUsage();
+            if (!inGame) return SendLoadASaveFirst();
+
+            if (!ServerActive())
+                return false;
+            
+            string player = args[0];
+            string identifierTypeName = args[1];
+            IdentifiableType type = getIdentByName(identifierTypeName);
+            if (type == null) return SendNotValidIdentType(identifierTypeName);
+            string itemName = type.getName();
+            if (type.isGadget()) return SendIsGadgetNotItem(itemName);
+        
+            int amount = 1;
+            if (args.Length == 3) if(!this.TryParseInt(args[2], out amount,0, false)) return false;
+
+            for (int i = 0; i < amount; i++)
+                ammoByPlotID[$"player_{player}"].MaybeAddToSlot(type, null);
+
+            return true;
+        }
+    }
     public class ShowSRMPErrorsCommand : SR2ECommand
     {
         public override bool Execute(string[] args)
@@ -153,16 +201,13 @@ namespace NewSR2MP
 
             dat.Username = $"User{i}";
             dat.Player = guid;
-            dat.Debug_Player2 = guid;
-            dat.ignoredMods = new List<string>()
-            {
-                "NewSR2MP"
-            };
+            dat.Debug_Player2 = guid2;
+            
             data = dat;
 
             SaveData();
         }
-        private void SaveData()
+        public void SaveData()
         {
             File.WriteAllText(DataPath, JsonConvert.SerializeObject(data, Formatting.Indented));
         }
@@ -180,7 +225,7 @@ namespace NewSR2MP
             return list.Cast<Il2CppSystem.Collections.Generic.IEnumerable<LandPlot.Upgrade>>();
         }
 
-        public static void OnRanchSceneGroupLoaded(SceneContext s)
+        public static void OnRanchSceneGroupLoaded()
         {
             var save = latestSaveJoined;
 
@@ -196,28 +241,31 @@ namespace NewSR2MP
                     handlingPacket = false;
                     var lp = model.gameObj.GetComponentInChildren<LandPlot>();
                     lp.ApplyUpgrades(ConvertToIEnumerable(plot.upgrades), false);
-                    var silo = model.gameObj.GetComponentInChildren<SiloStorage>();
-                    silo.RegisterAmmoPointer();
-                    foreach (var ammo in plot.siloData.ammo)
+                    var silos = model.gameObj.GetComponentsInChildren<SiloStorage>();
+                    foreach (var silo in silos)
                     {
-                        try
+                        silo.RegisterAmmoPointer();
+
+                        foreach (var ammo in plot.siloData[silo.AmmoSetReference.name].ammo)
                         {
-                            if (!(ammo.count == 0 || ammo.id == 9))
+                            try
                             {
-                                silo.LocalAmmo.Slots[ammo.slot]._count = ammo.count;
-                                silo.LocalAmmo.Slots[ammo.slot]._id = identifiableTypes[ammo.id];
+                                if (!(ammo.count == 0 || ammo.id == 9))
+                                {
+                                    silo.LocalAmmo.Slots[ammo.slot]._count = ammo.count;
+                                    silo.LocalAmmo.Slots[ammo.slot]._id = identifiableTypes[ammo.id];
+                                }
+                                else
+                                {
+                                    silo.LocalAmmo.Slots[ammo.slot]._count = 0;
+                                    silo.LocalAmmo.Slots[ammo.slot]._id = null;
+                                }
                             }
-                            else
+                            catch
                             {
-                                silo.LocalAmmo.Slots[ammo.slot]._count = 0;
-                                silo.LocalAmmo.Slots[ammo.slot]._id = null;
                             }
-                        }
-                        catch
-                        {
                         }
                     }
-
                     if (plot.type == LandPlot.Id.GARDEN)
                     {
                         GardenCatcher gc = lp.transform.GetComponentInChildren<GardenCatcher>(true);
@@ -305,7 +353,6 @@ namespace NewSR2MP
                         if (!ident.IsSceneObject && !ident.IsPlayer)
                         {
                             handlingPacket = true;
-                            var obj = ident.prefab;
                             var obj2 = RegisterActor(new ActorId(newActor.id), ident, newActor.pos, Quaternion.identity, sceneGroups[newActor.scene]);
                             
                             obj2.AddComponent<NetworkActor>();
@@ -352,10 +399,16 @@ namespace NewSR2MP
                             netPlayer.id = player.id;
                             playerobj.SetActive(true);
                             UnityEngine.Object.DontDestroyOnLoad(playerobj);
+                            
+                            netPlayer.usernamePanel = playerobj.transform.GetComponentInChildren<TextMesh>();
+                            netPlayer.usernamePanel.text = player.username;
+                            netPlayer.usernamePanel.characterSize = 0.2f;
+                            netPlayer.usernamePanel.anchor = TextAnchor.MiddleCenter;
+                            netPlayer.usernamePanel.fontSize = 24;
                         }
                         catch
                         {
-                        } // Some reason it does happen. // Note found out why, the marker code is completely broken, i forgot that i didnt remove it here so i was wondering why it errored.
+                        }
                     }
 
                     completedPlayers = true;
@@ -548,12 +601,18 @@ namespace NewSR2MP
 
                 if (!completedUpgrades)
                 {
-                    var playerUpgrades = new Il2CppSystem.Collections.Generic.Dictionary<int, int>();
+                    sceneContext.PlayerState._model.upgradeModel.upgradeLevels = new Il2CppSystem.Collections.Generic.Dictionary<int, int>();
 
                     foreach (var upgrade in save.upgrades)
-                        playerUpgrades.Add(upgrade.Key, upgrade.Value);
-                
-                    sceneContext.PlayerState._model.upgradeModel.upgradeLevels = playerUpgrades;
+                    {
+                        sceneContext.PlayerState._model.upgradeModel.upgradeLevels.Add(upgrade.Key, -1);
+                        
+                        var def = sceneContext.PlayerState._model.upgradeModel.upgradeDefinitions.items._items
+                            .FirstOrDefault(x => x._uniqueId == upgrade.Key);
+                        
+                        for (int i = 0; i < upgrade.Value; i++)
+                            sceneContext.PlayerState._model.upgradeModel.IncrementUpgradeLevel(def);
+                    }
 
                     completedUpgrades = true;
                     
@@ -561,6 +620,8 @@ namespace NewSR2MP
                 }
 
                 handlingPacket = false;
+                clientLoading = false;
+                
                 var ammo = sceneContext.PlayerState.Ammo;
 
                 ammo.RegisterAmmoPointer($"player_{data.Player}");
@@ -587,8 +648,8 @@ namespace NewSR2MP
                     Initialize();
                     break;
                 case "MainMenuEnvironment":
-                    SRMP.Log("Join the discord server for help and updates!");
-                    SRMP.Log("Discord server invite:");
+                    SRMP.Log(SR2ELanguageManger.translation("ui.discord.intro"));
+                    SRMP.Log(SR2ELanguageManger.translation("ui.discord.invite"));
                     SRMP.Log("https://discord.gg/a7wfBw5feU", 175);
                     
                     MultiplayerManager.Instance.GeneratePlayerModel();
@@ -600,6 +661,10 @@ namespace NewSR2MP
                     if (autoHostPort != 0)
                         MultiplayerManager.Instance.Host((ushort)autoHostPort);
                     break;
+                #if SERVER
+                case "GameCore":
+                    gameContext.AutoSaveDirector.Load()
+                #endif
             }
         }
 
@@ -623,13 +688,23 @@ namespace NewSR2MP
         /// </summary>
         public class UserData
         {
+            /// <summary>
+            /// If the player has set their username
+            /// </summary>
+            public bool HasSavedUsername;
+            /// <summary>
+            /// Player Username
+            /// </summary>
             public string Username;
             /// <summary>
             /// Used for player saving.
             /// </summary>
             public Guid Player;
             public Guid Debug_Player2;
-            public List<string> ignoredMods;
+
+            public string LastIP = "127.0.0.1";
+            public string LastPort = "7777";
+            public string LastPortHosted = "7777";
         }
         
     }

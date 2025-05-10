@@ -15,6 +15,8 @@ namespace NewSR2MP.Networking.Patches
         {
             yield return null;
             
+            if (!__result) yield break;
+            
             if (isJoiningAsClient) yield break;
 
             if (!handlingPacket)
@@ -49,46 +51,46 @@ namespace NewSR2MP.Networking.Patches
 
                         DestroyActor(__result, "SR2MP.ClientActorSpawn", true);
                     }
+                    else if (ServerActive())
+                    {
+
+                        if (__result.GetComponent<NetworkActor>() == null)
+                        {
+                            __result.AddComponent<NetworkActor>();
+                            __result.AddComponent<TransformSmoother>();
+                            __result.AddComponent<NetworkActorOwnerToggle>();
+                        }
+
+                        var ts = __result.GetComponent<TransformSmoother>();
+                        var id = __result.GetComponent<IdentifiableActor>().GetActorId().Value;
+                
+                        if (!actors.TryAdd(id, __result.GetComponent<NetworkActor>()))
+                            actors[id] = __result.GetComponent<NetworkActor>();
+
+
+                        ts.interpolPeriod = 0.245f;
+                        ts.enabled = false;
+
+                        Vector3 vel = Vector3.zero;
+                        if (__result.TryGetComponent<Rigidbody>(out var rb))
+                            vel = rb.velocity;
+                
+                        MultiplayerManager.NetworkSend(new ActorSpawnMessage
+                        {
+                            rotation = rotation.ToEuler(),
+                            position = position,
+                            velocity = vel,
+                            id = id,
+                            ident = GetIdentID(__result.GetComponent<IdentifiableActor>().identType),
+                            scene = sceneGroupsReverse[sceneGroup.name]
+                        });
+                    }
                 }
-                catch
+                catch (Exception e)
                 {
+                    MelonLogger.Error($"Error in loading actor: {e}");
                 }
             }
-            else if (ServerActive())
-            {
-
-                if (__result.GetComponent<NetworkActor>() == null)
-                {
-                    __result.AddComponent<NetworkActor>();
-                    __result.AddComponent<TransformSmoother>();
-                    __result.AddComponent<NetworkActorOwnerToggle>();
-                }
-
-                var ts = __result.GetComponent<TransformSmoother>();
-                var id = __result.GetComponent<IdentifiableActor>().GetActorId().Value;
-                
-                if (!actors.TryAdd(id, __result.GetComponent<NetworkActor>()))
-                    actors[id] = __result.GetComponent<NetworkActor>();
-
-
-                ts.interpolPeriod = 0.245f;
-                ts.enabled = false;
-
-                Vector3 vel = Vector3.zero;
-                if (__result.TryGetComponent<Rigidbody>(out var rb))
-                    vel = rb.velocity;
-                
-                MultiplayerManager.NetworkSend(new ActorSpawnMessage
-                {
-                    rotation = rotation.ToEuler(),
-                    position = position,
-                    velocity = vel,
-                    id = id,
-                    ident = GetIdentID(__result.GetComponent<IdentifiableActor>().identType),
-                    scene = sceneGroupsReverse[sceneGroup.name]
-                });
-            }
-
         }
     }
     [HarmonyPatch(typeof(InstantiationHelpers), nameof(InstantiateActor))]

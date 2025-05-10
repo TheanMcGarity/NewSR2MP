@@ -8,6 +8,7 @@ using Il2CppMonomiPark.SlimeRancher.UI.Map;
 using Il2CppMonomiPark.SlimeRancher.Weather;
 using Il2CppMonomiPark.SlimeRancher.World;
 using Il2CppMonomiPark.World;
+using Il2CppTMPro;
 using Il2CppXGamingRuntime.Interop;
 using Unity.Mathematics;
 using UnityEngine;
@@ -282,9 +283,21 @@ public class NetworkHandler
             {
                 var player = Object.Instantiate(MultiplayerManager.Instance.onlinePlayerPrefab);
                 player.name = $"Player{packet.id}";
-                var netPlayer = player.GetComponent<NetworkPlayer>();
-                players.Add(packet.id, netPlayer);
+                
+                var netPlayer = player.GetComponent<NetworkPlayer>();     
+                
+                netPlayer.usernamePanel = netPlayer.transform.GetChild(1).GetComponent<TextMesh>();
+                netPlayer.usernamePanel.text = packet.username;
+                netPlayer.usernamePanel.characterSize = 0.2f;
+                netPlayer.usernamePanel.anchor = TextAnchor.MiddleCenter;
+                netPlayer.usernamePanel.fontSize = 24;
+                
                 netPlayer.id = packet.id;
+
+                playerUsernames.Add(packet.username, packet.id);
+                playerUsernamesReverse.Add(packet.id, packet.username);
+                players.Add(packet.id, netPlayer);
+                
                 player.SetActive(true);
                 Object.DontDestroyOnLoad(player);
             }
@@ -452,6 +465,8 @@ public class NetworkHandler
             if (ShowErrors)
                 SRMP.Log($"Exception in transfering actor({packet.id})! Stack Trace:\n{e}");
         }
+        
+        
     }
 
     [MessageHandler((ushort)PacketType.ActorDestroy)]
@@ -498,12 +513,6 @@ public class NetworkHandler
             actor.enabled = false;
 
             actor.GetComponent<NetworkActorOwnerToggle>().LoseGrip();
-
-            MultiplayerManager.NetworkSend(new ActorVelocityMessage
-            {
-                id = packet.id,
-                velocity = actor.GetComponent<Rigidbody>().velocity
-            }, MultiplayerManager.ServerSendOptions.SendToPlayer(client));
         }
         catch (Exception e)
         {
@@ -520,8 +529,17 @@ public class NetworkHandler
         try
         {
             if (!actors.TryGetValue(packet.id, out var actor)) return;
-            
+
             actor.GetComponent<Rigidbody>().velocity = packet.velocity;
+
+            if (packet.bounce)
+                if (!actor.IsOwned)
+                    ForwardMessage(new ActorVelocityMessage
+                    {
+                        id = packet.id,
+                        bounce = false,
+                        velocity = actor.GetComponent<Rigidbody>().velocity
+                    }, client);
         }
         catch (Exception e)
         {
@@ -538,6 +556,15 @@ public class NetworkHandler
             if (!actors.TryGetValue(packet.id, out var actor)) return;
             
             actor.GetComponent<Rigidbody>().velocity = packet.velocity;
+            
+            if (packet.bounce)
+                if (!actor.IsOwned)
+                    MultiplayerManager.NetworkSend(new ActorVelocityMessage
+                    {
+                        id = packet.id,
+                        bounce = false,
+                        velocity = actor.GetComponent<Rigidbody>().velocity
+                    });
         }
         catch (Exception e)
         {
@@ -576,7 +603,6 @@ public class NetworkHandler
             if (!actors.TryGetValue(packet.id, out var actor)) return;
 
             actor.GetComponent<NetworkActorOwnerToggle>().OwnActor();
-            actor.GetComponent<Rigidbody>().velocity = packet.velocity;
         }
         catch (Exception e)
         {
@@ -977,19 +1003,14 @@ public class NetworkHandler
         try
         {
             var ammo = GetNetworkAmmo(packet.id);
-
-            if (!ammo.Slots[packet.slot]._id.name.Equals(identifiableTypes[packet.ident].name))
-            {
-                ammo.Slots[packet.slot]._id = identifiableTypes[packet.ident];
-            }
-
-            ammo.Slots[packet.slot]._count += packet.count;
-
-
-
+            
+            handlingPacket = true;
+            ammo.MaybeAddToSpecificSlot(identifiableTypes[packet.ident], null, packet.slot, packet.count);
+            handlingPacket = false;
         }
-        catch
+        catch (Exception e)
         {
+            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
         }
 
     }
@@ -1002,25 +1023,14 @@ public class NetworkHandler
         try
         {
             var ammo = GetNetworkAmmo(packet.id);
-            int slot = -1;
-            for (int i = 0; i < ammo._ammoModel.slots.Count; i++)
-            {
-                if (ammo.Slots[i]._count + 1 <= ammo._ammoModel.GetSlotMaxCount(identifiableTypes[packet.ident], i))
-                {
-                    slot = i;
-                    continue;
-                }
-            }
-
-            if (!ammo.Slots[slot]._id.name.Equals(packet.id))
-            {
-                ammo.Slots[slot]._id = identifiableTypes[packet.ident];
-            }
-
-            ammo.Slots[slot]._count++;
+            
+            handlingPacket = true;
+            ammo.MaybeAddToSlot(identifiableTypes[packet.ident], null, SlimeAppearance.AppearanceSaveSet.NONE);
+            handlingPacket = false;
         }
-        catch
+        catch (Exception e)
         {
+            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
         }
     }
 
@@ -1033,21 +1043,56 @@ public class NetworkHandler
         {
             Ammo ammo = GetNetworkAmmo(packet.id);
 
-            if (ammo.Slots[packet.index]._id != null)
-            {
-                if (ammo.Slots[packet.index]._count <= packet.count)
-                {
-                    ammo.Slots[packet.index]._id = null;
-                }
-                else
-                    ammo.Slots[packet.index]._count -= packet.count;
-            }
+            handlingPacket = true;
+            ammo.Decrement(packet.index, packet.count);
+            handlingPacket = false;
         }
-        catch
+        catch (Exception e)
         {
+            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
         }
 
         ForwardMessage(packet, client);
+    }
+
+    [MessageHandler((ushort)PacketType.AmmoSelect)]
+    public static void HandleAmmoSelect(ushort client, Message msg)
+    {
+        var packet = ICustomMessage.Deserialize<AmmoSelectMessage>(msg);
+
+        try
+        {
+            Ammo ammo = GetNetworkAmmo(packet.id);
+
+            handlingPacket = true;
+            ammo.SetAmmoSlot(packet.index);
+            handlingPacket = false;
+        }
+        catch (Exception e)
+        {
+            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
+        }
+
+        ForwardMessage(packet, client);
+    }
+
+    [MessageHandler((ushort)PacketType.AmmoSelect)]
+    public static void HandleAmmoSelect(Message msg)
+    {
+        var packet = ICustomMessage.Deserialize<AmmoSelectMessage>(msg);
+
+        try
+        {
+            Ammo ammo = GetNetworkAmmo(packet.id);
+
+            handlingPacket = true;
+            ammo.SetAmmoSlot(packet.index);
+            handlingPacket = false;
+        }
+        catch (Exception e)
+        {
+            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
+        }
     }
 
     [MessageHandler((ushort)PacketType.AmmoEdit)]
@@ -1058,19 +1103,13 @@ public class NetworkHandler
         try
         {
             var ammo = GetNetworkAmmo(packet.id);
-
-            if (!ammo.Slots[packet.slot]._id.name.Equals(identifiableTypes[packet.ident].name))
-            {
-                ammo.Slots[packet.slot]._id = identifiableTypes[packet.ident];
-            }
-
-            ammo.Slots[packet.slot]._count += packet.count;
-
-
-
+            handlingPacket = true;
+            ammo.MaybeAddToSpecificSlot(identifiableTypes[packet.ident], null, packet.slot, packet.count);
+            handlingPacket = false;
         }
-        catch
+        catch (Exception e)
         {
+            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
         }
 
         ForwardMessage(packet, client);
@@ -1084,25 +1123,14 @@ public class NetworkHandler
         try
         {
             var ammo = GetNetworkAmmo(packet.id);
-            int slot = -1;
-            for (int i = 0; i < ammo._ammoModel.slots.Count; i++)
-            {
-                if (ammo.Slots[i]._count + 1 <= ammo._ammoModel.GetSlotMaxCount(identifiableTypes[packet.ident], i))
-                {
-                    slot = i;
-                    continue;
-                }
-            }
-
-            if (!ammo.Slots[slot]._id.name.Equals(packet.id))
-            {
-                ammo.Slots[slot]._id = identifiableTypes[packet.ident];
-            }
-
-            ammo.Slots[slot]._count++;
+            
+            handlingPacket = true;
+            ammo.MaybeAddToSlot(identifiableTypes[packet.ident], null, SlimeAppearance.AppearanceSaveSet.NONE);
+            handlingPacket = false;
         }
-        catch
+        catch (Exception e)
         {
+            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
         }
 
         ForwardMessage(packet, client);
@@ -1117,27 +1145,14 @@ public class NetworkHandler
         {
             Ammo ammo = GetNetworkAmmo(packet.id);
 
-            if (ammo.Slots[packet.index]._id != null)
-            {
-                if (ammo.Slots[packet.index]._count <= packet.count)
-                {
-                    ammo.Slots[packet.index]._id = null;
-                }
-                else
-                    ammo.Slots[packet.index]._count -= packet.count;
-            }
+            handlingPacket = true;
+            ammo.Decrement(packet.index, packet.count);
+            handlingPacket = false;
         }
-        catch
+        catch (Exception e)
         {
+            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
         }
-    }
-
-    //
-    // TODO: Add map handling. look into disabling the map fog game objects.
-    //
-    public static void HandleMap(Message msg)
-    {
-        // sceneContext.PlayerState._model.unlockedZoneMaps.Add(packet.id);
     }
 
     [MessageHandler((ushort)PacketType.ActorUpdate)]
