@@ -25,7 +25,7 @@ namespace NewSR2MP.Networking.Component
         {
             timer += Time.unscaledDeltaTime;
 
-            if (timer > .08)
+            if (timer > .07)
             {
                 var msg = new TimeSyncMessage()
                 {
