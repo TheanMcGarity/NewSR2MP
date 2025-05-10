@@ -7,6 +7,9 @@ internal class UpgradeModelIncrementUpgradeLevel
 {
     public static void Postfix(UpgradeModel __instance, UpgradeDefinition definition)
     {
+        if (handlingPacket)
+            return;
+        
         if (ClientActive() || ServerActive())
             MultiplayerManager.NetworkSend(new PlayerUpgradeMessage{ id = (byte)definition._uniqueId });
     }

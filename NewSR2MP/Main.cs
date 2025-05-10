@@ -609,9 +609,11 @@ namespace NewSR2MP
                         
                         var def = sceneContext.PlayerState._model.upgradeModel.upgradeDefinitions.items._items
                             .FirstOrDefault(x => x._uniqueId == upgrade.Key);
-                        
+
+                        handlingPacket = true;
                         for (int i = 0; i < upgrade.Value; i++)
                             sceneContext.PlayerState._model.upgradeModel.IncrementUpgradeLevel(def);
+                        handlingPacket = false;
                     }
 
                     completedUpgrades = true;

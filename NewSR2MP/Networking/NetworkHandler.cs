@@ -334,9 +334,8 @@ public class NetworkHandler
     public static void HandleClientSleep(ushort client, Message msg)
     {
         var packet = ICustomMessage.Deserialize<SleepMessage>(msg);
+        
         sceneContext.TimeDirector.FastForwardTo(packet.targetTime);
-
-        ForwardMessage(packet, client);
     }
 
     [MessageHandler((ushort)PacketType.TempClientActorSpawn)]
@@ -1546,8 +1545,11 @@ public class NetworkHandler
     {
         var packet = ICustomMessage.Deserialize<PlayerUpgradeMessage>(msg);
 
-        sceneContext.PlayerState._model.upgradeModel.upgradeLevels[packet.id]++;
-        
+        handlingPacket = true;
+        sceneContext.PlayerState._model.upgradeModel.IncrementUpgradeLevel(sceneContext.PlayerState._model.upgradeModel.upgradeDefinitions.items._items
+            .FirstOrDefault(x => x._uniqueId == packet.id));
+        handlingPacket = false;
+
         ForwardMessage(packet, client);
     }
 
@@ -1556,7 +1558,11 @@ public class NetworkHandler
     {
         var packet = ICustomMessage.Deserialize<PlayerUpgradeMessage>(msg);
 
-        sceneContext.PlayerState._model.upgradeModel.upgradeLevels[packet.id]++;
+        handlingPacket = true;
+        sceneContext.PlayerState._model.upgradeModel.IncrementUpgradeLevel(sceneContext.PlayerState._model.upgradeModel.upgradeDefinitions.items._items
+            .FirstOrDefault(x => x._uniqueId == packet.id));
+        handlingPacket = false;
+
     }
     
     /// <summary>
