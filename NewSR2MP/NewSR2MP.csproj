@@ -47,7 +47,7 @@
         <Private>False</Private>
       </Reference>
       <Reference Include="Assembly-CSharp">
-        <HintPath>libs\Assembly-CSharp.dll</HintPath>
+        <HintPath>Libs\Assembly-CSharp.dll</HintPath>
       </Reference>
       <Reference Include="Il2Cppcom.rlabrecque.steamworks.net">
         <HintPath>Libs\Il2Cppcom.rlabrecque.steamworks.net.dll</HintPath>

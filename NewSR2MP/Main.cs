@@ -130,15 +130,15 @@ namespace NewSR2MP
 
         public static bool TryRemoveComponent<T>(this GameObject go) where T : Component
         {
-            try
+            T component = go.GetComponent<T>();
+            
+            if (component != null)
             {
                 go.RemoveComponent<T>();
                 return true;
             }
-            catch
-            {
-                return false;
-            }
+            
+            return false;
         }
     }
     
