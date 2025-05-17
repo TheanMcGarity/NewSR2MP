@@ -174,7 +174,8 @@ namespace NewSR2MP.Networking.Packet
                 string username = msg.ReadString();
                 initPlayers.Add(new InitPlayerData()
                 {
-                    id = id
+                    id = id,
+                    username = username,
                 });
             }
 
