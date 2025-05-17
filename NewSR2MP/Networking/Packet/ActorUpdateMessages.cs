@@ -1,6 +1,5 @@
 ﻿
 using Il2CppMonomiPark.SlimeRancher.Regions;
-using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,25 +23,21 @@ namespace NewSR2MP.Networking.Packet
             this.w = w;
         }
 
-        public void Serialize(Message msg)
+        public void Serialize(OutgoingMessage msg)
         {
-            msg.AddFloat(x);
-            msg.AddFloat(y);
-            msg.AddFloat(z);
-            msg.AddFloat(w);
+            msg.WriteCompressed(this);
         }
-        public static NetworkEmotions Deserialize(Message msg)
+        public static NetworkEmotions Deserialize(IncomingMessage msg)
         {
-            var x = msg.GetFloat();
-            var y = msg.GetFloat();
-            var z = msg.GetFloat();
-            var w = msg.GetFloat();
-            
-            return new NetworkEmotions(x, y, z, w);
+            return msg.ReadCompressedSlimeEmotions();
         }
     }
-    public class ActorUpdateMessage : ICustomMessage
+    public class ActorUpdateMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => ActorUpdate;
+
         public long id;
         
         public Vector3 position;
@@ -52,159 +47,173 @@ namespace NewSR2MP.Networking.Packet
         
         public NetworkEmotions slimeEmotions = new NetworkEmotions();
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.ActorUpdate);
-
-            msg.AddLong(id);
-            msg.AddVector3(position);
-            msg.AddVector3(rotation);
-            msg.AddVector3(velocity);
+            msg.Write(id);
+            msg.Write(position);
+            msg.WriteCompressed(rotation);
+            msg.Write(velocity);
 
             slimeEmotions.Serialize(msg);
-            
-            return msg;
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetLong();
-            position = msg.GetVector3();
-            rotation = msg.GetVector3();
-            velocity = msg.GetVector3();
+            id = msg.ReadInt64();
+            position = msg.ReadVector3();
+            rotation = msg.ReadCompressedVector3();
+            velocity = msg.ReadVector3();
+            
             slimeEmotions = NetworkEmotions.Deserialize(msg);
         }
     }
-    public class ActorUpdateClientMessage : ICustomMessage // Remind me to merge this with the main message
+    public class ActorUpdateClientMessage : IPacket // Remind me to merge this with the main message
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => TempClientActorUpdate;
+
         public long id;
         
         public Vector3 position;
         public Vector3 rotation;
-        
+
         public Vector3 velocity;
-
+        
         public NetworkEmotions slimeEmotions = new NetworkEmotions();
-
-        public Message Serialize()
+        
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.TempClientActorUpdate);
-            msg.AddLong(id);
-            msg.AddVector3(position);
-            msg.AddVector3(rotation);
-            msg.AddVector3(velocity);
-            
+            msg.Write(id);
+            msg.Write(position);
+            msg.WriteCompressed(rotation);
+            msg.Write(velocity);
+
             slimeEmotions.Serialize(msg);
-            
-            return msg;
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetLong();
-            position = msg.GetVector3();
-            rotation = msg.GetVector3();
-            velocity = msg.GetVector3();
+            id = msg.ReadInt64();
+            position = msg.ReadVector3();
+            rotation = msg.ReadCompressedVector3();
+            velocity = msg.ReadVector3();
+            
             slimeEmotions = NetworkEmotions.Deserialize(msg);
         }
     }
-    public class ActorUpdateOwnerMessage : ICustomMessage // Owner update message.
+    public class ActorUpdateOwnerMessage : IPacket // Owner update message.
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => ActorBecomeOwner;
+
         public long id;
         public int player;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorBecomeOwner);
-            msg.AddLong(id);
-            msg.AddInt(player);
+            
+            msg.Write(id);
+            msg.Write(player);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetLong();
-            player = msg.GetInt();
+            id = msg.ReadInt64();
+            player = msg.ReadInt32();
         }
     }
-    public class ActorVelocityMessage : ICustomMessage // Set velocity for new actor owner.
+    public class ActorVelocityMessage : IPacket // Set velocity for new actor owner.
     {   
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => ActorVelocitySet;
+
         public Vector3 velocity;
         public bool bounce;
         public long id;
 
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorVelocitySet);
-            msg.AddVector3(velocity);
-            msg.AddLong(id);
-            msg.AddBool(bounce);
+            
+            msg.Write(velocity);
+            msg.Write(id);
+            msg.Write(bounce);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            velocity = msg.GetVector3();
-            id = msg.GetLong();
-            bounce = msg.GetBool();
+            velocity = msg.ReadVector3();
+            id = msg.ReadInt64();
+            bounce = msg.ReadBoolean();
         }
     }
-    public class ActorSetOwnerMessage : ICustomMessage // Host informing client to set actor
+    public class ActorSetOwnerMessage : IPacket // Host informing client to set actor
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => ActorSetOwner;
+
         public long id;
         public Vector3 velocity;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorBecomeOwner);
-            msg.AddLong(id);
-            msg.AddVector3(velocity);
             
-            return msg;
+            msg.Write(id);
+            msg.Write(velocity);
+            
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetLong();
-            velocity = msg.GetVector3();
+            id = msg.ReadInt64();
+            velocity = msg.ReadVector3();
         }
     }
-    public class ActorChangeHeldOwnerMessage : ICustomMessage // Largo holder change message.
+    public class ActorChangeHeldOwnerMessage : IPacket // Largo holder change message.
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => ActorHeldOwner;
+
         public long id;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.ActorHeldOwner);
-            msg.AddLong(id);
-            return msg;
+            
+            msg.Write(id);
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
             // no
         }
     }
-    public class ActorDestroyGlobalMessage : ICustomMessage // Destroy message. Runs on both client and server (Global)
+    public class ActorDestroyGlobalMessage : IPacket // Destroy message. Runs on both client and server (Global)
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => ActorDestroy;
+
         public long id;
-        private ICustomMessage _customMessageImplementation;
 
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorDestroy);
-            
-            msg.AddLong(id);
-
-            return msg;
+            msg.Write(id);
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetLong();
+            id = msg.ReadInt64();
         }
     }
 }

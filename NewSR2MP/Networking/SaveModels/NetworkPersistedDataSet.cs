@@ -5,10 +5,13 @@ namespace NewSR2MP.Networking.SaveModels
 {
     public class NetworkPersistedDataSet
     {
+        public Il2CppSystem.IO.Stream stream;
+        
         public virtual uint Version => 0;
         public virtual string Identifier => "";
         public void Write(Il2CppSystem.IO.Stream stream)
         {
+            this.stream = stream;
             
             Encoding utf = Encoding.UTF8;
             GameBinaryWriter binaryWriter = new GameBinaryWriter(stream, utf);
@@ -32,6 +35,8 @@ namespace NewSR2MP.Networking.SaveModels
         }
         public void Load(Il2CppSystem.IO.Stream stream)
         {
+            this.stream = stream;
+            
             Encoding encoding = Encoding.UTF8;
             GameBinaryReader reader = new GameBinaryReader(stream, encoding);
 

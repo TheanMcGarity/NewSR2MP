@@ -2,24 +2,26 @@
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class KillAllCommandMessage : ICustomMessage
+    public class KillAllCommandMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => KillAllCommand;
+
         public int sceneGroup;
         public int actorType = -1;
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            var msg = Message.Create(MessageSendMode.Unreliable, PacketType.KillAllCommand);
+            msg.Write(sceneGroup);
+            msg.Write(actorType);
             
-            msg.AddInt(sceneGroup);
-            msg.AddInt(actorType);
             
-            return msg;
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            sceneGroup = msg.GetInt();
-            actorType = msg.GetInt();
+            sceneGroup = msg.ReadInt32();
+            actorType = msg.ReadInt32();
         }
     }
 }

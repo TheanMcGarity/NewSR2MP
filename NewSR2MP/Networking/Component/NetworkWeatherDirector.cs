@@ -27,7 +27,7 @@ namespace NewSR2MP.Networking.Component
         {
             timer += Time.unscaledDeltaTime;
 
-            if (timer > 2.25)
+            if (timer > WeatherTimer)
             {
 
                 if (latestMessage == null)

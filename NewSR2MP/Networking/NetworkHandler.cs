@@ -8,8 +8,12 @@ using Il2CppMonomiPark.SlimeRancher.UI.Map;
 using Il2CppMonomiPark.SlimeRancher.Weather;
 using Il2CppMonomiPark.SlimeRancher.World;
 using Il2CppMonomiPark.World;
+using Il2CppSystem.Data.Common;
 using Il2CppTMPro;
 using Il2CppXGamingRuntime.Interop;
+using NewSR2MP.Attributes;
+using NewSR2MP.Networking.Patches;
+using SRMP.Enums;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -18,12 +22,11 @@ using Object = UnityEngine.Object;
 
 namespace NewSR2MP.Networking;
 
-public class NetworkHandler
+public partial class NetworkHandler
 {
-    [MessageHandler((ushort)PacketType.ResourceState)]
-    public static void HandleResourceState(Message msg)
+    [PacketResponse]
+    private static void HandleResourceState(Globals.PlayerState player, ResourceStateMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<ResourceStateMessage>(msg);
         try
         {
             if (!actors.TryGetValue(packet.id, out var nres)) return;
@@ -88,118 +91,25 @@ public class NetworkHandler
 
     }
 
-    [MessageHandler((ushort)PacketType.ResourceState)]
-    public static void HandleResourceState(ushort client, Message msg)
+    
+
+
+    [PacketResponse]
+    private static void HandleDoor(Globals.PlayerState player, DoorOpenMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<ResourceStateMessage>(msg);
-        try
-        {
-            if (!actors.TryGetValue(packet.id, out var nres)) return;
-
-            var res = nres.GetComponent<ResourceCycle>();
-
-            var rigidbody = nres.GetComponent<Rigidbody>();
-
-            switch (packet.state)
-            {
-                case ResourceCycle.State.ROTTEN:
-                    if (res._model.state == ResourceCycle.State.ROTTEN) break;
-                    res.Rot();
-                    res.SetRotten(true);
-                    break;
-                case ResourceCycle.State.RIPE:
-                    if (res._model.state == ResourceCycle.State.RIPE) break;
-                    res.Ripen();
-                    if (res.VacuumableWhenRipe)
-                    {
-                        res._vacuumable.enabled = true;
-                    }
-
-                    if (res.gameObject.transform.localScale.x < res._defaultScale.x * 0.33f)
-                    {
-                        res.gameObject.transform.localScale = res._defaultScale * 0.33f;
-                    }
-
-                    TweenUtil.ScaleTo(res.gameObject, res._defaultScale, 4f);
-                    break;
-                case ResourceCycle.State.UNRIPE:
-                    if (res._model.state == ResourceCycle.State.UNRIPE) break;
-                    res._model.state = ResourceCycle.State.UNRIPE;
-                    res.transform.localScale = res._defaultScale * 0.33f;
-                    break;
-                case ResourceCycle.State.EDIBLE:
-                    if (res._model.state == ResourceCycle.State.EDIBLE) break;
-                    res.MakeEdible();
-                    res._additionalRipenessDelegate = null;
-                    rigidbody.isKinematic = false;
-                    if (res._preparingToRelease)
-                    {
-                        res._preparingToRelease = false;
-                        res._releaseAt = 0f;
-                        res.ToShake.localPosition = res._toShakeDefaultPos;
-                        if (res.ReleaseCue != null)
-                        {
-                            SECTR_PointSource component = res.GetComponent<SECTR_PointSource>();
-                            component.Cue = res.ReleaseCue;
-                            component.Play();
-                        }
-                    }
-
-                    break;
-            }
-        }
-        catch (Exception e)
-        {
-            if (ShowErrors)
-                SRMP.Log($"Exception in handling state for resource({packet.id})! Stack Trace:\n{e}");
-        }
-
-        ForwardMessage(packet, client);
-    }
-
-
-    [MessageHandler((ushort)PacketType.OpenDoor)]
-    public static void HandleDoor(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<DoorOpenMessage>(msg);
         sceneContext.GameModel.doors[packet.id].gameObj.GetComponent<AccessDoor>().CurrState =
             AccessDoor.State.OPEN;
     }
-
-    [MessageHandler((ushort)PacketType.OpenDoor)]
-    public static void HandleDoor(ushort client, Message msg)
+    [PacketResponse]
+    private static void HandleMoneyChange(Globals.PlayerState player, SetMoneyMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<DoorOpenMessage>(msg);
-        sceneContext.GameModel.doors[packet.id].gameObj.GetComponent<AccessDoor>().CurrState =
-            AccessDoor.State.OPEN;
-
-
-
-    }
-
-    [MessageHandler((ushort)PacketType.SetCurrency)]
-    public static void HandleMoneyChange(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<SetMoneyMessage>(msg);
         sceneContext.PlayerState._model.currency = packet.newMoney;
 
 
     }
-
-    [MessageHandler((ushort)PacketType.SetCurrency)]
-    public static void HandleMoneyChange(ushort client, Message msg)
+    
+    private static void HandleActorSpawn(Globals.PlayerState player, ActorSpawnMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<SetMoneyMessage>(msg);
-        sceneContext.PlayerState._model.currency = packet.newMoney;
-
-
-    }
-
-    [MessageHandler((ushort)PacketType.ActorSpawn)]
-
-    public static void HandleActorSpawn(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<ActorSpawnMessage>(msg);
         try
         {
             var sg = sceneGroups[packet.scene];
@@ -237,7 +147,7 @@ public class NetworkHandler
                 {
                     actors.Add(obj.GetComponent<Identifiable>().GetActorId().Value,
                         obj.GetComponent<NetworkActor>());
-                    obj.GetComponent<TransformSmoother>().interpolPeriod = .245f;
+                    obj.GetComponent<TransformSmoother>().interpolPeriod = ActorTimer;
                     if (obj.TryGetComponent<Vacuumable>(out var vac))
                         vac._launched = true;
                 }
@@ -245,7 +155,7 @@ public class NetworkHandler
                 {
                     if (!obj.TryGetComponent<Gadget>(out var gadget))
                         obj.GetComponent<TransformSmoother>().enabled = false;
-                    obj.GetComponent<TransformSmoother>().interpolPeriod = .245f;
+                    obj.GetComponent<TransformSmoother>().interpolPeriod = ActorTimer;
                     if (obj.TryGetComponent<Vacuumable>(out var vac))
                         vac._launched = true;
                 }
@@ -265,11 +175,10 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.PlayerJoin)]
-
-    public static void HandlePlayerJoin(Message msg)
+    
+    [PacketResponse]
+    private static void HandlePlayerJoin(Globals.PlayerState player, PlayerJoinMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<PlayerJoinMessage>(msg);
 
         try
         {
@@ -281,10 +190,10 @@ public class NetworkHandler
             }
             else
             {
-                var player = Object.Instantiate(MultiplayerManager.Instance.onlinePlayerPrefab);
-                player.name = $"Player{packet.id}";
+                var playerObj = Object.Instantiate(MultiplayerManager.Instance.onlinePlayerPrefab);
+                playerObj.name = $"Player{packet.id}";
                 
-                var netPlayer = player.GetComponent<NetworkPlayer>();     
+                var netPlayer = playerObj.GetComponent<NetworkPlayer>();     
                 
                 netPlayer.usernamePanel = netPlayer.transform.GetChild(1).GetComponent<TextMesh>();
                 netPlayer.usernamePanel.text = packet.username;
@@ -296,10 +205,16 @@ public class NetworkHandler
 
                 playerUsernames.Add(packet.username, packet.id);
                 playerUsernamesReverse.Add(packet.id, packet.username);
-                players.Add(packet.id, netPlayer);
+                players.Add(new Globals.PlayerState
+                {
+                    connectionState = NetworkPlayerConnectionState.Connected,
+                    epicID = null,
+                    gameObject = netPlayer,
+                    playerID = (ushort)packet.id
+                });
                 
-                player.SetActive(true);
-                Object.DontDestroyOnLoad(player);
+                playerObj.SetActive(true);
+                Object.DontDestroyOnLoad(playerObj);
             }
         }
         catch
@@ -307,22 +222,20 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.PlayerLeave)]
-    public static void HandlePlayerLeave(Message msg)
+    [PacketResponse]
+    private static void HandlePlayerLeave(Globals.PlayerState player, PlayerLeaveMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<PlayerLeaveMessage>(msg);
 
-        var player = players[packet.id];
-        players.Remove(packet.id);
-        Object.Destroy(player.gameObject);
+        var playerObj = player.gameObject;
+        players.Remove(player);
+        Object.Destroy(playerObj.gameObject);
     }
 
-    [MessageHandler((ushort)PacketType.TimeUpdate)]
-    public static void HandleTime(Message msg)
+    [PacketResponse]
+    private static void HandleTime(Globals.PlayerState player, TimeSyncMessage packet, byte channel)
     {
         try
         {
-            var packet = ICustomMessage.Deserialize<TimeSyncMessage>(msg);
             sceneContext.GameModel.world.worldTime = packet.time;
         }
         catch
@@ -330,19 +243,11 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.FastForward)]
-    public static void HandleClientSleep(ushort client, Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<SleepMessage>(msg);
-        
-        sceneContext.TimeDirector.FastForwardTo(packet.targetTime);
-    }
+    
+    
 
-    [MessageHandler((ushort)PacketType.TempClientActorSpawn)]
-
-    public static void HandleClientActorSpawn(ushort client, Message msg)
+    private static void HandleClientActorSpawn(Globals.PlayerState player, ActorSpawnClientMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<ActorSpawnClientMessage>(msg);
         try
         {
             var sg = sceneGroups[packet.scene];
@@ -365,7 +270,7 @@ public class NetworkHandler
                 obj.GetComponent<TransformSmoother>().enabled = false;
                 if (obj.TryGetComponent<Rigidbody>(out var rb))
                     rb.velocity = packet.velocity;
-                obj.GetComponent<TransformSmoother>().interpolPeriod = .245f;
+                obj.GetComponent<TransformSmoother>().interpolPeriod = ActorTimer;
                 obj.GetComponent<Vacuumable>()._launched = true;
             }
 
@@ -396,7 +301,7 @@ public class NetworkHandler
                 id = actorID,
                 velocity = packet.velocity
             };
-            MultiplayerManager.NetworkSend(ownPacket, MultiplayerManager.ServerSendOptions.SendToPlayer(client));
+            MultiplayerManager.NetworkSend(ownPacket, MultiplayerManager.ServerSendOptions.SendToPlayer(player.playerID));
             MultiplayerManager.NetworkSend(forwardPacket);
         }
         catch (Exception e)
@@ -407,46 +312,10 @@ public class NetworkHandler
 
     }
 
-    [MessageHandler((ushort)PacketType.TempClientActorUpdate)]
-
-    public static void HandleClientActor(ushort client, Message msg)
+    
+    [PacketResponse]
+    private static void HandleActorOwner(Globals.PlayerState player, ActorUpdateOwnerMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<ActorUpdateClientMessage>(msg);
-        try
-        {
-            if (!actors.TryGetValue(packet.id, out var actor)) return;
-
-            var t = actor.GetComponent<TransformSmoother>();
-            t.nextPos = packet.position;
-            t.nextRot = packet.rotation;
-
-            if (actor.TryGetComponent<SlimeEmotions>(out var emotions))
-                emotions.SetFromNetwork(packet.slimeEmotions);
-
-            if (actor.TryGetComponent<Rigidbody>(out var rigidbody))
-                rigidbody.velocity = packet.velocity;
-        }
-        catch (Exception e)
-        {
-            if (ShowErrors)
-                SRMP.Log($"Exception in handling actor({packet.id})! Stack Trace:\n{e}");
-        }
-
-        ActorUpdateMessage packetS2C = new ActorUpdateMessage()
-        {
-            id = packet.id,
-            position = packet.position,
-            rotation = packet.rotation,
-        };
-
-        ForwardMessage(packetS2C, client);
-    }
-
-    [MessageHandler((ushort)PacketType.ActorBecomeOwner)]
-
-    public static void HandleActorOwner(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<ActorUpdateOwnerMessage>(msg);
         try
         {
             if (!actors.TryGetValue(packet.id, out var actor)) return;
@@ -468,11 +337,10 @@ public class NetworkHandler
         
     }
 
-    [MessageHandler((ushort)PacketType.ActorDestroy)]
-
-    public static void HandleDestroyActor(Message msg)
+    
+    [PacketResponse]
+    private static void HandleDestroyActor(Globals.PlayerState player, ActorDestroyGlobalMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<ActorDestroyGlobalMessage>(msg);
         try
         {
             if (actors.TryGetValue(packet.id, out var actor))
@@ -497,59 +365,9 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.ActorBecomeOwner)]
-    public static void HandleActorOwner(ushort client, Message msg)
+    [PacketResponse]
+    private static void HandleActorVelocity(Globals.PlayerState player, ActorVelocityMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<ActorUpdateOwnerMessage>(msg);
-        try
-        {
-            if (!actors.TryGetValue(packet.id, out var actor)) return;
-
-
-            actor.IsOwned = false;
-            actor.GetComponent<TransformSmoother>().enabled = true;
-            actor.GetComponent<TransformSmoother>().nextPos = actor.transform.position;
-            actor.enabled = false;
-
-            actor.GetComponent<NetworkActorOwnerToggle>().LoseGrip();
-        }
-        catch (Exception e)
-        {
-            if (ShowErrors)
-                SRMP.Log($"Exception in transfering actor({packet.id})! Stack Trace:\n{e}");
-        }
-        
-        ForwardMessage(packet, client);
-    }
-[MessageHandler((ushort)PacketType.ActorVelocitySet)]
-    public static void HandleActorVelocity(ushort client, Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<ActorVelocityMessage>(msg);
-        try
-        {
-            if (!actors.TryGetValue(packet.id, out var actor)) return;
-
-            actor.GetComponent<Rigidbody>().velocity = packet.velocity;
-
-            if (packet.bounce)
-                if (!actor.IsOwned)
-                    ForwardMessage(new ActorVelocityMessage
-                    {
-                        id = packet.id,
-                        bounce = false,
-                        velocity = actor.GetComponent<Rigidbody>().velocity
-                    }, client);
-        }
-        catch (Exception e)
-        {
-            if (ShowErrors)
-                SRMP.Log($"Exception in setting actor({packet.id}) velocity! Stack Trace:\n{e}");
-        }
-    }
-[MessageHandler((ushort)PacketType.ActorVelocitySet)]
-    public static void HandleActorVelocity(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<ActorVelocityMessage>(msg);
         try
         {
             if (!actors.TryGetValue(packet.id, out var actor)) return;
@@ -572,31 +390,9 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.ActorDestroy)]
-    public static void HandleDestroyActor(ushort client, Message msg)
+    [PacketResponse]
+    private static void HandleActorSetOwner(Globals.PlayerState player, ActorSetOwnerMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<ActorDestroyGlobalMessage>(msg);
-        try
-        {
-            if (!actors.TryGetValue(packet.id, out var actor)) return;
-
-            DeregisterActor(new ActorId(packet.id));
-
-            Object.Destroy(actor.gameObject);
-            actors.Remove(packet.id);
-        }
-        catch (Exception e)
-        {
-            SRMP.Error($"Exception in destroying actor({packet.id})! Stack Trace:\n{e}");
-        }
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.ActorSetOwner)]
-    public static void HandleActorSetOwner(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<ActorSetOwnerMessage>(msg);
         try
         {
             if (!actors.TryGetValue(packet.id, out var actor)) return;
@@ -610,21 +406,21 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.PlayerUpdate)]
-
-    public static void HandlePlayer(Message msg)
+    
+    [PacketResponse]
+    private static void HandlePlayer(Globals.PlayerState player, PlayerUpdateMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<PlayerUpdateMessage>(msg);
 
         try
         {
-            var player = players[packet.id];
+            if (!TryGetPlayer((ushort)packet.id, out var state))
+                return;
+            var playerObj = state.gameObject;
+            playerObj.GetComponent<TransformSmoother>().nextPos = packet.pos;
+            playerObj.GetComponent<TransformSmoother>().nextRot = packet.rot.eulerAngles;
 
-            player.GetComponent<TransformSmoother>().nextPos = packet.pos;
-            player.GetComponent<TransformSmoother>().nextRot = packet.rot.eulerAngles;
 
-
-            var anim = player.GetComponent<Animator>();
+            var anim = playerObj.GetComponent<Animator>();
 
             anim.SetFloat("HorizontalMovement", packet.horizontalMovement);
             anim.SetFloat("ForwardMovement", packet.forwardMovement);
@@ -640,49 +436,15 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.PlayerUpdate)]
-
-    public static void HandlePlayer(ushort client, Message msg)
+    [PacketResponse]
+    private static void HandleLandPlot(Globals.PlayerState player, LandPlotMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<PlayerUpdateMessage>(msg);
-
-        try
-        {
-            var player = players[packet.id];
-
-            savedGame.savedPlayers.playerList[clientToGuid[client]].sceneGroup = packet.scene;
-
-            player.GetComponent<TransformSmoother>().nextPos = packet.pos;
-            player.GetComponent<TransformSmoother>().nextRot = packet.rot.eulerAngles;
-
-
-            var anim = player.GetComponent<Animator>();
-
-            anim.SetFloat("HorizontalMovement", packet.horizontalMovement);
-            anim.SetFloat("ForwardMovement", packet.forwardMovement);
-            anim.SetFloat("Yaw", packet.yaw);
-            anim.SetInteger("AirborneState", packet.airborneState);
-            anim.SetBool("Moving", packet.moving);
-            anim.SetFloat("HorizontalSpeed", packet.horizontalSpeed);
-            anim.SetFloat("ForwardSpeed", packet.forwardSpeed);  
-            anim.SetBool("Sprinting", packet.sprinting);
-        }
-        catch
-        {
-        }
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.LandPlot)]
-    public static void HandleLandPlot(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<LandPlotMessage>(msg);
 
 
         try
         {
-            var plot = sceneContext.GameModel.landPlots[packet.id].gameObj;
+            var model = sceneContext.GameModel.landPlots[packet.id];
+            var plot = model.gameObj;
 
             if (packet.messageType == LandplotUpdateType.SET)
             {
@@ -691,6 +453,8 @@ public class NetworkHandler
                 plot.GetComponent<LandPlotLocation>().Replace(plot.GetComponentInChildren<LandPlot>(),
                     GameContext.Instance.LookupDirector._plotPrefabDict[packet.type]);
 
+                model.typeId = packet.type;
+                
                 handlingPacket = false;
             }
             else
@@ -702,6 +466,8 @@ public class NetworkHandler
 
                 lp.AddUpgrade(packet.upgrade);
 
+                model.upgrades.Add(packet.upgrade);
+                
                 handlingPacket = false;
 
             }
@@ -713,16 +479,20 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.GardenPlant)]
-
-    public static void HandleGarden(Message msg)
+    
+    [PacketResponse]
+    private static void HandleGarden(Globals.PlayerState player, GardenPlantMessage packet, byte channel)
     {     
-        var packet = ICustomMessage.Deserialize<GardenPlantMessage>(msg);
         
         try
         {
             // get plot from id.
-            var plot = sceneContext.GameModel.landPlots[packet.id].gameObj;
+            var model = sceneContext.GameModel.landPlots[packet.id];
+            var plot = model.gameObj;
+
+            model.resourceGrowerDefinition =
+                gameContext.AutoSaveDirector.resourceGrowers.items._items.FirstOrDefault(x =>
+                    x._primaryResourceType == identifiableTypes[packet.ident]);
 
             // Get required components
             var lp = plot.transform.GetChild(0).GetComponent<LandPlot>();
@@ -763,102 +533,10 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.LandPlot)]
-    public static void HandleLandPlot(ushort client, Message msg)
-    {     
-        var packet = ICustomMessage.Deserialize<LandPlotMessage>(msg);
-
-
-        try
-        {
-            var plot = sceneContext.GameModel.landPlots[packet.id].gameObj;
-
-            if (packet.messageType == LandplotUpdateType.SET)
-            {
-                handlingPacket = true;
-
-                plot.GetComponent<LandPlotLocation>().Replace(plot.GetComponentInChildren<LandPlot>(),
-                    GameContext.Instance.LookupDirector._plotPrefabDict[packet.type]);
-
-                handlingPacket = false;
-            }
-            else
-            {
-
-                var lp = plot.GetComponentInChildren<LandPlot>();
-                handlingPacket = true;
-
-                lp.AddUpgrade(packet.upgrade);
-
-                handlingPacket = false;
-
-            }
-        }
-        catch (Exception e)
-        {
-            if (ShowErrors)
-                SRMP.Log($"Exception in handling landplot({packet.id})! Stack Trace:\n{e}");
-        }
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.GardenPlant)]
-
-    public static void HandleGarden(ushort client, Message msg)
+    
+    [PacketResponse]
+    private static void HandleGordoEat(Globals.PlayerState player, GordoEatMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<GardenPlantMessage>(msg);
-
-        try
-        {
-            // get plot from id.
-            var plot = sceneContext.GameModel.landPlots[packet.id].gameObj;
-
-            // Get required components
-            var lp = plot.transform.GetChild(0).GetComponent<LandPlot>();
-            var g = plot.transform.GetComponentInChildren<GardenCatcher>();
-
-            // Check if is destroy (planting NONE)
-            if (packet.ident != 9)
-            {
-                // Add handled component.
-                handlingPacket = true;
-
-                // Plant
-                if (g.CanAccept(identifiableTypes[packet.ident]))
-                    g.Plant(identifiableTypes[packet.ident], false);
-
-                // Remove handled component.
-                handlingPacket = false;
-            }
-            else
-            {
-                // Add handled component.
-
-                handlingPacket = true;
-
-                // UnPlant.
-                lp.DestroyAttached();
-
-                // Remove handled component.
-                handlingPacket = false;
-
-
-            }
-        }
-        catch (Exception e)
-        {
-            if (ShowErrors)
-                SRMP.Log($"Exception in handling garden({packet.id})! Stack Trace:\n{e}");
-        }
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.GordoFeed)]
-    public static void HandleGordoEat(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<GordoEatMessage>(msg);
 
         try
         {
@@ -882,20 +560,18 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.PediaUnlock)]
-    public static void HandlePedia(Message msg)
+    [PacketResponse]
+    private static void HandlePedia(Globals.PlayerState player, PediaMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<PediaMessage>(msg);
 
         handlingPacket = true;
         sceneContext.PediaDirector.Unlock(pediaEntries[packet.id]);
         handlingPacket = false;
     }
 
-    [MessageHandler((ushort)PacketType.GordoExplode)]
-    public static void HandleGordoBurst(Message msg)
+    [PacketResponse]
+    private static void HandleGordoBurst(Globals.PlayerState player, GordoBurstMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<GordoBurstMessage>(msg);
 
         try
         {
@@ -930,81 +606,31 @@ public class NetworkHandler
 
     }
 
-    [MessageHandler((ushort)PacketType.GordoFeed)]
-    public static void HandleGordoEat(ushort client, Message msg)
+    private static void HandleSleep(Globals.PlayerState player, SleepMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<GordoEatMessage>(msg);
 
         try
         {
-            if (!sceneContext.GameModel.gordos.TryGetValue(packet.id, out var gordo))
-                sceneContext.GameModel.gordos.Add(packet.id, new GordoModel()
-                {
-                    fashions = new Il2CppSystem.Collections.Generic.List<IdentifiableType>(),
-                    gordoEatCount = packet.count,
-                    gordoSeen = true,
-                    identifiableType = identifiableTypes[packet.ident],
-                    gameObj = null,
-                    GordoEatenCount = packet.count,
-                    targetCount = gameContext.LookupDirector._gordoDict[identifiableTypes[packet.ident]]
-                        .GetComponent<GordoEat>().TargetCount,
-                });
-            gordo.gordoEatCount = packet.count;
+            sceneContext?.TimeDirector.FastForwardTo(packet.targetTime);
         }
         catch (Exception e)
         {
-            if (ShowErrors)
-                SRMP.Log($"Exception in feeding gordo({packet.id})! Stack Trace:\n{e}");
+            SRMP.Error($"Exception in sleeping! Stack Trace:\n{e}");
         }
-
-        ForwardMessage(packet, client);
-
     }
 
-    [MessageHandler((ushort)PacketType.PediaUnlock)]
-    public static void HandlePedia(ushort client, Message msg)
+    
+
+    [PacketResponse]
+    private static void HandleAmmoSlot(Globals.PlayerState player, AmmoEditSlotMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<PediaMessage>(msg);
-
-        handlingPacket = true;
-        sceneContext.PediaDirector.Unlock(pediaEntries[packet.id]);
-        handlingPacket = false;
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.GordoExplode)]
-    public static void HandleGordoBurst(ushort client, Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<GordoBurstMessage>(msg);
-
-        try
-        {
-            var gordo = sceneContext.GameModel.gordos[packet.id].gameObj;
-            handlingPacket = true;
-            gordo.GetComponent<GordoEat>().ImmediateReachedTarget();
-            handlingPacket = false;
-        }
-        catch (Exception e)
-        {
-            if (ShowErrors)
-                SRMP.Log($"Exception in feeding gordo({packet.id})! Stack Trace:\n{e}");
-        }
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.AmmoEdit)]
-    public static void HandleAmmoSlot(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<AmmoEditSlotMessage>(msg);
 
         try
         {
             var ammo = GetNetworkAmmo(packet.id);
             
             handlingPacket = true;
-            ammo.MaybeAddToSpecificSlot(identifiableTypes[packet.ident], null, packet.slot, packet.count);
+            ammo?.MaybeAddToSpecificSlot(identifiableTypes[packet.ident], null, packet.slot, packet.count);
             handlingPacket = false;
         }
         catch (Exception e)
@@ -1014,17 +640,16 @@ public class NetworkHandler
 
     }
 
-    [MessageHandler((ushort)PacketType.AmmoAdd)]
-    public static void HandleAmmo(Message msg)
+    [PacketResponse]
+    private static void HandleAmmo(Globals.PlayerState player, AmmoAddMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<AmmoAddMessage>(msg);
 
         try
         {
             var ammo = GetNetworkAmmo(packet.id);
             
             handlingPacket = true;
-            ammo.MaybeAddToSlot(identifiableTypes[packet.ident], null, SlimeAppearance.AppearanceSaveSet.NONE);
+            ammo?.MaybeAddToSlot(identifiableTypes[packet.ident], null, SlimeAppearance.AppearanceSaveSet.NONE);
             handlingPacket = false;
         }
         catch (Exception e)
@@ -1033,59 +658,36 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.AmmoRemove)]
-    public static void HandleAmmoReverse(ushort client, Message msg)
+    
+    [PacketResponse]
+    private static void HandleAmmoSelect(Globals.PlayerState player, AmmoSelectMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<AmmoRemoveMessage>(msg);
 
         try
         {
             Ammo ammo = GetNetworkAmmo(packet.id);
 
             handlingPacket = true;
-            ammo.Decrement(packet.index, packet.count);
+            ammo?.SetAmmoSlot(packet.index);
             handlingPacket = false;
         }
         catch (Exception e)
         {
             SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
         }
-
-        ForwardMessage(packet, client);
     }
 
-    [MessageHandler((ushort)PacketType.AmmoSelect)]
-    public static void HandleAmmoSelect(ushort client, Message msg)
+    
+    [PacketResponse]
+    private static void HandleAmmoReverse(Globals.PlayerState player, AmmoRemoveMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<AmmoSelectMessage>(msg);
 
         try
         {
             Ammo ammo = GetNetworkAmmo(packet.id);
 
             handlingPacket = true;
-            ammo.SetAmmoSlot(packet.index);
-            handlingPacket = false;
-        }
-        catch (Exception e)
-        {
-            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
-        }
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.AmmoSelect)]
-    public static void HandleAmmoSelect(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<AmmoSelectMessage>(msg);
-
-        try
-        {
-            Ammo ammo = GetNetworkAmmo(packet.id);
-
-            handlingPacket = true;
-            ammo.SetAmmoSlot(packet.index);
+            ammo?.Decrement(packet.index, packet.count);
             handlingPacket = false;
         }
         catch (Exception e)
@@ -1094,70 +696,9 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.AmmoEdit)]
-    public static void HandleAmmoSlot(ushort client, Message msg)
+    [PacketResponse]
+    private static void HandleActor(Globals.PlayerState player, ActorUpdateMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<AmmoEditSlotMessage>(msg);
-
-        try
-        {
-            var ammo = GetNetworkAmmo(packet.id);
-            handlingPacket = true;
-            ammo.MaybeAddToSpecificSlot(identifiableTypes[packet.ident], null, packet.slot, packet.count);
-            handlingPacket = false;
-        }
-        catch (Exception e)
-        {
-            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
-        }
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.AmmoAdd)]
-    public static void HandleAmmo(ushort client, Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<AmmoAddMessage>(msg);
-
-        try
-        {
-            var ammo = GetNetworkAmmo(packet.id);
-            
-            handlingPacket = true;
-            ammo.MaybeAddToSlot(identifiableTypes[packet.ident], null, SlimeAppearance.AppearanceSaveSet.NONE);
-            handlingPacket = false;
-        }
-        catch (Exception e)
-        {
-            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
-        }
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.AmmoRemove)]
-    public static void HandleAmmoReverse(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<AmmoRemoveMessage>(msg);
-
-        try
-        {
-            Ammo ammo = GetNetworkAmmo(packet.id);
-
-            handlingPacket = true;
-            ammo.Decrement(packet.index, packet.count);
-            handlingPacket = false;
-        }
-        catch (Exception e)
-        {
-            SRMP.Error($"Error in handling inventory({packet.id})! Stack Trace:\n{e}");
-        }
-    }
-
-    [MessageHandler((ushort)PacketType.ActorUpdate)]
-    public static void HandleActor(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<ActorUpdateMessage>(msg);
 
         try
         {
@@ -1181,61 +722,15 @@ public class NetworkHandler
 
     }
 
-    [MessageHandler((ushort)PacketType.JoinSave)]
-    public static void HandleSave(Message msg)
+    private static void HandleSavedPlayers(Globals.PlayerState player, LoadMessage packet, byte channel)
     {
-        SRMP.Debug("Starting to read save data!");
-        latestSaveJoined = ICustomMessage.Deserialize<LoadMessage>(msg);
-        SRMP.Debug("Finished reading save data!");
+        latestSaveJoined = packet;
     }
 
 
-    [MessageHandler((ushort)PacketType.RequestJoin)]
-    public static void HandleClientJoin(ushort client, Message joinInfo)
+    [PacketResponse]
+    private static void HandleNavPlace(Globals.PlayerState player, PlaceNavMarkerNessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<ClientUserMessage>(joinInfo);
-        MultiplayerManager.server.TryGetClient(client, out var con);
-        MultiplayerManager.PlayerJoin(con, packet.guid, packet.name);
-    }
-
-    [MessageHandler((ushort)PacketType.NavigationMarkerPlace)]
-    public static void HandleNavPlace(ushort client, Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<PlaceNavMarkerNessage>(msg);
-
-
-        MapDefinition map = null;
-        switch (packet.map)
-        {
-            case MapType.RainbowIsland:
-                map = sceneContext.MapDirector._mapList._maps[0];
-                break;
-            case MapType.Labyrinth:
-                map = sceneContext.MapDirector._mapList._maps[1];
-                break;
-        }
-
-        handlingNavPacket = true;
-        sceneContext.MapDirector.SetPlayerNavigationMarker(packet.position, map, 0);
-        handlingNavPacket = false;
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.NavigationMarkerRemove)]
-    public static void HandleNavRemove(ushort client, Message joinInfo)
-    {
-        handlingNavPacket = true;
-        sceneContext.MapDirector.ClearPlayerNavigationMarker();
-        handlingNavPacket = false;
-
-        ForwardMessage(new RemoveNavMarkerNessage(), client);
-    }
-
-    [MessageHandler((ushort)PacketType.NavigationMarkerPlace)]
-    public static void HandleNavPlace(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<PlaceNavMarkerNessage>(msg);
 
 
         MapDefinition map = null;
@@ -1254,8 +749,8 @@ public class NetworkHandler
         handlingNavPacket = false;
     }
 
-    [MessageHandler((ushort)PacketType.NavigationMarkerRemove)]
-    public static void HandleNavRemove(Message joinInfo)
+    [PacketResponse]
+    private static void HandleNavRemove(Globals.PlayerState player, RemoveNavMarkerNessage packet, byte channel)
     {
         handlingNavPacket = true;
         sceneContext.MapDirector.ClearPlayerNavigationMarker();
@@ -1264,16 +759,15 @@ public class NetworkHandler
 
 
 
-    [MessageHandler((ushort)PacketType.WeatherUpdate)]
-    public static void HandleWeather(Message msg)
+    [PacketResponse]
+    private static void HandleWeather(Globals.PlayerState player, WeatherSyncMessage packet, byte channel)
     {
-        MelonCoroutines.Start(WeatherHandlingCoroutine(ICustomMessage.Deserialize<WeatherSyncMessage>(msg)));
+        MelonCoroutines.Start(WeatherHandlingCoroutine(packet));
     }
 
-    [MessageHandler((ushort)PacketType.MarketRefresh)]
-    public static void HandleMarketRefresh(Message msg)
+    [PacketResponse]
+    private static void HandleMarketRefresh(Globals.PlayerState player, MarketRefreshMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<MarketRefreshMessage>(msg);
 
         int i = 0;
 
@@ -1296,58 +790,10 @@ public class NetworkHandler
         marketUI?.EconUpdate();
     }
 
-    [MessageHandler((ushort)PacketType.KillAllCommand)]
-    public static void HandleKillAllCommand(ushort client, Message msg)
+    
+    [PacketResponse]
+    private static void HandleKillAllCommand(Globals.PlayerState player, KillAllCommandMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<KillAllCommandMessage>(msg);
-
-        SRMP.Debug("Ran KillAll command!");
-
-        if (packet.actorType == -1)
-        {
-            foreach (var ident in sceneContext.GameModel.identifiables._entries
-                         .Where(x => sceneGroupsReverse[x.value.sceneGroup.name] == packet.sceneGroup).ToList())
-            {
-                if (ident.value.ident.name != "Player")
-                {
-                    var model = ident.value.TryCast<ActorModel>();
-                    if (model != null)
-                    {
-                        if (model.transform != null)
-                            Object.Destroy(model.transform.gameObject);
-                        SceneContext.Instance.GameModel.identifiables.Remove(model.actorId);
-                    }
-                }
-            }
-        }
-        else
-        {
-
-            var type = identifiableTypes[packet.actorType];
-
-            foreach (var ident in sceneContext.GameModel.identifiables._entries
-                         .Where(x => sceneGroupsReverse[x.value.sceneGroup.name] == packet.sceneGroup).ToList())
-            {
-                if (ident.value.ident != type)
-                {
-                    var model = ident.value.TryCast<ActorModel>();
-                    if (model != null)
-                    {
-                        if (model.transform != null)
-                            Object.Destroy(model.transform.gameObject);
-                        SceneContext.Instance.GameModel.identifiables.Remove(model.actorId);
-                    }
-                }
-            }
-
-            ForwardMessage(packet, client);
-        }
-    }
-
-    [MessageHandler((ushort)PacketType.KillAllCommand)]
-    public static void HandleKillAllCommand(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<KillAllCommandMessage>(msg);
 
         SRMP.Debug("Ran KillAll command!");
 
@@ -1390,10 +836,9 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.SwitchModify)]
-    public static void HandleSwitchModify(Message msg)
+    [PacketResponse]
+    private static void HandleSwitchModify(Globals.PlayerState player, SwitchModifyMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<SwitchModifyMessage>(msg);
 
         if (sceneContext.GameModel.switches.TryGetValue(packet.id, out var model))
         {
@@ -1425,51 +870,17 @@ public class NetworkHandler
         }
     }
 
-    [MessageHandler((ushort)PacketType.SwitchModify)]
-    public static void HandleSwitchModify(ushort client, Message msg)
+    [PacketResponse]
+    private static void HandleMapUnlock(Globals.PlayerState player, MapUnlockMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<SwitchModifyMessage>(msg);
-
-        if (sceneContext.GameModel.switches.TryGetValue(packet.id, out var model))
-        {
-            model.state = (SwitchHandler.State)packet.state;
-            if (model.gameObj)
-            {
-                handlingPacket = true;
-
-                if (model.gameObj.TryGetComponent<WorldStatePrimarySwitch>(out var primary))
-                    primary.SetStateForAll((SwitchHandler.State)packet.state, false);
-
-                if (model.gameObj.TryGetComponent<WorldStateSecondarySwitch>(out var secondary))
-                    secondary.SetState((SwitchHandler.State)packet.state, false);
-
-                if (model.gameObj.TryGetComponent<WorldStateInvisibleSwitch>(out var invisible))
-                    invisible.SetStateForAll((SwitchHandler.State)packet.state, false);
-
-                handlingPacket = false;
-            }
-        }
-        else
-        {
-            model = new WorldSwitchModel()
-            {
-                gameObj = null,
-                state = (SwitchHandler.State)packet.state,
-            };
-            sceneContext.GameModel.switches.Add(packet.id, model);
-        }
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.MapUnlock)]
-    public static void HandleMapUnlock(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<MapUnlockMessage>(msg);
 
         sceneContext.MapDirector.NotifyZoneUnlocked(GetGameEvent(packet.id), false, 0);
 
-        return;
+        var activator = Resources.FindObjectsOfTypeAll<MapNodeActivator>().FirstOrDefault(x => x._fogRevealEvent._dataKey == packet.id);
+
+        if (activator)
+            activator.StartCoroutine(activator.ActivateHologramAnimation());
+        
         
         var eventDirModel = sceneContext.eventDirector._model;
         if (!eventDirModel.table.TryGetValue("fogRevealed", out var table))
@@ -1491,93 +902,49 @@ public class NetworkHandler
         });
     }
 
-    [MessageHandler((ushort)PacketType.MapUnlock)]
-    public static void HandleMapUnlock(ushort client, Message msg)
+    
+    [PacketResponse]
+    private static void HandleRefineryItem(Globals.PlayerState player, RefineryItemMessage packet, byte channel)
     {
-        var packet = ICustomMessage.Deserialize<MapUnlockMessage>(msg);
 
-        sceneContext.MapDirector.NotifyZoneUnlocked(GetGameEvent(packet.id), false, 0);
-        
-        ForwardMessage(packet, client);
+        handlingPacket = true;
+        sceneContext.GadgetDirector._model.SetCount(identifiableTypes[packet.id], packet.count);
+        handlingPacket = false;
+    }
 
-        return;
+    [PacketResponse]
+    private static void HandlePlayerUpgrade(Globals.PlayerState player, PlayerUpgradeMessage packet, byte channel)
+    {
+
+        handlingPacket = true;
+        sceneContext.PlayerState._model.upgradeModel.IncrementUpgradeLevel(sceneContext.PlayerState._model.upgradeModel.upgradeDefinitions.items._items
+            .FirstOrDefault(x => x._uniqueId == packet.id));
+        handlingPacket = false;
+
+    }
+
+    [PacketResponse]
+    private static void HandleTreasurePod(Globals.PlayerState player, TreasurePodMessage packet, byte channel)
+    {
         
-        var eventDirModel = sceneContext.eventDirector._model;
-        if (!eventDirModel.table.TryGetValue("fogRevealed", out var table))
+        var identifier = $"pod{ExtendInteger(packet.id)}";
+        
+        if (sceneContext.GameModel.pods.TryGetValue(identifier, out var model))
         {
-            eventDirModel.table.Add("fogRevealed",
-                new Il2CppSystem.Collections.Generic.Dictionary<string, EventRecordModel.Entry>());
-            table = eventDirModel.table["fogRevealed"];
+            handlingPacket = true;
+            model.gameObj?.GetComponent<TreasurePod>().Activate();
+            handlingPacket = false;
+            
+            model.state = Il2Cpp.TreasurePod.State.OPEN;
         }
-
-        table.Add(packet.id, new EventRecordModel.Entry
+        else
         {
-            count = 1,
-            createdRealTime = 0,
-            createdGameTime = 0,
-            dataKey = packet.id,
-            eventKey = "fogRevealed",
-            updatedRealTime = 0,
-            updatedGameTime = 0,
-        });
-
-        ForwardMessage(packet, client);
-    }
-    
-    [MessageHandler((ushort)PacketType.RefineryItem)]
-    public static void HandleRefineryItem(ushort client, Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<RefineryItemMessage>(msg);
-
-        handlingPacket = true;
-        sceneContext.GadgetDirector._model.SetCount(identifiableTypes[packet.id], packet.count);
-        handlingPacket = false;
-        
-        ForwardMessage(packet, client);
-    }
-    
-    [MessageHandler((ushort)PacketType.RefineryItem)]
-    public static void HandleRefineryItem(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<RefineryItemMessage>(msg);
-
-        handlingPacket = true;
-        sceneContext.GadgetDirector._model.SetCount(identifiableTypes[packet.id], packet.count);
-        handlingPacket = false;
-    }
-
-    [MessageHandler((ushort)PacketType.PlayerUpgrade)]
-    public static void HandlePlayerUpgrade(ushort client, Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<PlayerUpgradeMessage>(msg);
-
-        handlingPacket = true;
-        sceneContext.PlayerState._model.upgradeModel.IncrementUpgradeLevel(sceneContext.PlayerState._model.upgradeModel.upgradeDefinitions.items._items
-            .FirstOrDefault(x => x._uniqueId == packet.id));
-        handlingPacket = false;
-
-        ForwardMessage(packet, client);
-    }
-
-    [MessageHandler((ushort)PacketType.PlayerUpgrade)]
-    public static void HandlePlayerUpgrade(Message msg)
-    {
-        var packet = ICustomMessage.Deserialize<PlayerUpgradeMessage>(msg);
-
-        handlingPacket = true;
-        sceneContext.PlayerState._model.upgradeModel.IncrementUpgradeLevel(sceneContext.PlayerState._model.upgradeModel.upgradeDefinitions.items._items
-            .FirstOrDefault(x => x._uniqueId == packet.id));
-        handlingPacket = false;
-
-    }
-    
-    /// <summary>
-    /// Shortcut for forwarding messages.
-    /// </summary>
-    /// <param name="msg">Message to forward</param>
-    /// <param name="from">The client the message came from</param>
-    public static void ForwardMessage(ICustomMessage msg, ushort from)
-    {
-        MultiplayerManager.NetworkSend(msg, MultiplayerManager.ServerSendOptions.SendToAllExcept(from));
+            sceneContext.GameModel.pods.Add(identifier, new TreasurePodModel
+            {
+                state = Il2Cpp.TreasurePod.State.OPEN,
+                gameObj = null,
+                spawnQueue = new Il2CppSystem.Collections.Generic.Queue<IdentifiableType>()
+            });
+        }
     }
 }

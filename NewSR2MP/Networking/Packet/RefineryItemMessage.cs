@@ -1,23 +1,29 @@
-﻿namespace NewSR2MP.Networking.Packet
+﻿using Il2CppSystem.Xml;
+
+namespace NewSR2MP.Networking.Packet
 {
-    public class RefineryItemMessage : ICustomMessage
+    public class RefineryItemMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => RefineryItem;
+
         public ushort id;
         public ushort count;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.RefineryItem);
-            msg.AddUShort(id);
-            msg.AddUShort(count);
+            
+            msg.Write(id);
+            msg.Write(count);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetUShort();
-            count = msg.GetUShort();
+            id = msg.ReadUInt16();
+            count = msg.ReadUInt16();
         }
     }
 }

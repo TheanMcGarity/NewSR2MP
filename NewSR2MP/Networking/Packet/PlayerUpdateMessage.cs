@@ -1,5 +1,4 @@
 ﻿
-using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,8 +7,12 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class PlayerUpdateMessage : ICustomMessage
+    public class PlayerUpdateMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => PlayerUpdate;
+        
         public int id;
         public byte scene;
         public Vector3 pos;
@@ -25,43 +28,43 @@ namespace NewSR2MP.Networking.Packet
         public float forwardSpeed;
         public bool sprinting;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.PlayerUpdate);
             
-            msg.AddInt(id);
-            msg.AddByte(scene);
-            msg.AddVector3(pos);
-            msg.AddQuaternion(rot);
             
-            msg.AddInt(airborneState);
-            msg.AddBool(moving);
-            msg.AddFloat(horizontalSpeed);
-            msg.AddFloat(forwardSpeed);
-            msg.AddFloat(horizontalMovement);
-            msg.AddFloat(forwardMovement);
-            msg.AddFloat(yaw);
-            msg.AddBool(sprinting);
+            msg.Write(id);
+            msg.Write(scene);
+            msg.Write(pos);//Compressed(pos);
+            msg.Write(rot);
             
-            return msg;
+            msg.Write(airborneState);
+            msg.Write(moving);
+            msg.Write(horizontalSpeed);
+            msg.Write(forwardSpeed);
+            msg.Write(horizontalMovement);
+            msg.Write(forwardMovement);
+            msg.Write(yaw);
+            msg.Write(sprinting);
+            
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetInt();
+            id = msg.ReadInt32();
 
-            scene = msg.GetByte();
-            pos = msg.GetVector3();
-            rot = msg.GetQuaternion();
+            scene = msg.ReadByte();
+            pos = msg.ReadVector3();
+            rot = msg.ReadQuaternion();
 
-            airborneState = msg.GetInt();
-            moving = msg.GetBool();
-            horizontalSpeed = msg.GetFloat();
-            forwardSpeed = msg.GetFloat();
-            horizontalMovement = msg.GetFloat();
-            forwardMovement = msg.GetFloat();
-            yaw = msg.GetFloat();
-            sprinting = msg.GetBool();
+            airborneState = msg.ReadInt32();
+            moving = msg.ReadBoolean();
+            horizontalSpeed = msg.ReadFloat();
+            forwardSpeed = msg.ReadFloat();
+            horizontalMovement = msg.ReadFloat();
+            forwardMovement = msg.ReadFloat();
+            yaw = msg.ReadFloat();
+            sprinting = msg.ReadBoolean();
         }
     }
 }

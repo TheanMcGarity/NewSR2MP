@@ -12,7 +12,7 @@ using NewSR2MP.Networking.Packet;
 using UnityEngine;
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(LandPlot), nameof(LandPlot.AddUpgrade))]
+    [HarmonyPatch(typeof(LandPlot), nameof(Il2Cpp.LandPlot.AddUpgrade))]
     public class LandPlotApplyUpgrades
     {
         public static void Prefix(LandPlot __instance, LandPlot.Upgrade upgrade)
@@ -38,7 +38,7 @@ namespace NewSR2MP.Networking.Patches
         }
 
     }
-    [HarmonyPatch(typeof(LandPlot), nameof(LandPlot.DestroyAttached))]
+    [HarmonyPatch(typeof(LandPlot), nameof(Il2Cpp.LandPlot.DestroyAttached))]
     public class LandPlotDestroyAttached
     {
         public static void Postfix(LandPlot __instance)

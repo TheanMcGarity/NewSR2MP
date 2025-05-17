@@ -11,7 +11,7 @@ public class SRCharacterControllerAwake
         if (latestSaveJoined == null)
             return;
         
-        __instance.Position = latestSaveJoined.localPlayerSave.pos;
-        __instance.Rotation = Quaternion.Euler(latestSaveJoined.localPlayerSave.rot);
+        __instance.Position = (Vector3)latestSaveJoined?.localPlayerSave.pos;
+        __instance.Rotation = Quaternion.Euler((Vector3)latestSaveJoined?.localPlayerSave.rot);
     }
 }

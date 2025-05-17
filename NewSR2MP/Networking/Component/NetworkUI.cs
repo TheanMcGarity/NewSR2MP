@@ -1,6 +1,4 @@
-using SR2E;
 using SR2E.Managers;
-using SR2E.Menus;
 
 namespace NewSR2MP.Networking.Component;
 
@@ -12,45 +10,64 @@ public class NetworkUI : MonoBehaviour
     public bool customBoxSize = false;
     public enum MainUIState
     {
+        // In game
         HOST,
         CLIENT,
+        SINGLEPLAYER,
+
+        // Out of game
         MAIN_MENU,
         LOADING,
-        SINGLEPLAYER,
         CHANGIMG_USERNAME,
-        HIDDEN
+        RESTART,
+        
+        // Hidden
+        HIDDEN,
     }
 
     public bool AlreadyHasUsername => Main.data.HasSavedUsername;
+
+    private string serverCodeInput = "";
+
+    public bool SteamMode => false;//Main.data.UseSteam;
+
+    public bool mustRestart = false;
     public bool changingUsername;
+
+    
     public MainUIState CurrentState 
     {
         get
         {
+            if (mustRestart)
+                return MainUIState.RESTART;
+            
             if (systemContext.SceneLoader.IsSceneLoadInProgress || gameContext == null)
                 return MainUIState.LOADING;
             
             if (changingUsername)
                 return MainUIState.CHANGIMG_USERNAME;
-            
+
             if (Time.timeScale == 0.0f)
             {
-                if (ServerActive())
-                    return MainUIState.HOST;
                 if (ClientActive())
                     return MainUIState.CLIENT;
-                
+                if (ServerActive())
+                    return MainUIState.HOST;
+
                 if (inGame)
                     return MainUIState.SINGLEPLAYER;
             }
-            
+
             if (!inGame)
                 return MainUIState.MAIN_MENU;
-            
+                
             
             return MainUIState.HIDDEN;
         }
     }
+    
+    public string inputCode = "";
     
     void UsernameInput()
     {
@@ -66,51 +83,37 @@ public class NetworkUI : MonoBehaviour
         }
         
     }
+
     void MainMenuUI()
     {
         if (!customBoxSize)
-            uiBox = new Rect(5, 5,  285, 200);
-        
+            uiBox = new Rect(5, 5, 285, 215);
+
         if (GUI.Button(new Rect(10, 10, 275, 25), SR2ELanguageManger.translation("ui.changeusername")))
         {
-           changingUsername = true;
+            changingUsername = true;
         }
-        
-        Main.data.LastIP = GUI.TextField(new Rect(10, 45, 275, 25), Main.data.LastIP);
-        Main.data.LastPort = GUI.TextField(new Rect(10, 80, 275, 25), Main.data.LastPort);
 
-        if (!ushort.TryParse(Main.data.LastPort, out var portParsed))
-            GUI.Label(new Rect(10, 115, 275, 25), SR2ELanguageManger.translation("ui.invalidport"));
-        else
+        inputCode = GUI.TextField(new Rect(10, 45, 275, 25), inputCode);
+
+        if (GUI.Button(new Rect(10, 80, 275, 25), SR2ELanguageManger.translation("ui.join")))
         {
-            if (GUI.Button(new Rect(10, 140, 275, 25), SR2ELanguageManger.translation("ui.join")))
-            {
-                MultiplayerManager.Instance.Connect(Main.data.LastIP, portParsed);
-                
-                Main.modInstance.SaveData();
-            }
-            
+            MultiplayerManager.Instance.Connect(inputCode);
         }
-        
+
+
         GUI.Label(new Rect(10, 185, 275, 25), SR2ELanguageManger.translation("ui.joinsave"));
 
     }
+
     void SinglePlayerUI()
     {
         if (!customBoxSize)
-            uiBox = new Rect(5, 5,  285, 80);
-        
-        Main.data.LastPortHosted = GUI.TextField(new Rect(10, 10, 275, 25), Main.data.LastPortHosted);
-        if (!ushort.TryParse(Main.data.LastPortHosted, out var portParsed))
-            GUI.Label(new Rect(10, 45, 275, 25), SR2ELanguageManger.translation("ui.invalidport"));
-        else
+            uiBox = new Rect(5, 5, 285, 50);
+            
+        if (GUI.Button(new Rect(10, 10, 275, 25), SR2ELanguageManger.translation("ui.host")))
         {
-            if (GUI.Button(new Rect(10, 45, 275, 25), SR2ELanguageManger.translation("ui.host")))
-            {
-                MultiplayerManager.Instance.Host(portParsed);
-                
-                Main.modInstance.SaveData();
-            }
+            MultiplayerManager.Instance.Host();
         }
     }
 
@@ -121,12 +124,43 @@ public class NetworkUI : MonoBehaviour
         
         GUI.Label(new Rect(10, 10, 275, 25), SR2ELanguageManger.translation("ui.loading"));
     }
+    void HostUI()
+    {
+        if (!customBoxSize)
+            uiBox = new Rect(5, 5,  285, 35);
+        
+        GUI.TextField(new Rect(10, 10, 275, 25), SR2ELanguageManger.translation("steam.ui.servercode", EpicApplication.Instance.Lobby.LobbyId));
+    }
+    void SingleplayerUI()
+    {
+        if (!customBoxSize)
+            uiBox = new Rect(5, 5,  285, 35);
+        
+        if (GUI.Button(new Rect(10, 10, 275, 25), SR2ELanguageManger.translation("ui.host")))
+        {
+            MultiplayerManager.Instance.Host();
+        }
+    }
+    void RestartUI()
+    {
+        if (!customBoxSize)
+            uiBox = new Rect(5, 5,  285, 35);
+        
+        GUI.Label(new Rect(10, 10, 275, 25), SR2ELanguageManger.translation("ui.restartgame"));
+    }
 
     void OnGUI()
     {    
         GUI.color = guiColor;
         
-        if (CurrentState != MainUIState.HIDDEN)
+        if (CurrentState == MainUIState.RESTART)
+        {            
+            GUI.Box(uiBox, "");
+            RestartUI();
+            return;
+        }
+        
+        if (CurrentState != MainUIState.HIDDEN)            
             GUI.Box(uiBox, "");
 
         if (!AlreadyHasUsername || CurrentState == MainUIState.CHANGIMG_USERNAME)
@@ -137,6 +171,9 @@ public class NetworkUI : MonoBehaviour
             SinglePlayerUI();
         else if (CurrentState == MainUIState.LOADING)
             LoadingUI();
-        // Implement Host and Client
+        else if (CurrentState == MainUIState.HOST)
+            HostUI();
+        
+        // Implement Host kick menu, chat menu, and Client menu
     }
 }

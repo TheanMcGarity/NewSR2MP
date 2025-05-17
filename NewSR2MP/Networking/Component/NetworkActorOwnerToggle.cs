@@ -78,10 +78,10 @@ namespace NewSR2MP.Networking.Component
                 
                 foreach (var player in players)
                 {
-                    if (player.Key == currentPlayerID)
+                    if (player.playerID == currentPlayerID)
                         continue;
                     
-                    var bounds2 = new Bounds(player.Value.transform.position, size);
+                    var bounds2 = new Bounds(player.gameObject.transform.position, size);
                     
                     if (bounds2.Intersects(bounds1))
                     {

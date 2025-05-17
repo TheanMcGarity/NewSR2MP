@@ -46,7 +46,9 @@ namespace NewSR2MP
             if (!DEBUG_MODE)
                 return;
             
-            GM<SR2EConsole>().Send(message, new Color(0, 127, 255));
+            if (message == null) return;
+            
+            GM<SR2EConsole>()?.Send(message, new Color(0, 127, 255));
             logger.Msg(System.Drawing.Color.Aqua, message);
         }
     }

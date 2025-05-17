@@ -8,14 +8,13 @@ using UnityEngine.SceneManagement;
 
 using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.Persist;
+using Il2CppMonomiPark.SlimeRancher.Platform.Steam;
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.UnitPropertySystem;
 using Il2CppMonomiPark.World;
 using Il2CppTMPro;
+using NewSR2MP.EpicSDK;
 using NewSR2MP.Networking.Patches;
-using Riptide.Transports.Tcp;
-using Riptide.Transports.Udp;
-using Riptide.Utils;
 using SR2E;
 using SR2E.Managers;
 using SR2E.Menus;
@@ -39,22 +38,18 @@ namespace NewSR2MP.Networking
         {
             InitializeCommandExtensions();
 
-            // Dont make that mistake again
-            // i submitted a incorrect bug report :sob:
-            RiptideLogger.Initialize(SRMP.Debug, SRMP.Log, SRMP.Warn, SRMP.Error, false);
             Instance = this;
 
-            Message.MaxPayloadSize = 2048000;
             gameObject.AddComponent<NetworkUI>();
+            gameObject.AddComponent<EpicApplication>();
+            NetworkHandler.Initialize();
         }
-
-
-
         private void Start()
         {
             SR2ECommandManager.RegisterCommand(new HostCommand());
             SR2ECommandManager.RegisterCommand(new JoinCommand());
-            SR2ECommandManager.RegisterCommand(new SplitScreenDebugCommand());
+            //SR2ECommandManager.RegisterCommand(new SplitScreenDebugCommand());
+            SR2ECommandManager.RegisterCommand(new DevModifySyncTimerCommand());
             SR2ECommandManager.RegisterCommand(new ShowSRMPErrorsCommand());
             SR2ECommandManager.RegisterCommand(new GivePlayerCommand());
         }
@@ -94,7 +89,7 @@ namespace NewSR2MP.Networking
             {
                 foreach (var player in players)
                 {
-                    var playerAnim = player.Value.gameObject.GetComponent<Animator>();
+                    var playerAnim = player.gameObject.gameObject.GetComponent<Animator>();
                     playerAnim.avatar = animator.avatar;
                     playerAnim.runtimeAnimatorController = animator.runtimeAnimatorController;
                 }
@@ -127,13 +122,11 @@ namespace NewSR2MP.Networking
         }
 
         // Hefty code
-        public static void PlayerJoin(Connection conn, Guid savingID, string username)
+        public static void PlayerJoin(ushort conn, Guid savingID, string username)
         {
             SRMP.Debug("A client is attempting to join!");
 
-            Instance.OnPlayerJoined(username, conn.Id);
-
-            clientToGuid.Add(conn.Id, savingID);
+            clientToGuid.Add(conn, savingID);
 
             var newPlayer = !savedGame.savedPlayers.playerList.TryGetValue(savingID, out var playerData);
             if (newPlayer)
@@ -153,7 +146,6 @@ namespace NewSR2MP.Networking
                 List<InitPlotData> plots = new List<InitPlotData>();
                 List<InitSwitchData> switches = new List<InitSwitchData>();
                 List<string> pedias = new List<string>();
-
 
                 foreach (var pedia in sceneContext.PediaDirector._pediaModel.unlocked)
                 {
@@ -181,7 +173,7 @@ namespace NewSR2MP.Networking
                             scene = sceneGroupsReverse[a.sceneGroup.name]
                         };
 
-                        if (actors.FirstOrDefault(x => x.id == data.id) == null)
+                        if (actors.FirstOrDefault(x => x == data) == null)
                             actors.Add(data);
                     }
                     catch
@@ -203,7 +195,7 @@ namespace NewSR2MP.Networking
 
                         InitGordoData data = new InitGordoData()
                         {
-                            id = g.Id,
+                            id = g._id,
                             eaten = g.GordoModel.gordoEatCount
                         };
                         gordos.Add(data);
@@ -216,13 +208,13 @@ namespace NewSR2MP.Networking
                 // Current Players
                 foreach (var player in players)
                 {
-                    if (player.Key != 65535)
+                    if (player.playerID != 65535 && player.playerID != conn)
                     {
 
                         var p = new InitPlayerData()
                         {
-                            id = player.Key,
-                            username = playerUsernamesReverse[player.Key]
+                            id = player.playerID,
+                            username = playerUsernamesReverse[player.playerID]
                         };
                         initPlayers.Add(p);
                     }
@@ -263,7 +255,7 @@ namespace NewSR2MP.Networking
                                     var ammoSlot = new AmmoData()
                                     {
                                         slot = idx,
-                                        id = GetIdentID(slot.Id),
+                                        id = GetIdentID(slot._id),
                                         count = slot.Count,
                                     };
                                     ammo.Add(ammoSlot);
@@ -381,6 +373,12 @@ namespace NewSR2MP.Networking
                 foreach (var item in sceneContext.GadgetDirector._model._itemCounts)
                     refineryItems.Add(GetIdentID(item.Key), item.Value);
 
+                Dictionary<int, TreasurePod.State> pods = new();
+                foreach (var pod in sceneContext.GameModel.pods)
+                {
+                    pods.Add(int.Parse(pod.key.Replace("pod","")), pod.value.state);
+                }
+                
                 // Send save data.
                 var saveMessage = new LoadMessage()
                 {
@@ -389,25 +387,18 @@ namespace NewSR2MP.Networking
                     initPlots = plots,
                     initGordos = gordos,
                     initPedias = pedias,
-                    initAccess = access,
-                    initMaps = fogEvents,
-                    playerID = conn.Id,
-                    money = money,
-                    time = time,
-                    localPlayerSave = localPlayerData,
-                    upgrades = upgrades,
-                    marketPrices = prices,
-                    initSwitches = switches,
-                    refineryItems = refineryItems,
+                    initAccess = access, initPods = pods, initSwitches = switches, money = money, time = time,
+                    initMaps = fogEvents, playerID = conn, localPlayerSave = localPlayerData, upgrades = upgrades,
+                    marketPrices = prices, refineryItems = refineryItems,
                 };
 
-                NetworkSend(saveMessage, ServerSendOptions.SendToPlayer(conn.Id));
+                NetworkSend(saveMessage, ServerSendOptions.SendToPlayer(conn));
                 SRMP.Debug("The world data has been sent to the client!");
 
             }
             catch (Exception ex)
             {
-                clientToGuid.Remove(conn.Id);
+                clientToGuid.Remove(conn);
                 SRMP.Error(ex.ToString());
             }
 
@@ -464,26 +455,20 @@ namespace NewSR2MP.Networking
             systemContext.SceneLoader.LoadSceneGroup(systemContext.SceneLoader._mainMenuSceneGroup);
         }
 
-        public void Connect(string ip, ushort port)
+        public void Connect(string lobby)
         {
             if (ServerActive())
             {
                 SRMP.Error("You can't join a server while hosting!");
                 return;
             }
-
-            var transport = new TcpClient();
-
-            client = new Client(transport);
-            Parallel.Invoke(() => client.Connect($"{ip}:{port}"));
-
-            client.TimeoutTime = 30000;
-
-            client.Connected += OnConnectionSuccessful;
-            client.ConnectionFailed += OnClientConnectionFail;
-            client.Disconnected += OnClientDisconnect;
+            
+            EpicApplication.Instance.Lobby.JoinLobby(lobby);
         }
 
+        public static void BeginWaitingForSaveData() => Instance.waitingForSave = true;
+        
+        
         bool waitingForSave = false;
         bool waitingForSceneLoad = false;
 
@@ -493,10 +478,10 @@ namespace NewSR2MP.Networking
             if (latestSaveJoined == null) return false;
             if (!waitingForSceneLoad)
             {
-                if (latestSaveJoined.localPlayerSave == null)
+                if (latestSaveJoined?.localPlayerSave == null)
                 {
-                    SRMP.Error("Failed to get the client's player data from save!");
-                    Shutdown();
+                    //SRMP.Error("Failed to get the client's player data from save!");
+                    //Shutdown();
                     return false;
                 }
 
@@ -521,12 +506,6 @@ namespace NewSR2MP.Networking
 
             SRMP.Debug("Received the save data!");
 
-            if (ServerActive())
-            {
-                server.Stop();
-                server = null;
-            }
-
             ammoByPlotID.Clear();
 
             MelonCoroutines.Start(Main.OnSaveLoaded());
@@ -544,16 +523,6 @@ namespace NewSR2MP.Networking
 
         public void OnConnectionSuccessful(object? sender, EventArgs args)
         {
-            client.TimeoutTime = 10000;
-
-            client.Connection.MaxSendAttempts = 75;
-            var saveRequestPacket = new ClientUserMessage()
-            {
-                guid = Main.data.Player,
-                name = Main.data.Username
-            };
-            NetworkSend(saveRequestPacket);
-
             AutoSaveDirectorSaveGame.isClient = true;
             waitingForSave = true;
         }
@@ -569,7 +538,7 @@ namespace NewSR2MP.Networking
             Shutdown();
         }
 
-        public void Host(ushort port)
+        public void Host()
         {
             if (!SystemContext.Instance.SceneLoader.IsCurrentSceneGroupGameplay())
             {
@@ -583,32 +552,12 @@ namespace NewSR2MP.Networking
                 return;
             }
 
-            var transport = new TcpServer();
-
-            server = new Server(transport);
-            server.Start(port, (ushort)short.MaxValue);
-
-            server.TimeoutTime = 20000;
-
-            RegisterAllSilos();
-
-            StartHosting();
+            EpicApplication.Instance.Lobby.CreateLobby();
         }
 
         public bool loadingZone = false;
 
-        private void UpdateNetwork()
-        {
-            try
-            {
-                if (ServerActive()) server.Update();
-                if (ClientActive()) client.Update();
-            }
-            catch (Exception ex)
-            {
-                SRMP.Error($"Network error!\n{ex}");
-            }
-        }
+        
 
         private float networkUpdateInterval = .15f;
         private float nextNetworkUpdate = -1f;
@@ -617,11 +566,6 @@ namespace NewSR2MP.Networking
 
         void Update()
         {
-            if (nextNetworkUpdate <= Time.unscaledTime)
-            {
-                UpdateNetwork();
-                nextNetworkUpdate = Time.unscaledTime + networkUpdateInterval;
-            }
 
             if (WaitForSaveData())
             {
@@ -640,6 +584,8 @@ namespace NewSR2MP.Networking
                     sceneLoadingFrameCounter++;
             else
                 sceneLoadingFrameCounter = 0;
+            
+            
         }
 
         bool WaitForZoneLoad()
@@ -652,9 +598,6 @@ namespace NewSR2MP.Networking
                 return false;
             if (!systemContext.SceneLoader._currentSceneGroup._isGameplay)
                 return false;
-
-            if (systemContext.SceneLoader._currentSceneGroup.ReferenceId.Equals("SceneGroup.ConservatoryFields"))
-                Main.OnRanchSceneGroupLoaded();
             
             IEnumerable<Il2CppSystem.Collections.Generic.Dictionary<ActorId, IdentifiableModel>.Entry> actors = null;
 
@@ -703,12 +646,12 @@ namespace NewSR2MP.Networking
 
         public static void Shutdown()
         {
-            if (ServerActive()) server.Stop();
-            if (ClientActive()) client.Disconnect();
-
-            server = null;
-            client = null;
-
+            EpicApplication.Instance.Lobby.LeaveLobby();
+            EpicApplication.Instance.Lobby.DestroyLobby();
+            
+            EpicApplication.Instance.Lobby.NetworkClient?.Shutdown();
+            EpicApplication.Instance.Lobby.NetworkServer?.Shutdown();
+            
             EraseValues();
         }
     }

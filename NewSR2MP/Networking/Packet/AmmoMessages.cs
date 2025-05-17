@@ -1,6 +1,5 @@
 ﻿
 using Il2CppMonomiPark.SlimeRancher.Regions;
-using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,93 +8,109 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class AmmoEditSlotMessage : ICustomMessage
+    public class AmmoEditSlotMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => AmmoEdit;
+
         public int ident;
         public int slot;
         public int count;
         public string id;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.AmmoEdit);
-            msg.AddInt(ident);
-            msg.AddInt(slot);
-            msg.AddInt(count);
-            msg.AddString(id);
+            
+            msg.Write(ident);
+            msg.Write(slot);
+            msg.Write(count);
+            msg.Write(id);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            ident = msg.GetInt();
-            slot = msg.GetInt();
-            count = msg.GetInt();
-            id = msg.GetString();
+            ident = msg.ReadInt32();
+            slot = msg.ReadInt32();
+            count = msg.ReadInt32();
+            id = msg.ReadString();
         }
     }
-    public class AmmoAddMessage : ICustomMessage
+    public class AmmoAddMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => AmmoAdd;
+
         public int ident;
         public string id;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.AmmoAdd);
-            msg.AddInt(ident);
-            msg.AddString(id);
+            
+            msg.Write(ident);
+            msg.Write(id);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            ident = msg.GetInt();
-            id = msg.GetString();
+            ident = msg.ReadInt32();
+            id = msg.ReadString();
         }
     }
-    public class AmmoRemoveMessage : ICustomMessage
+    public class AmmoRemoveMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => AmmoRemove;
+
         public int index;
         public int count;
         public string id;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.AmmoRemove);
-            msg.AddInt(index);
-            msg.AddString(id);
-            msg.AddInt(count);
+            
+            msg.Write(index);
+            msg.Write(id);
+            msg.Write(count);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            index = msg.GetInt();
-            id = msg.GetString();
-            count = msg.GetInt();
+            index = msg.ReadInt32();
+            id = msg.ReadString();
+            count = msg.ReadInt32();
         }
     }
-    public class AmmoSelectMessage : ICustomMessage
+    public class AmmoSelectMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => AmmoSelect;
+
         public int index;
         public string id;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.AmmoSelect);
-            msg.AddInt(index);
-            msg.AddString(id);
+            
+            msg.Write(index);
+            msg.Write(id);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            index = msg.GetInt();
-            id = msg.GetString();
+            index = msg.ReadInt32();
+            id = msg.ReadString();
         }
     }
 }

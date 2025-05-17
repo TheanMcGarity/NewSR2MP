@@ -72,8 +72,8 @@ namespace NewSR2MP.Networking.SaveModels
         {
             writer.Write(sceneGroup);
 
-            position.WriteData(writer);
-            rotation.WriteData(writer);
+            position.Write(stream);
+            rotation.Write(stream);
 
             writer.Write(money);
             

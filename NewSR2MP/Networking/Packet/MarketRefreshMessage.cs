@@ -2,29 +2,34 @@
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class MarketRefreshMessage : ICustomMessage
+    public class MarketRefreshMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => MarketRefresh;
+
         public List<float> prices = new();
-    
-        public Message Serialize()
+        
+
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.MarketRefresh);
             
-            msg.AddInt(prices.Count);
+            
+            msg.Write(prices.Count);
             
             foreach (var price in prices)
-                msg.AddFloat(price);
+                msg.Write(price);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            var c = msg.GetInt();
+            var c = msg.ReadInt32();
             prices = new List<float>(c);
 
             for (int i = 0; i < c; i++)
-                prices.Add(msg.GetFloat());
+                prices.Add(msg.ReadFloat());
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Epic.OnlineServices;
 using Il2CppTMPro;
 using UnityEngine;
 
@@ -14,6 +15,22 @@ namespace NewSR2MP.Networking.Component
     [RegisterTypeInIl2Cpp(false)]
     public class NetworkPlayer : MonoBehaviour
     {
+        public ProductUserId epicID { get; private set; }
+
+        public void SetUsername(string username)
+        {
+            usernamePanel = transform.GetChild(1).GetComponent<TextMesh>();
+            usernamePanel.text = username;
+            usernamePanel.characterSize = 0.2f;
+            usernamePanel.anchor = TextAnchor.MiddleCenter;
+            usernamePanel.fontSize = 24;
+        }
+        
+        internal void Intialize(ProductUserId epicID)
+        {
+            this.epicID = epicID;
+        }
+        
         void Awake()
         {
             if (transform.GetComponents<NetworkPlayer>().Length > 1)
@@ -30,14 +47,14 @@ namespace NewSR2MP.Networking.Component
         public TextMesh usernamePanel;
         
         public int id;
-        float transformTimer = 0.1f;
+        float transformTimer = PlayerTimer;
 
         public void Update()
         {
             transformTimer -= Time.unscaledDeltaTime;
             if (transformTimer < 0)
             {
-                transformTimer = 0.1f;
+                transformTimer = PlayerTimer;
                 
                 var anim = GetComponent<Animator>();
                 

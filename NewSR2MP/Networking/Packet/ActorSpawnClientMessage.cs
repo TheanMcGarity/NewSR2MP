@@ -4,8 +4,12 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class ActorSpawnClientMessage : ICustomMessage
+    public class ActorSpawnClientMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.ReliableOrdered;
+
+        public PacketType Type => TempClientActorSpawn;
+
         public Vector3 position;
         public Vector3 rotation;
         public Vector3 velocity;
@@ -13,28 +17,28 @@ namespace NewSR2MP.Networking.Packet
         public int scene;
         public int player;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.TempClientActorSpawn);
             
-            msg.AddInt(ident);
-            msg.AddVector3(position);
-            msg.AddVector3(rotation);
-            msg.AddVector3(velocity);
-            msg.AddInt(scene);
-            msg.AddInt(player);
             
-            return msg;
+            msg.Write(ident);
+            msg.Write(position);
+            msg.Write(rotation);
+            msg.Write(velocity);
+            msg.Write(scene);
+            msg.Write(player);
+            
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            ident = msg.GetInt();
-            position = msg.GetVector3();
-            rotation = msg.GetVector3();
-            velocity = msg.GetVector3();
-            scene = msg.GetInt();
-            player = msg.GetInt();
+            ident = msg.ReadInt32();
+            position = msg.ReadVector3();
+            rotation = msg.ReadVector3();
+            velocity = msg.ReadVector3();
+            scene = msg.ReadInt32();
+            player = msg.ReadInt32();
         }
     }
 }

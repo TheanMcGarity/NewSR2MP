@@ -1,5 +1,4 @@
 ﻿
-using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,22 +7,26 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class SleepMessage : ICustomMessage
+    public class SleepMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => FastForward;
+
         public double targetTime;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.FastForward);
             
-            msg.AddDouble(targetTime);
+            
+            msg.Write(targetTime);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            targetTime = msg.GetDouble();
+            targetTime = msg.ReadDouble();
         }
     }
 }

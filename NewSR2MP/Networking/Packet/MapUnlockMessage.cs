@@ -2,22 +2,26 @@
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class MapUnlockMessage : ICustomMessage
+    public class MapUnlockMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => MapUnlock;
+
         public string id;
     
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.MapUnlock);
             
-            msg.AddString(id);
+            
+            msg.Write(id);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetString();
+            id = msg.ReadString();
         }
     }
 }

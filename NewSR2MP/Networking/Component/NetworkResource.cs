@@ -55,10 +55,10 @@ namespace NewSR2MP.Networking.Component
                         MultiplayerManager.NetworkSend(message);
                     }
                 }
-                updateTimer = .275f;
+                updateTimer = ActorTimer;
             }
 
-            if (MultiplayerManager.server == null && MultiplayerManager.client != null)
+            if (ClientActive())
             {
                 resource._model.progressTime = double.MaxValue;
             }

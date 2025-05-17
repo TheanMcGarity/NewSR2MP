@@ -21,7 +21,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <DefineConstants>TRACE;EOS_PLATFORM_WINDOWS_64;EOS_UNITY</DefineConstants>
+      <DefineConstants>TRACE;EOS_PLATFORM_WINDOWS_64;EOS_UNITY;EOS_DYNAMIC_BINDINGS</DefineConstants>
       <DocumentationFile>bin\Debug\NewSR2MP.xml</DocumentationFile>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       <DebugType>embedded</DebugType>
@@ -30,7 +30,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <DefineConstants>TRACE;EOS_PLATFORM_WINDOWS_64;EOS_UNITY</DefineConstants>
+      <DefineConstants>TRACE;EOS_PLATFORM_WINDOWS_64;EOS_UNITY;EOS_DYNAMIC_BINDINGS</DefineConstants>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       <DebugSymbols>true</DebugSymbols>
       <DebugType>embedded</DebugType>
@@ -153,6 +153,9 @@
       </Reference>
       <Reference Include="SR2E">
         <HintPath>Libs\SR2E.dll</HintPath>
+      </Reference>
+      <Reference Include="Steamworks.NET">
+        <HintPath>Steamworks.NET.dll</HintPath>
       </Reference>
       <Reference Include="Unity.2D.Animation.Runtime">
         <HintPath>Libs\Unity.2D.Animation.Runtime.dll</HintPath>
@@ -518,11 +521,16 @@
       <None Remove="en.txt" />
       <None Remove="translations.csv" />
       <EmbeddedResource Include="translations.csv" />
+      <None Remove="Steamworks.NET.dll" />
+      <None Remove="steam_api64.dll" />
+      <None Remove="MultiplayerButton.png" />
+      <EmbeddedResource Include="MultiplayerButton.png" />
+      <None Remove="Networking\SatyEOS\EpicSDK\Libs\EOSSDK-Win64-Shipping.dll" />
+      <EmbeddedResource Include="Networking\SatyEOS\EpicSDK\Libs\EOSSDK-Win64-Shipping.dll" />
     </ItemGroup>
 
     <ItemGroup>
       <None Remove="RiptideNetworking.dll" />
-      <EmbeddedResource Include="RiptideNetworking.dll" />
     </ItemGroup>
 
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">

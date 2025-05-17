@@ -1,20 +1,24 @@
 ﻿namespace NewSR2MP.Networking.Packet
 {
-    public class DoorOpenMessage : ICustomMessage
+    public class DoorOpenMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => OpenDoor;
+
         public string id;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.OpenDoor);
-            msg.AddString(id);
+            
+            msg.Write(id);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetString();
+            id = msg.ReadString();
         }
     }
 }

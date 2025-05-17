@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Epic.OnlineServices;
 using Il2CppAssets.Script.Util.Extensions;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Event;
@@ -22,84 +23,98 @@ using Il2CppSystem.Net.WebSockets;
 using NewSR2MP.Networking.SaveModels;
 using SR2E;
 using SR2E.Managers;
+using SRMP.Enums;
 using Unity.Mathematics;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace NewSR2MP
 {
-    public static class MessageExtensions
+    public static class Globals
     {
-        public static void AddVector3(this Message msg, Vector3 vector)
+        public static void NetworkCopyTo(this byte[] src, byte[] dst, int offsetDst = 4, int offsetSrc = 0, int size = 1000)
         {
-            msg.AddFloat(vector.x);
-            msg.AddFloat(vector.y);
-            msg.AddFloat(vector.z);
+            for (int i = offsetSrc; i < offsetSrc + size; i++)
+            {
+                if (!(dst.Length <= (i - offsetSrc) + offsetDst))
+                    dst[(i - offsetSrc) + offsetDst] = src[i];
+                else return;
+            }
         }
 
-        public static Vector3 GetVector3(this Message msg)
+        public static void WriteCompressed(this NetBuffer net, Vector3 pos)
         {
-            var x = msg.GetFloat();
-            var y = msg.GetFloat();
-            var z = msg.GetFloat();
+            int x = (int)pos.x & 0xFFF; 
+            int z = (int)pos.z & 0xFFF; 
+            int y = (int)pos.y & 0xFF;
+            
+            net.Write((y << 24) | (z << 12) | x);
+        }
+        
+        public static void WriteCompressed(this NetBuffer net, NetworkEmotions emotions)
+        {
+            byte x = (byte)Mathf.Clamp(emotions.x * 255f, 0f, 255f);
+            byte y = (byte)Mathf.Clamp(emotions.y * 255f, 0f, 255f);
+            byte z = (byte)Mathf.Clamp(emotions.z * 255f, 0f, 255f);
+            byte w = (byte)Mathf.Clamp(emotions.w * 255f, 0f, 255f);
+            net.Write((uint)(x | (y << 8) | (z << 16) | (w << 24)));
+        }
+        public static NetworkEmotions ReadCompressedSlimeEmotions(this NetBuffer net)
+        {
+            var compressed = net.ReadInt32();
+            
+            float x = ((compressed >> 0) & 0xFF) / 255f;
+            float y = ((compressed >> 8) & 0xFF) / 255f;
+            float z = ((compressed >> 16) & 0xFF) / 255f;
+            float w = ((compressed >> 24) & 0xFF) / 255f;
+            
+            return new NetworkEmotions(x, y, z, w);
+        }
+        public static Vector3 ReadCompressedVector3(this NetBuffer net)
+        {
+            var compressed = net.ReadInt32();
+            
+            int x = compressed & 0xFFF;
+            int z = (compressed >> 12) & 0xFFF;
+            int y = (compressed >> 24) & 0xFF;
+
+            if ((x & 0x800) != 0) x |= unchecked((int)0xFFFFF000);
+            if ((z & 0x800) != 0) z |= unchecked((int)0xFFFFF000);
+            if ((y & 0x80) != 0) y |= unchecked((int)0xFFFFFF00);
 
             return new Vector3(x, y, z);
         }
-
-        public static void AddQuaternion(this Message msg, Quaternion quaternion)
+        public static void Write(this NetBuffer net, AmmoData ammoData)
         {
-            msg.AddFloat(quaternion.x);
-            msg.AddFloat(quaternion.y);
-            msg.AddFloat(quaternion.z);
-            msg.AddFloat(quaternion.w);
+            net.Write(ammoData.id);
+            net.Write(ammoData.count);
+            net.Write(ammoData.slot);
         }
-
-        public static Quaternion GetQuaternion(this Message msg)
+        public static AmmoData ReadAmmoData(this NetBuffer net)
         {
-            var x = msg.GetFloat();
-            var y = msg.GetFloat();
-            var z = msg.GetFloat();
-            var w = msg.GetFloat();
-
-            return new Quaternion(x, y, z, w);
-        }
-
-        public static void AddGuid(this Message msg, Guid guid)
-        {
-            msg.AddString(guid.ToString());
-        }
-
-        public static Guid GetGuid(this Message msg)
-        {
-            var str = msg.GetString();
-
-            return new Guid(str);
-        }
-
-        public static void AddAmmoData(this Message msg, AmmoData data)
-        {
-            msg.AddInt(data.count);
-            msg.AddInt(data.slot);
-            msg.AddInt(data.id);
-        }
-
-        public static AmmoData GetAmmoData(this Message msg)
-        {
-            var count = msg.GetInt();
-            var slot = msg.GetInt();
-            var id = msg.GetInt();
-
-            return new AmmoData()
+            return new AmmoData
             {
-                count = count,
-                slot = slot,
-                id = id
+                id = net.ReadInt32(),
+                count = net.ReadInt32(),
+                slot = net.ReadInt32(),
             };
         }
-    }
-
-    public static class Globals
-    {
+        public static Guid ReadGuid(this NetBuffer net)
+        {
+            return Guid.Parse(net.ReadString());
+        }
+        
+        public static bool TryGetPlayer(ProductUserId id, out PlayerState player)
+        {
+            player = players.FirstOrDefault(x => x.epicID == id);
+            return player != null;
+        }
+        public static bool TryGetPlayer(ushort id, out PlayerState player)
+        {
+            player = players.FirstOrDefault(x => x.playerID == id);
+            return player != null;
+        }
+        
         /// <summary>
         /// Auto host port in options. can be 0/off, 7777, 16500
         /// </summary>
@@ -110,7 +125,17 @@ namespace NewSR2MP
         /// </summary>
         internal static ScriptedInt? scriptedAutoHostPort;
 
-
+        internal static Texture2D LoadImage(string filename)
+        {
+            Assembly executingAssembly = Assembly.GetExecutingAssembly();
+            Stream manifestResourceStream = executingAssembly.GetManifestResourceStream(executingAssembly.GetName().Name + "." + filename + ".png");
+            byte[] array = new byte[manifestResourceStream.Length];
+            manifestResourceStream.Read(array, 0, array.Length);
+            Texture2D texture2D = new Texture2D(1, 1);
+            ImageConversion.LoadImage(texture2D, array);
+            texture2D.filterMode = FilterMode.Bilinear;
+            return texture2D;
+        }
         /// <summary>
         /// Built in packet IDs, use a custom packet enum or an ushort to make custom packets.
         /// </summary>
@@ -153,8 +178,21 @@ namespace NewSR2MP
             SwitchModify,
             RefineryItem,
             PlayerUpgrade,
+            TreasurePod,
+            Auth,
         }
-
+        public static byte[] ExtractResource(String filename)
+        {
+            System.Reflection.Assembly a = System.Reflection.Assembly.GetExecutingAssembly();
+            using (Stream resFilestream = a.GetManifestResourceStream(filename))
+            {
+                if (resFilestream == null) return null;
+                byte[] ba = new byte[resFilestream.Length];
+                resFilestream.Read(ba, 0, ba.Length);
+                return ba;
+            }
+        }
+        
         public static Dictionary<string, int> playerUsernames = new();
         public static Dictionary<int, string> playerUsernamesReverse = new();
         
@@ -218,10 +256,13 @@ namespace NewSR2MP
 
         public static bool isJoiningAsClient = false;
 
-        public static bool ServerActive() => MultiplayerManager.server != null;
-        public static bool ClientActive() => MultiplayerManager.client != null;
+        public static bool ServerActive() => EpicApplication.Instance.Lobby.IsLobbyOwner;
+        public static bool ClientActive() => EpicApplication.Instance.Lobby.IsInLobby && !EpicApplication.Instance.Lobby.IsLobbyOwner;
 
 
+        public static readonly string EOS_SDK_PATH = Path.Combine(Application.dataPath, "..", "UserLibs", "EOSSDK-Win64-Shipping.dll");
+
+        
         public static void InitEmbeddedDLL(string name)
         {
             Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"NewSR2MP.{name}");
@@ -302,7 +343,7 @@ namespace NewSR2MP
         /// </summary>
         public static Dictionary<string, int> weatherStatesReverseLookup;
 
-        public static Dictionary<int, NetworkPlayer> players = new Dictionary<int, NetworkPlayer>();
+        public static List<PlayerState> players = new List<PlayerState>();
 
         public static Dictionary<int, Guid> clientToGuid = new Dictionary<int, Guid>();
 
@@ -414,7 +455,7 @@ namespace NewSR2MP
             }
         }
 
-        public static LoadMessage? latestSaveJoined;
+        public static LoadMessage latestSaveJoined;
 
         public static int currentPlayerID;
 
@@ -937,10 +978,20 @@ namespace NewSR2MP
         
         public static StaticGameEvent GetGameEvent(string dataKey) => Resources.FindObjectsOfTypeAll<StaticGameEvent>().FirstOrDefault(x => x._dataKey == dataKey);
         
-        public const bool DEBUG_MODE = false;
+        public const bool DEBUG_MODE = true;
 
         public static long NextMultiplayerActorID => ++sceneContext.GameModel._actorIdProvider._nextActorId;
         
         public static bool clientLoading = false;
+
+        public static string ExtendInteger(int value) => new string('0', 10 - value.ToString().Length) + value;
+
+        public class PlayerState
+        {
+            public NetworkPlayerConnectionState connectionState = NetworkPlayerConnectionState.Authenticating;
+            public ProductUserId epicID;
+            public ushort playerID;
+            public NetworkPlayer gameObject;
+        }
     }
 }

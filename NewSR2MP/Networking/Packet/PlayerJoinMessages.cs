@@ -1,72 +1,58 @@
 ﻿
-using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Riptide;
 using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class PlayerJoinMessage : ICustomMessage
+    public class PlayerJoinMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => PlayerJoin;
+
         public int id;
         public bool local;
         public string username;
     
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.PlayerJoin);
-            msg.AddInt(id);
-            msg.AddBool(local);
-            msg.AddString(username);
+            
+            msg.Write(id);
+            msg.Write(local);
+            msg.Write(username);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetInt();
-            local = msg.GetBool();
-            username = msg.GetString();
-        }
-    }
-    public class ClientUserMessage : ICustomMessage
-    {
-        public Guid guid;
-        public string name;
-    
-        public Message Serialize()
-        {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.RequestJoin);
-            msg.AddGuid(guid);
-            msg.AddString(name);
-
-            return msg;
-        }
-
-        public void Deserialize(Message msg)
-        {
-            guid = msg.GetGuid();
-            name = msg.GetString();
+            id = msg.ReadInt32();
+            local = msg.ReadBoolean();
+            username = msg.ReadString();
         }
     }
-    public class PlayerLeaveMessage : ICustomMessage
+    public class PlayerLeaveMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => PlayerLeave;
+
         public int id;
     
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.PlayerLeave);
-            msg.AddInt(id);
+            
+            msg.Write(id);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetInt();
+            id = msg.ReadInt32();
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class LoadMessage : ICustomMessage
+    public class LoadMessage : IPacket
     {
         public List<InitActorData> initActors;
         public List<InitPlayerData> initPlayers;
@@ -10,6 +10,7 @@ namespace NewSR2MP.Networking.Packet
         //public List<InitGadgetData> initGadgets;
         public List<InitAccessData> initAccess;
         public List<InitSwitchData> initSwitches;
+        public Dictionary<int, TreasurePod.State> initPods;
         //public List<InitResourceNodeData> initResourceNodes;
 
         public List<string> initPedias;
@@ -26,131 +27,136 @@ namespace NewSR2MP.Networking.Packet
         
         public List<float> marketPrices = new();
         public Dictionary<int, int> refineryItems = new();
-        
-        public Message Serialize()
+
+        public PacketType Type => PacketType.JoinSave;
+        public PacketReliability Reliability => PacketReliability.ReliableUnordered;
+
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.JoinSave);
-            
-            
-            msg.AddInt(initActors.Count);
+            msg.Write(initActors.Count);
             foreach (var actor in initActors)
             {
-                msg.AddLong(actor.id);
-                msg.AddInt(actor.ident);
-                msg.AddInt(actor.scene);
-                msg.AddVector3(actor.pos);
+                msg.Write(actor.id);
+                msg.Write(actor.ident);
+                msg.Write(actor.scene);
+                msg.Write(actor.pos);
             }
-            msg.AddInt(initPlayers.Count);
+            msg.Write(initPlayers.Count);
             foreach (var player in initPlayers)
             {
-                msg.AddInt(player.id);
-                msg.AddString(player.username);
+                msg.Write(player.id);
+                msg.Write(player.username);
             }
-            msg.AddInt(initPlots.Count);
+            msg.Write(initPlots.Count);
             foreach (var plot in initPlots)
             {
-                msg.AddString(plot.id);
-                msg.AddInt((int)plot.type); 
-                msg.AddInt(plot.upgrades.Count);
+                msg.Write(plot.id);
+                msg.Write((int)plot.type); 
+                msg.Write(plot.upgrades.Count);
 
                 foreach (var upg in plot.upgrades)
                 {
-                    msg.AddInt((int)upg);
+                    msg.Write((int)upg);
                 }
 
-                msg.AddInt(plot.siloData.Count);
+                msg.Write(plot.siloData.Count);
                 foreach (var silo in plot.siloData)
                 {
-                    msg.AddString(silo.Key);
-                    msg.AddInt(silo.Value.slots);
+                    msg.Write(silo.Key);
+                    msg.Write(silo.Value.slots);
 
-                    msg.AddInt(silo.Value.ammo.Count);
+                    msg.Write(silo.Value.ammo.Count);
                     foreach (var ammo in silo.Value.ammo)
                     {
-                        msg.AddAmmoData(ammo);
+                        msg.Write(ammo);
                     }
                 }
-                msg.AddInt(plot.cropIdent);
+                msg.Write(plot.cropIdent);
             }
-            msg.AddInt(initGordos.Count);
+            msg.Write(initGordos.Count);
             foreach (var gordo in initGordos)
             {
-                msg.AddString(gordo.id);
-                msg.AddInt(gordo.eaten);
-                msg.AddInt(gordo.ident);
+                msg.Write(gordo.id);
+                msg.Write(gordo.eaten);
+                msg.Write(gordo.ident);
             }
-            msg.AddInt(initPedias.Count);
+            msg.Write(initPedias.Count);
             foreach (var pedia in initPedias)
             {
-                msg.AddString(pedia);
+                msg.Write(pedia);
             }
-            msg.AddInt(initMaps.Count);
+            msg.Write(initMaps.Count);
             foreach (var map in initMaps)
             {
-                msg.AddString(map);
+                msg.Write(map);
             }
-            msg.AddInt(initAccess.Count);
+            msg.Write(initAccess.Count);
             foreach (var access in initAccess)
             {
-                msg.AddString(access.id);
-                msg.AddBool(access.open);
+                msg.Write(access.id);
+                msg.Write(access.open);
             }
 
-            msg.AddInt(playerID);
-            msg.AddVector3(localPlayerSave.pos);
-            msg.AddVector3(localPlayerSave.rot);
-            msg.AddInt(localPlayerSave.ammo.Count);
+            msg.Write(playerID);
+            msg.Write(localPlayerSave.pos);
+            msg.Write(localPlayerSave.rot);
+            msg.Write(localPlayerSave.ammo.Count);
 
             foreach (var amm in localPlayerSave.ammo)
             {
-                msg.AddAmmoData(amm);
+                msg.Write(amm);
             }
-            msg.AddInt(localPlayerSave.sceneGroup);
+            msg.Write(localPlayerSave.sceneGroup);
             
-            msg.AddInt(money);
+            msg.Write(money);
 
-            msg.AddInt(upgrades.Count);
+            msg.Write(upgrades.Count);
             foreach (var upgrade in upgrades)
             {
-                msg.AddByte(upgrade.Key);
-                msg.AddSByte(upgrade.Value);
+                msg.Write(upgrade.Key);
+                msg.Write(upgrade.Value);
             }
             
 
-            msg.AddDouble(time);
+            msg.Write(time);
 
-            msg.AddInt(marketPrices.Count);
+            msg.Write(marketPrices.Count);
             foreach (var price in marketPrices)
-                msg.AddFloat(price);
+                msg.Write(price);
             
-            msg.AddInt(refineryItems.Count);
+            msg.Write(refineryItems.Count);
             foreach (var item in refineryItems)
             {
-                msg.AddInt(item.Key);
-                msg.AddInt(item.Value);
+                msg.Write(item.Key);
+                msg.Write(item.Value);
             }
 
-            msg.AddInt(initSwitches.Count);
+            msg.Write(initSwitches.Count);
             foreach (var _switch in initSwitches)
             {
-                msg.AddString(_switch.id);
-                msg.AddByte(_switch.state);
+                msg.Write(_switch.id);
+                msg.Write(_switch.state);
             }
             
-            return msg;
+            msg.Write(initPods.Count);
+            foreach (var pod in initPods)
+            {
+                msg.Write(pod.Key);
+                msg.Write((byte)pod.Value);
+            }
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            int lengthActor = msg.GetInt();
+            int lengthActor = msg.ReadInt32();
 
             initActors = new List<InitActorData>();
             for (int i = 0; i < lengthActor; i++)
             {
-                long id = msg.GetLong();
-                int ident = msg.GetInt();
-                int sg = msg.GetInt();
-                Vector3 actorPos = msg.GetVector3();
+                long id = msg.ReadInt64();
+                int ident = msg.ReadInt32();
+                int sg = msg.ReadInt32();
+                Vector3 actorPos = msg.ReadVector3();
                 initActors.Add(new InitActorData
                 {
                     id = id,
@@ -160,43 +166,43 @@ namespace NewSR2MP.Networking.Packet
                 });
             }
 
-            int lengthPlayer = msg.GetInt();
+            int lengthPlayer = msg.ReadInt32();
             initPlayers = new List<InitPlayerData>();
             for (int i = 0; i < lengthPlayer; i++)
             {
-                int id = msg.GetInt();
-                string username = msg.GetString();
+                int id = msg.ReadInt32();
+                string username = msg.ReadString();
                 initPlayers.Add(new InitPlayerData()
                 {
                     id = id
                 });
             }
 
-            int lengthPlot = msg.GetInt();
+            int lengthPlot = msg.ReadInt32();
             initPlots = new List<InitPlotData>();
             for (int i = 0; i < lengthPlot; i++)
             {
-                string id = msg.GetString();
-                LandPlot.Id type = (LandPlot.Id)msg.GetInt();
-                int upgLength = msg.GetInt();
+                string id = msg.ReadString();
+                LandPlot.Id type = (LandPlot.Id)msg.ReadInt32();
+                int upgLength = msg.ReadInt32();
                 Il2CppSystem.Collections.Generic.HashSet<LandPlot.Upgrade> upgrades =
                     new Il2CppSystem.Collections.Generic.HashSet<LandPlot.Upgrade>();
                 for (int i2 = 0; i2 < upgLength; i2++)
                 {
-                    upgrades.Add((LandPlot.Upgrade)msg.GetInt());
+                    upgrades.Add((LandPlot.Upgrade)msg.ReadInt32());
                 }
 
                 Dictionary<string, InitSiloData> silos = new();
-                int inventories = msg.GetInt();
+                int inventories = msg.ReadInt32();
                 for (int j = 0; j < inventories; j++)
                 {
-                    string inventoryID = msg.GetString();
-                    int slots = msg.GetInt();
-                    int ammLength = msg.GetInt();
+                    string inventoryID = msg.ReadString();
+                    int slots = msg.ReadInt32();
+                    int ammLength = msg.ReadInt32();
                     HashSet<AmmoData> ammoDatas = new HashSet<AmmoData>();
                     for (int i2 = 0; i2 < ammLength; i2++)
                     {
-                        var data = msg.GetAmmoData();
+                        var data = msg.ReadAmmoData();
                         ammoDatas.Add(data);
                     }
 
@@ -206,7 +212,7 @@ namespace NewSR2MP.Networking.Packet
                         ammo = ammoDatas
                     });
                 }
-                var crop = msg.GetInt();
+                var crop = msg.ReadInt32();
                 initPlots.Add(new InitPlotData()
                 {
                     type = type,
@@ -217,13 +223,13 @@ namespace NewSR2MP.Networking.Packet
                 });
             }
 
-            int lengthGordo = msg.GetInt();
+            int lengthGordo = msg.ReadInt32();
             initGordos = new HashSet<InitGordoData>();
             for (int i = 0; i < lengthGordo; i++)
             {
-                string id = msg.GetString();
-                int eaten = msg.GetInt();
-                int ident = msg.GetInt();
+                string id = msg.ReadString();
+                int eaten = msg.ReadInt32();
+                int ident = msg.ReadInt32();
                 initGordos.Add(new InitGordoData()
                 {
                     id = id,
@@ -232,26 +238,26 @@ namespace NewSR2MP.Networking.Packet
                 });
             }
 
-            int pedLength = msg.GetInt();
+            int pedLength = msg.ReadInt32();
             initPedias = new List<string>();
             for (int i = 0; i < pedLength; i++)
             {
-                initPedias.Add(msg.GetString());
+                initPedias.Add(msg.ReadString());
             }
 
-            int mapLength = msg.GetInt();
+            int mapLength = msg.ReadInt32();
             initMaps = new List<string>();
             for (int i = 0; i < mapLength; i++)
             {
-                initMaps.Add(msg.GetString());
+                initMaps.Add(msg.ReadString());
             }
 
-            int accLength = msg.GetInt();
+            int accLength = msg.ReadInt32();
             initAccess = new List<InitAccessData>();
             for (int i = 0; i < accLength; i++)
             {
-                string id = msg.GetString();
-                bool open = msg.GetBool();
+                string id = msg.ReadString();
+                bool open = msg.ReadBoolean();
                 InitAccessData accessData = new InitAccessData()
                 {
                     id = id,
@@ -260,19 +266,19 @@ namespace NewSR2MP.Networking.Packet
                 initAccess.Add(accessData);
             }
 
-            playerID = msg.GetInt();
-            var pos = msg.GetVector3();
-            var rot = msg.GetVector3();
+            playerID = msg.ReadInt32();
+            var pos = msg.ReadVector3();
+            var rot = msg.ReadVector3();
 
-            var localAmmoCount = msg.GetInt();
+            var localAmmoCount = msg.ReadInt32();
 
             List<AmmoData> localAmmo = new List<AmmoData>();
             for (int i = 0; i < localAmmoCount; i++)
             {
-                localAmmo.Add(msg.GetAmmoData());
+                localAmmo.Add(msg.ReadAmmoData());
             }
 
-            int scene = msg.GetInt();
+            int scene = msg.ReadInt32();
 
             localPlayerSave = new LocalPlayerData()
             {
@@ -283,41 +289,41 @@ namespace NewSR2MP.Networking.Packet
             };
 
 
-            money = msg.GetInt();
+            money = msg.ReadInt32();
 
-            var pUpgradesCount = msg.GetInt();
+            var pUpgradesCount = msg.ReadInt32();
             upgrades = new(pUpgradesCount);
 
             for (int i = 0; i < pUpgradesCount; i++)
             {
-                var key = msg.GetByte();
-                var val = msg.GetSByte();
+                var key = msg.ReadByte();
+                var val = msg.ReadSByte();
 
                 upgrades.TryAdd(key, val);
             }
 
-            time = msg.GetDouble();
+            time = msg.ReadDouble();
 
-            var marketCount = msg.GetInt();
+            var marketCount = msg.ReadInt32();
             marketPrices = new List<float>(marketCount);
 
             for (int i = 0; i < marketCount; i++)
-                marketPrices.Add(msg.GetFloat());
+                marketPrices.Add(msg.ReadFloat());
 
-            var refineryCount = msg.GetInt();
+            var refineryCount = msg.ReadInt32();
             refineryItems = new Dictionary<int, int>(refineryCount);
 
             for (int i = 0; i < refineryCount; i++)
-                refineryItems.Add(msg.GetInt(), msg.GetInt());
+                refineryItems.Add(msg.ReadInt32(), msg.ReadInt32());
 
 
             initSwitches = new List<InitSwitchData>();
-            var switchCount = msg.GetInt();
+            var switchCount = msg.ReadInt32();
             for (int i = 0; i < switchCount; i++)
                 initSwitches.Add(new InitSwitchData
                 {
-                    id = msg.GetString(),
-                    state = msg.GetByte()
+                    id = msg.ReadString(),
+                    state = msg.ReadByte()
                 });
 
         }

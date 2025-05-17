@@ -1,6 +1,5 @@
 ﻿
 using Il2CppMonomiPark.SlimeRancher.Regions;
-using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,21 +8,25 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class PediaMessage : ICustomMessage
+    public class PediaMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => PediaUnlock;
+
         public string id;
     
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.PediaUnlock);
-            msg.AddString(id);
+            
+            msg.Write(id);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetString();
+            id = msg.ReadString();
         }
     }
 }

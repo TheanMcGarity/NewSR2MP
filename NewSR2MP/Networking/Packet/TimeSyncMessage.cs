@@ -1,5 +1,4 @@
 ﻿
-using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,21 +7,25 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class TimeSyncMessage : ICustomMessage
+    public class TimeSyncMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.ReliableOrdered;
+
+        public PacketType Type => TimeUpdate;
+
         public double time;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.TimeUpdate);
-            msg.AddDouble(time);
+            
+            msg.Write(time);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            time = msg.GetDouble();
+            time = msg.ReadDouble();
         }
     }
 }

@@ -43,7 +43,7 @@ namespace NewSR2MP.Networking.Component
         /// <summary>
         ///  Interpolation Period. the speed at which the transform is smoothed.
         /// </summary>
-        public float interpolPeriod = .1f;
+        public float interpolPeriod = PlayerTimer;
 
         public Vector3 currPos => transform.position;
         private float positionTime;
@@ -51,8 +51,6 @@ namespace NewSR2MP.Networking.Component
         public Vector3 currRot => transform.eulerAngles;
 
         private uint frame;
-
-        private float playerRegionTimer = 0f;
 
         void OnEnable()
         {

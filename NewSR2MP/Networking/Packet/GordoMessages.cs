@@ -1,51 +1,59 @@
 ﻿
+using Epic.OnlineServices.P2P;
 using Il2CppMonomiPark.SlimeRancher.Regions;
 using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class GordoEatMessage : ICustomMessage
+    public class GordoEatMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+        public PacketType Type => GordoFeed;
+
         public string id;
         public int count;
         public int ident;
         
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.GordoFeed);
-            msg.AddString(id);
-            msg.AddInt(count);
-            msg.AddInt(ident);
+            
+            msg.Write(id);
+            msg.Write(count);
+            msg.Write(ident);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetString();
-            count = msg.GetInt();
-            ident = msg.GetInt();
+            id = msg.ReadString();
+            count = msg.ReadInt32();
+            ident = msg.ReadInt32();
         }
     }
-    public class GordoBurstMessage : ICustomMessage
+    public class GordoBurstMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => GordoExplode;
+
         public string id;
         public int ident;
 
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.GordoExplode);
-            msg.AddString(id);      
-            msg.AddInt(ident);
+            
+            msg.Write(id);      
+            msg.Write(ident);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetString();
-            ident = msg.GetInt();
+            id = msg.ReadString();
+            ident = msg.ReadInt32();
         }
     }
 }

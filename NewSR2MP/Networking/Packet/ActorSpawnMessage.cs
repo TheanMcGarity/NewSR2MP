@@ -1,6 +1,5 @@
 ﻿
 using Il2CppMonomiPark.SlimeRancher.Regions;
-using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,8 +8,12 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class ActorSpawnMessage : ICustomMessage
+    public class ActorSpawnMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.ReliableOrdered;
+
+        public PacketType Type => ActorSpawn;
+
         public long id;
         public Vector3 position;
         public Vector3 rotation;
@@ -19,30 +22,30 @@ namespace NewSR2MP.Networking.Packet
         public int scene;
         public int player;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.ActorSpawn);
             
-            msg.AddLong(id);
-            msg.AddInt(ident);
-            msg.AddVector3(position);
-            msg.AddVector3(rotation);
-            msg.AddVector3(velocity);
-            msg.AddInt(scene);
-            msg.AddInt(player);
+            
+            msg.Write(id);
+            msg.Write(ident);
+            msg.Write(position);
+            msg.Write(rotation);
+            msg.Write(velocity);
+            msg.Write(scene);
+            msg.Write(player);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetLong();
-            ident = msg.GetInt();
-            position = msg.GetVector3();
-            rotation = msg.GetVector3();
-            velocity = msg.GetVector3();
-            scene = msg.GetInt();
-            player = msg.GetInt();
+            id = msg.ReadInt64();
+            ident = msg.ReadInt32();
+            position = msg.ReadVector3();
+            rotation = msg.ReadVector3();
+            velocity = msg.ReadVector3();
+            scene = msg.ReadInt32();
+            player = msg.ReadInt32();
         }
     }
 }

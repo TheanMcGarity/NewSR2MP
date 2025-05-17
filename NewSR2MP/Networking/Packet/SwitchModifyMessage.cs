@@ -4,25 +4,29 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class SwitchModifyMessage : ICustomMessage
+    public class SwitchModifyMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => SwitchModify;
+
         public string id;
         public byte state;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.SwitchModify);
             
-            msg.AddString(id);
-            msg.AddByte(state);
             
-            return msg;
+            msg.Write(id);
+            msg.Write(state);
+            
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            id = msg.GetString();
-            state = msg.GetByte();
+            id = msg.ReadString();
+            state = msg.ReadByte();
         }
     }
 }

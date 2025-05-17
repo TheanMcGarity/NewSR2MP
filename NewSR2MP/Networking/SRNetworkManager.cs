@@ -11,9 +11,11 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Epic.OnlineServices;
 using Il2CppMono.Security.Protocol.Ntlm;
 using Il2CppTMPro;
-using Riptide;
+using NewSR2MP.EpicSDK;
+using SRMP.Enums;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -36,9 +38,6 @@ namespace NewSR2MP.Networking
     }
     public partial class MultiplayerManager
     {
-        public static Server server;
-        
-        public static Client client;
         
         public static NetGameInitialSettings initialWorldSettings = new NetGameInitialSettings();
 
@@ -64,32 +63,35 @@ namespace NewSR2MP.Networking
                         actor.AddComponent<TransformSmoother>();
                         actor.AddComponent<NetworkResource>();
                         var ts = actor.GetComponent<TransformSmoother>();
-                        ts.interpolPeriod = 0.15f;
+                        ts.interpolPeriod = ActorTimer;
                         ts.enabled = false;
                         actors.Add(a.GetActorId().Value, a.GetComponent<NetworkActor>());
                     }
                 }
                 catch { }
             }
-
             
-            server.ClientDisconnected += OnPlayerLeft;
-
             sceneContext.gameObject.AddComponent<NetworkTimeDirector>();
             sceneContext.gameObject.AddComponent<NetworkWeatherDirector>();
             
             var hostNetworkPlayer = sceneContext.player.AddComponent<NetworkPlayer>();
             hostNetworkPlayer.id = ushort.MaxValue;
             currentPlayerID = hostNetworkPlayer.id;
-            players.Add(ushort.MaxValue, hostNetworkPlayer);
+            players.Add(new Globals.PlayerState
+            {
+                epicID = EpicApplication.Instance.Authentication.ProductUserId,
+                playerID = ushort.MaxValue,
+                gameObject = hostNetworkPlayer,
+                connectionState = NetworkPlayerConnectionState.Connected,
+            });
         }
 
-        public void OnPlayerJoined(string username, ushort clientId)
+        public NetworkPlayer OnPlayerJoined(string username, ushort id, ProductUserId epicID)
         {
             DoNetworkSave();
             
             var player = Instantiate(onlinePlayerPrefab);
-            player.name = $"Player{clientId}";
+            player.name = $"Player{id}";
             var netPlayer = player.GetComponent<NetworkPlayer>();
             
             netPlayer.usernamePanel = netPlayer.transform.GetChild(1).GetComponent<TextMesh>();
@@ -98,37 +100,38 @@ namespace NewSR2MP.Networking
             netPlayer.usernamePanel.anchor = TextAnchor.MiddleCenter;
             netPlayer.usernamePanel.fontSize = 24;
             
-            players.Add(clientId, netPlayer);
-            playerUsernames.Add(username, clientId);
-            playerUsernamesReverse.Add(clientId, username);
+            playerUsernames.Add(username, id);
+            playerUsernamesReverse.Add(id, username);
             
-            netPlayer.id = clientId;
+            netPlayer.id = id;
             
             DontDestroyOnLoad(player);
             player.SetActive(true);
             
             var packet = new PlayerJoinMessage()
             {
-                id = clientId,
+                id = id,
                 local = false,
                 username = username,
             };
             var packet2 = new PlayerJoinMessage()
             {
-                id = clientId,
+                id = id,
                 local = true,
                 username = username,
             };
-            NetworkSend(packet, ServerSendOptions.SendToAllExcept(clientId));
-            NetworkSend(packet2, ServerSendOptions.SendToPlayer(clientId));
+            NetworkSend(packet, ServerSendOptions.SendToAllExcept(id));
+            NetworkSend(packet2, ServerSendOptions.SendToPlayer(id));
+
+            return netPlayer;
         }
-        public void OnPlayerLeft(object? sender, ServerDisconnectedEventArgs args)
+        public void OnPlayerLeft(ushort id)
         {
-            OnServerDisconnect(args.Client.Id);
+            OnServerDisconnect(id);
             
             var packet = new PlayerLeaveMessage
             {
-                id = args.Client.Id,
+                id = ushort.MaxValue,
             };
             
             NetworkSend(packet);
@@ -146,12 +149,14 @@ namespace NewSR2MP.Networking
             
             try
             {
-                players[player].enabled = true;
-                Destroy(players[player].gameObject);
-                players.Remove(player);
-                playerUsernames.Remove(playerUsernamesReverse[player]);
+                if (!TryGetPlayer(player, out var state))
+                    return;
+                
+                Destroy(state.gameObject);
+                players.Remove(state);
+                playerUsernames.Remove(playerUsernamesReverse[state.playerID]);
                 playerUsernamesReverse.Remove(player);
-                players.Remove(player);
+                players.Remove(state);
                 clientToGuid.Remove(player);
             }
             catch { }
@@ -170,47 +175,35 @@ namespace NewSR2MP.Networking
         {
             systemContext.SceneLoader.LoadMainMenuSceneGroup();
         }
-        public void InitializeClient()
-        {
-            var joinMsg = new ClientUserMessage()
-            {
-                guid = Main.data.Player,
-                name = Main.data.Username,
-            };
-            NetworkSend(joinMsg, ServerSendOptions.SendToAllDefault());
-        }
 
         /// <summary>
-        /// The send function common to both server and client. By default uses 'SRMPSendToAll' for server and 'SRMPSend' for client.
+        /// The send function common to both server and client.
         /// </summary>
-        /// <typeparam name="M">Message struct type. Ex: 'PlayerJoinMessage'</typeparam>
-        /// <param name="message">The actual message itself. Should automatically set the M type paramater.</param>
-        public static void NetworkSend<M>(M msg, ServerSendOptions serverOptions) where M : ICustomMessage
+        /// <typeparam name="P">Message struct type. Ex: 'PlayerJoinMessage'</typeparam>
+        /// <param name="packet">The actual message itself. Should automatically set the M type paramater.</param>
+        public static void NetworkSend<P>(P packet, ServerSendOptions serverOptions) where P : IPacket
         {
-            Parallel.Invoke(() =>
-            {
-                Message message = msg.Serialize();
             
-                if (client != null)
-                {
-                    client.Send(message);
-                }
-                else if (server != null)
+            if (ServerActive())
+                if (TryGetPlayer(serverOptions.player, out var state))
                 {
                     if (serverOptions.ignoreSpecificPlayer)
-                        server.SendToAll(message, serverOptions.player);
-                    else if (serverOptions.onlySendToPlayer)          
-                        server.Send(message, serverOptions.player);
+                        EpicApplication.Instance.Lobby.NetworkServer.SendPacketToAll(packet, state.epicID, packetReliability:packet.Reliability);
+                    else if (serverOptions.onlySendToPlayer)
+                        EpicApplication.Instance.Lobby.NetworkServer.SendPacket(state.epicID, packet, packetReliability:packet.Reliability);
                     else
-                        server.SendToAll(message);
-
+                        EpicApplication.Instance.Lobby.NetworkServer.SendPacketToAll(packet, packetReliability:packet.Reliability);
                 }
-            });
+                else
+                    EpicApplication.Instance.Lobby.NetworkServer.SendPacketToAll(packet, packetReliability:packet.Reliability);
+            else if (ClientActive())
+                EpicApplication.Instance.Lobby.NetworkClient.SendPacket(packet, packetReliability:packet.Reliability);
+            
         }
 
-        public static void NetworkSend<M>(M msg) where M : ICustomMessage
+        public static void NetworkSend<P>(P packet) where P : IPacket
         {
-            NetworkSend(msg, ServerSendOptions.SendToAllDefault());
+            NetworkSend(packet, ServerSendOptions.SendToAllDefault());
         }
 
         public struct ServerSendOptions
@@ -264,7 +257,7 @@ namespace NewSR2MP.Networking
             actors.Clear();
             gadgets.Clear();
 
-            foreach (var player in players.Values)
+            foreach (var player in players)
             {
                 Destroy(player.gameObject);
             }
@@ -286,31 +279,30 @@ namespace NewSR2MP.Networking
 
             foreach (var player in players)
             {
-                if (player.Key == ushort.MaxValue)
-                {
+                if (player.playerID == ushort.MaxValue)
                     continue;
-                }
+                
 
-                if (clientToGuid.TryGetValue(player.Key, out var playerID))
+                if (clientToGuid.TryGetValue(player.playerID, out var playerID))
                 {
                     var ammo = GetNetworkAmmo($"player_{playerID}");
                     Il2CppSystem.Collections.Generic.List<AmmoDataV01> ammoData =
                         GameContext.Instance.AutoSaveDirector.SavedGame.AmmoDataFromSlots(ammo.Slots,
                             GameContext.Instance.AutoSaveDirector._savedGame.identifiableTypeToPersistenceId);
-                    savedGame.savedPlayers.playerList[playerID].ammo = ammoData;
-                    if (player.Value)
+                    if (player.gameObject && savedGame.savedPlayers.playerList.TryGetValue(playerID, out var playerFromID) )
                     {
+                        playerFromID.ammo = ammoData;
                         var playerPos = new Vector3V01();
-                        playerPos.Value = player.Value.transform.position;
+                        playerPos.Value = player.gameObject.transform.position;
                         var playerRot = new Vector3V01();
-                        playerRot.Value = player.Value.transform.eulerAngles;
-                        savedGame.savedPlayers.playerList[playerID].position = playerPos;
-                        savedGame.savedPlayers.playerList[playerID].rotation = playerRot;
+                        playerRot.Value = player.gameObject.transform.eulerAngles;
+                        playerFromID.position = playerPos;
+                        playerFromID.rotation = playerRot;
                     }
                 }
                 else
                 {
-                    SRMP.Error($"Error saving player {player.Key}, their GUID was not found.");
+                    SRMP.Error($"Error saving player {player.playerID}, their GUID was not found.");
                 }
             }
 

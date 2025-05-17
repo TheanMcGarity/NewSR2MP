@@ -2,35 +2,39 @@
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class LandPlotMessage : ICustomMessage
+    public class LandPlotMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.ReliableOrdered;
+
+        public PacketType Type => PacketType.LandPlot;
+
         public string id;
         public LandPlot.Id type;
         public LandPlot.Upgrade upgrade;
         public LandplotUpdateType messageType;
     
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.LandPlot);
-            msg.AddByte((byte)messageType);
-            msg.AddString(id);
+            
+            msg.Write((byte)messageType);
+            msg.Write(id);
 
             if (messageType == LandplotUpdateType.SET)
-                msg.AddByte((byte)type);
+                msg.Write((byte)type);
             else
-                msg.AddByte((byte)upgrade);
+                msg.Write((byte)upgrade);
 
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            messageType = (LandplotUpdateType)msg.GetByte();
-            id = msg.GetString();
+            messageType = (LandplotUpdateType)msg.ReadByte();
+            id = msg.ReadString();
             if (messageType == LandplotUpdateType.SET)
-                type = (LandPlot.Id)msg.GetByte();
+                type = (LandPlot.Id)msg.ReadByte();
             else
-                upgrade = (LandPlot.Upgrade)msg.GetByte();
+                upgrade = (LandPlot.Upgrade)msg.ReadByte();
 
         }
     }

@@ -8,15 +8,12 @@ using System;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.UI.Map;
 
-
 namespace NewSR2MP.Networking.Patches
 {
-    [HarmonyPatch(typeof(PlayerState), nameof(PlayerState.AddCurrency))]
+    [HarmonyPatch(typeof(Il2Cpp.PlayerState), nameof(Il2Cpp.PlayerState.AddCurrency))]
     internal class PlayerStateAddCurrency
     {
-        public static bool Prefix(PlayerState __instance, int adjust, PlayerState.CoinsType coinsType) => Time.unscaledTime >= SceneContextNoteGameFullyLoaded.loadTime + 4f;
-        
-        public static void Postfix(PlayerState __instance, int adjust, PlayerState.CoinsType coinsType)
+        public static void Postfix(Il2Cpp.PlayerState __instance, int adjust, Il2Cpp.PlayerState.CoinsType coinsType)
         {
 
             if (ClientActive() || ServerActive())
@@ -29,10 +26,10 @@ namespace NewSR2MP.Networking.Patches
             }
         }
     }
-    [HarmonyPatch(typeof(PlayerState), nameof(PlayerState.SpendCurrency))]
+    [HarmonyPatch(typeof(Il2Cpp.PlayerState), nameof(Il2Cpp.PlayerState.SpendCurrency))]
     internal class PlayerStateSpendCurrency
     {
-        public static void Postfix(PlayerState __instance, int adjust)
+        public static void Postfix(Il2Cpp.PlayerState __instance, int adjust)
         {
 
             if (ClientActive() || ServerActive())

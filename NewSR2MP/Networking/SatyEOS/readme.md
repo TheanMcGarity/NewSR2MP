@@ -1,0 +1,1 @@
+# Part of the `srmp-rewritten` **PRIVATE** github project! Look on saty's server for the public build of the mod.

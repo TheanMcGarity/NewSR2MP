@@ -8,40 +8,48 @@ namespace NewSR2MP.Networking.Packet
         Labyrinth,
     }
     
-    public class PlaceNavMarkerNessage : ICustomMessage
+    public class PlaceNavMarkerNessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => NavigationMarkerPlace;
+
         public MapType map;
         public Vector3 position;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.NavigationMarkerPlace);
             
-            msg.AddByte((byte)map);
-            msg.AddVector3(position);
             
-            return msg;
+            msg.Write((byte)map);
+            msg.Write(position);
+            
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
-            map = (MapType)msg.GetByte();
-            position = msg.GetVector3();
+            map = (MapType)msg.ReadByte();
+            position = msg.ReadVector3();
         }
     }
     
-    public class RemoveNavMarkerNessage : ICustomMessage
+    public class RemoveNavMarkerNessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => NavigationMarkerRemove;
+
         // Empty packet. Just used to inform of removal of navigation marker.
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Unreliable, PacketType.NavigationMarkerRemove);
             
-            return msg;
+            
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
             throw new NotImplementedException();
         }

@@ -65,7 +65,7 @@ namespace NewSR2MP.Networking.Patches
                         actors[id] = __result.GetComponent<NetworkActor>();
 
 
-                    ts.interpolPeriod = 0.245f;
+                    ts.interpolPeriod = ActorTimer;
                     ts.enabled = false;
 
                     Vector3 vel = Vector3.zero;

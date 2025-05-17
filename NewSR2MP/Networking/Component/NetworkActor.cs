@@ -46,8 +46,8 @@ namespace NewSR2MP.Networking.Component
             catch { }
         }
 
-        private float transformTimer = 0;
-        public float vacTimer = 0;
+        private float transformTimer;
+        public float vacTimer;
 
         internal int startingOwner = 0;
 
@@ -96,10 +96,10 @@ namespace NewSR2MP.Networking.Component
             transformTimer -= Time.unscaledDeltaTime;
             if (transformTimer <= 0)
             {
-                transformTimer = .245f;
+                transformTimer = ActorTimer;
                 try
                 {
-                    if (MultiplayerManager.server == null && MultiplayerManager.client != null)
+                    if (ClientActive())
                     {
                     
                         var packet = new ActorUpdateClientMessage()
@@ -121,7 +121,7 @@ namespace NewSR2MP.Networking.Component
                     
                         MultiplayerManager.NetworkSend(packet);
                     }
-                    else if (MultiplayerManager.server != null)
+                    else if (ServerActive())
                     {
 
                         var packet = new ActorUpdateMessage()

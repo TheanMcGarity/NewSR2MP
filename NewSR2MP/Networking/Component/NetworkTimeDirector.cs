@@ -25,13 +25,15 @@ namespace NewSR2MP.Networking.Component
         {
             timer += Time.unscaledDeltaTime;
 
-            if (timer > .07)
+            if (timer > TimeSyncTimer)
             {
                 var msg = new TimeSyncMessage()
                 {
                     time = dir._worldModel.worldTime
                 };
                 MultiplayerManager.NetworkSend(msg);
+                
+                timer = 0;
             }
         }
     }

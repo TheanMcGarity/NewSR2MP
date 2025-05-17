@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Reflection;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppMonomiPark.ScriptedValue;
 using Main = NewSR2MP.Main;
@@ -10,6 +11,7 @@ using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.Options;
 using Il2CppMonomiPark.SlimeRancher.Pedia;
 using Il2CppMonomiPark.SlimeRancher.Player.CharacterController;
+using Il2CppMonomiPark.SlimeRancher.UI.Map;
 using Il2CppMonomiPark.SlimeRancher.UI.Refinery;
 using Il2CppMonomiPark.SlimeRancher.Util.Extensions;
 using Il2CppMonomiPark.SlimeRancher.World;
@@ -32,12 +34,29 @@ namespace NewSR2MP
     {
         public override bool Execute(string[] args)
         {
-            MultiplayerManager.Instance.Host(ushort.Parse(args[0]));
+            MultiplayerManager.Instance.Host();
             return true;
         }
 
         public override string ID => "host";
         public override string Usage => "host <port>";
+    }
+    public class DevModifySyncTimerCommand : SR2ECommand
+    {
+        public override List<string> GetAutoComplete(int argIndex, string[] args)
+        {
+            return Enum.GetNames<SyncTimerType>().ToList();
+        }
+
+        public override bool Execute(string[] args)
+        {
+            SetTimer(Enum.Parse<SyncTimerType>(args[0]), float.Parse(args[1]));
+            
+            return true;
+        }
+
+        public override string ID => "dev_modifysynctimer";
+        public override string Usage => "dev_modifysynctimer <synctype>";
     }
     public class GivePlayerCommand : SR2ECommand
     {
@@ -102,27 +121,23 @@ namespace NewSR2MP
     {
         public override bool Execute(string[] args)
         {
-            ushort port = ushort.Parse(args[1]);
-            MultiplayerManager.Instance.Connect(args[0], port);
+            MultiplayerManager.Instance.Connect(args[0]);
             return true;
         }
 
         public override string ID => "join";
-        public override string Usage => "join <ip> <port>";
+        public override string Usage => "join <code>";
     }
     public class SplitScreenDebugCommand : SR2ECommand
     {
         public override bool Execute(string[] args)
         {
-            Main.data.Player = Main.data.Debug_Player2;
-
-            ushort port = ushort.Parse(args[1]);
-            MultiplayerManager.Instance.Connect(args[0], port);
+            MultiplayerManager.Instance.Connect(args[0]);
             return true;
         }
 
         public override string ID => "debug_ss";
-        public override string Usage => "debug_ss <ip> <port>";
+        public override string Usage => "debug_ss <code>";
     }
     public static class Extentions
     {
@@ -157,10 +172,18 @@ namespace NewSR2MP
             
             CustomSettingsCreator.Create(CustomSettingsCreator.BuiltinSettingsCategory.GameSettings, AddTranslationFromSR2E("setting.mpautohost", "b.autohost", "UI"),AddTranslationFromSR2E("setting.mpautohost.desc", "b.autohostdescription", "UI"), "autoHost", 0, true, false, false, ((_,_,_) => { }), new CustomSettingsCreator.OptionValue("off",AddTranslationFromSR2E("setting.mpautohost.off", "b.autohostoff", "UI"),scriptedAutoHostPort, 0), new CustomSettingsCreator.OptionValue("val1",AddTranslationFromSR2E("setting.mpautohost.val1", "b.autohostval1", "UI"),scriptedAutoHostPort, 7777), new CustomSettingsCreator.OptionValue("val1",AddTranslationFromSR2E("setting.mpautohost.val2", "b.autohostval2", "UI"),scriptedAutoHostPort, 16500));
         }
-        
+
         public override void OnEarlyInitializeMelon()
         {
-            InitEmbeddedDLL("RiptideNetworking.dll");
+            var eosAudioPath = Path.Combine(Application.dataPath, "..", "UserLibs", "xaudio2_9redist.dll");
+            if (!File.Exists(EOS_SDK_PATH))
+            {
+                File.WriteAllBytes(EOS_SDK_PATH, ExtractResource("NewSR2MP.Networking.SatyEOS.EpicSDK.Libs.EOSSDK-Win64-Shipping.dll"));
+            }
+            //if (!File.Exists(eosAudioPath))
+            //{
+            //    File.WriteAllBytes(eosAudioPath, ExtractResource("NewSR2MP.Networking.SatyEOS.SRMP.EpicSDK.Libs.xaudio2_9redist.dll"));
+            //}
         }
 
         public static Main modInstance;
@@ -234,13 +257,22 @@ namespace NewSR2MP
                 try
                 {
                     var model = sceneContext.GameModel.landPlots[plot.id];
+                    
+                    model.typeId = plot.type;
+                    foreach (var upgrade in plot.upgrades)
+                    {
+                        model.upgrades.Add(upgrade);
+                    }
+                    
                     handlingPacket = true;
                     model.gameObj.GetComponent<LandPlotLocation>().Replace(
                         model.gameObj.GetComponentInChildren<LandPlot>(),
                         GameContext.Instance.LookupDirector._plotPrefabDict[plot.type]);
                     handlingPacket = false;
+                    
                     var lp = model.gameObj.GetComponentInChildren<LandPlot>();
                     lp.ApplyUpgrades(ConvertToIEnumerable(plot.upgrades), false);
+                    
                     var silos = model.gameObj.GetComponentsInChildren<SiloStorage>();
                     foreach (var silo in silos)
                     {
@@ -266,22 +298,25 @@ namespace NewSR2MP
                             }
                         }
                     }
-                    if (plot.type == LandPlot.Id.GARDEN)
-                    {
-                        GardenCatcher gc = lp.transform.GetComponentInChildren<GardenCatcher>(true);
 
-                        GameObject cropObj = UnityEngine.Object.Instantiate(
-                            lp.HasUpgrade(LandPlot.Upgrade.DELUXE_GARDEN)
-                                ? gc._deluxeDict[identifiableTypes[plot.cropIdent]]
-                                : gc._plantableDict[identifiableTypes[plot.cropIdent]], lp.transform.position,
-                            lp.transform.rotation);
+                    if (plot.type != Il2Cpp.LandPlot.Id.GARDEN) continue;
+                    
+                    GardenCatcher gc = lp.transform.GetComponentInChildren<GardenCatcher>(true);
 
-                        handlingPacket = true;
-                        if (gc.CanAccept(identifiableTypes[plot.cropIdent]))
-                            lp.Attach(cropObj, true, true);
-                        handlingPacket = false;
+                    var cropObj = UnityEngine.Object.Instantiate(
+                        lp.HasUpgrade(Il2Cpp.LandPlot.Upgrade.DELUXE_GARDEN)
+                            ? gc._deluxeDict[identifiableTypes[plot.cropIdent]]
+                            : gc._plantableDict[identifiableTypes[plot.cropIdent]], lp.transform.position,
+                        lp.transform.rotation);
 
-                    }
+                    model.resourceGrowerDefinition =
+                        gameContext.AutoSaveDirector.resourceGrowers.items._items.FirstOrDefault(x =>
+                            x._primaryResourceType == identifiableTypes[plot.cropIdent]);
+                    
+                    handlingPacket = true;
+                    if (gc.CanAccept(identifiableTypes[plot.cropIdent]))
+                        lp.Attach(cropObj, true, true);
+                    handlingPacket = false;
                 }
                 catch (Exception e)
                 {
@@ -289,12 +324,11 @@ namespace NewSR2MP
                 }
             }
         }
-
         public static IEnumerator OnSaveLoaded()
         {
             if (ClientActive() && !ServerActive())
             {
-                if (sceneContext.gameObject.GetComponent<NetworkTimeDirector>())
+                if (sceneContext.GetComponent<NetworkTimeDirector>())
                     sceneContext.gameObject.RemoveComponent<NetworkTimeDirector>();
 
                 LoadMessage save = latestSaveJoined;
@@ -304,7 +338,8 @@ namespace NewSR2MP
                     Quaternion.Euler(save.localPlayerSave.rot);
 
                 sceneContext.TimeDirector._worldModel.worldTime = save.time;
-
+                sceneContext.TimeDirector._timeFactor = 0;
+                
                 actors.Clear();
                 sceneContext.GameModel.identifiables.Clear();
 
@@ -352,6 +387,7 @@ namespace NewSR2MP
 
                         if (!ident.IsSceneObject && !ident.IsPlayer)
                         {
+                            SRMP.Debug($"Save data loading actor from save.initActors[{actorTotalCounter}]");
                             handlingPacket = true;
                             var obj2 = RegisterActor(new ActorId(newActor.id), ident, newActor.pos, Quaternion.identity, sceneGroups[newActor.scene]);
                             
@@ -395,7 +431,12 @@ namespace NewSR2MP
                             var playerobj = UnityEngine.Object.Instantiate(MultiplayerManager.Instance.onlinePlayerPrefab);
                             playerobj.name = $"Player{player.id}";
                             var netPlayer = playerobj.GetComponent<NetworkPlayer>();
-                            players.Add(player.id, netPlayer);
+                            players.Add(new Globals.PlayerState()
+                            {
+                                playerID = (ushort)player.id,
+                                epicID = null,
+                                gameObject = netPlayer,
+                            });
                             netPlayer.id = player.id;
                             playerobj.SetActive(true);
                             UnityEngine.Object.DontDestroyOnLoad(playerobj);
@@ -534,6 +575,10 @@ namespace NewSR2MP
                             updatedRealTime = 0,
                             updatedGameTime = 0,
                         });
+                        
+                        var activator = Resources.FindObjectsOfTypeAll<MapNodeActivator>().FirstOrDefault(x => x._fogRevealEvent._dataKey == map);
+                        if (activator)
+                            activator.StartCoroutine(activator.ActivateHologramAnimation());
                     }
                 }
                 bool completedSwitches = false;
@@ -619,10 +664,7 @@ namespace NewSR2MP
                         var def = sceneContext.PlayerState._model.upgradeModel.upgradeDefinitions.items._items
                             .FirstOrDefault(x => x._uniqueId == upgrade.Key);
 
-                        handlingPacket = true;
-                        for (int i = 0; i < upgrade.Value; i++)
-                            sceneContext.PlayerState._model.upgradeModel.IncrementUpgradeLevel(def);
-                        handlingPacket = false;
+                        sceneContext.PlayerState._model.upgradeModel.SetUpgradeLevel(def, upgrade.Value);
                     }
 
                     completedUpgrades = true;
@@ -648,7 +690,30 @@ namespace NewSR2MP
                 }
 
                 sceneContext.PlayerState.Ammo = ammo;
+
+                yield return null;
+
+                foreach (var pod in save.initPods)
+                {
+                    var id = ExtendInteger(pod.Key);
+                    if (sceneContext.GameModel.pods.TryGetValue($"pod{id}", out var podModel))
+                    {
+                        podModel.state = pod.Value;
+                        podModel.gameObj?.GetComponent<TreasurePod>().UpdateImmediate(pod.Value);
+                    }
+                    else
+                    {
+                        sceneContext.GameModel.pods.Add($"pod{id}", new TreasurePodModel
+                        {
+                            state = pod.Value,
+                            gameObj = null,
+                            spawnQueue = new Il2CppSystem.Collections.Generic.Queue<IdentifiableType>(),
+                        });
+                    }
+                }
             }
+
+            yield return null;
         }
 
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
@@ -663,14 +728,14 @@ namespace NewSR2MP
                     SRMP.Log(SR2ELanguageManger.translation("ui.discord.invite"));
                     SRMP.Log("https://discord.gg/a7wfBw5feU", 175);
                     
+                    EpicApplication.Instance.Authentication.Login("Player");
+                    
                     MultiplayerManager.Instance.GeneratePlayerModel();
                     break;
                 case "PlayerCore":        
                     MultiplayerManager.Instance.SetupPlayerAnimations();
                     break;
                 case "UICore":
-                    if (autoHostPort != 0)
-                        MultiplayerManager.Instance.Host((ushort)autoHostPort);
                     break;
                 #if SERVER
                 case "GameCore":
@@ -678,6 +743,7 @@ namespace NewSR2MP
                 #endif
             }
         }
+
 
         public static void Initialize()
         {
@@ -716,6 +782,11 @@ namespace NewSR2MP
             public string LastIP = "127.0.0.1";
             public string LastPort = "7777";
             public string LastPortHosted = "7777";
+            
+            /// <summary>
+            /// Should use steam to play or not.
+            /// </summary>
+            public bool UseSteam = false;
         }
         
     }

@@ -2,7 +2,6 @@
 using System.Collections;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Weather;
-using Riptide;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,8 +10,12 @@ using UnityEngine;
 
 namespace NewSR2MP.Networking.Packet
 {
-    public class WeatherSyncMessage : ICustomMessage
+    public class WeatherSyncMessage : IPacket
     {
+        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+
+        public PacketType Type => WeatherUpdate;
+        
         public const float BUG_CHECK = 3.5f;
 
         public float timeStarted;
@@ -75,16 +78,16 @@ namespace NewSR2MP.Networking.Packet
         
         public NetworkWeatherModel sync;
         
-        public Message Serialize()
+        public void Serialize(OutgoingMessage msg)
         {
-            Message msg = Message.Create(MessageSendMode.Reliable, PacketType.WeatherUpdate);
+            
 
             sync.Write(msg);
             
-            return msg;
+            
         }
 
-        public void Deserialize(Message msg)
+        public void Deserialize(IncomingMessage msg)
         {
             sync = new NetworkWeatherModel();
             sync.Read(msg);
@@ -94,22 +97,22 @@ namespace NewSR2MP.Networking.Packet
     {
         public Dictionary<byte, NetworkWeatherZoneData> zones;
         
-        public void Write(Message msg)
+        public void Write(OutgoingMessage msg)
         {
-            msg.AddInt(zones.Count);
+            msg.Write(zones.Count);
             foreach (var zone in zones)
             {
-                msg.AddByte(zone.Key);
+                msg.Write(zone.Key);
                 zone.Value.Write(msg);
             }
         }
-        public void Read(Message msg)
+        public void Read(IncomingMessage msg)
         {
-            var c = msg.GetInt();
+            var c = msg.ReadInt32();
             zones = new Dictionary<byte, NetworkWeatherZoneData>();
             for (var i = 0; i < c; i++)
             {
-                var id = msg.GetByte();
+                var id = msg.ReadByte();
                 var data = new NetworkWeatherZoneData();
 
                 data.Read(msg);
@@ -127,15 +130,15 @@ namespace NewSR2MP.Networking.Packet
 
         public bool started;
         
-        public void Write(Message msg)
+        public void Write(OutgoingMessage msg)
         {
-            msg.AddInt(weatherStatesReverseLookup[state.name]);
-            msg.AddBool(started);
+            msg.Write(weatherStatesReverseLookup[state.name]);
+            msg.Write(started);
         }
-        public void Read(Message msg)
+        public void Read(IncomingMessage msg)
         {
-            state = weatherStates[msg.GetInt()];
-            started = msg.GetBool();
+            state = weatherStates[msg.ReadInt32()];
+            started = msg.ReadBoolean();
         }
     }
     
@@ -144,18 +147,18 @@ namespace NewSR2MP.Networking.Packet
         public List<NetworkWeatherForcast> forcast;
         
         public Vector3 windSpeed;
-        public void Write(Message msg)
+        public void Write(OutgoingMessage msg)
         {
-            msg.AddInt(forcast.Count);
+            msg.Write(forcast.Count);
             foreach (var f in forcast)
             {
                 f.Write(msg);
             }
-            msg.AddVector3(windSpeed);
+            msg.Write(windSpeed);
         }
-        public void Read(Message msg)
+        public void Read(IncomingMessage msg)
         {
-            var c = msg.GetInt();
+            var c = msg.ReadInt32();
             forcast = new List<NetworkWeatherForcast>();
             for (var i = 0; i < c; i++)
             {
@@ -164,7 +167,7 @@ namespace NewSR2MP.Networking.Packet
                 forcast.Add(f);
             }
 
-            windSpeed = msg.GetVector3();
+            windSpeed = msg.ReadVector3();
         }
     }
 }
