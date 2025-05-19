@@ -19,7 +19,7 @@ ui.restartgame,"Restart your game to apply!","Starte dein Spiel neu, um die Änd
 steam.ui.turnon,"Enable Steam (Easy Connect)","Benutze Steam (Zum einfachen verbinden)","","Activer Steam (Connexion Facile)","","Włacz Steam (Łatwe Dołączanie)"
 steam.ui.turnoff,"Disable Steam","Schalte Steam aus","","Désactiver Steam","","Wyłacz Steam"
 steam.ui.invite,"Invite using Steam","Lade über Steam ein","","Inviter par Steam","","Zaproś przez Steam"
-steam.ui.servercode,"Server code: $1","Server-Code: $1","","Code serveur: $1","","Kod serwera: $1"
+steam.ui.servercode,"Server code: $1","Server-Code: $1","","Code serveur: $1","Код сервера: $1","Kod serwera: $1"
 steam.ui.joinusingcode,"Join using Server Code","Verbinde mit einem Server-Code","","Rejoindre par code serveur","","Dołącz za pomocą kodu"
 steam.ui.waitforinvite,"You can also wait for an invite!","Du kannst auch auf eine Einladung warten!","","Vous pouvez également attendre une invitation!","","Możesz poczekać na zaproszenie!"
 button.multiplayer,"Multiplayer","","","","","Tryb wieloosobowy"
