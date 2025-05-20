@@ -178,11 +178,11 @@ namespace NewSR2MP
             var eosAudioPath = Path.Combine(Application.dataPath, "..", "UserLibs", "xaudio2_9redist.dll");
             if (!File.Exists(EOS_SDK_PATH))
             {
-                File.WriteAllBytes(EOS_SDK_PATH, ExtractResource("NewSR2MP.Networking.SatyEOS.EpicSDK.Libs.EOSSDK-Win64-Shipping.dll"));
+                File.WriteAllBytes(EOS_SDK_PATH, ExtractResource("NewSR2MP.SatyEOS.EpicSDK.Libs.EOSSDK-Win64-Shipping.dll"));
             }
             //if (!File.Exists(eosAudioPath))
             //{
-            //    File.WriteAllBytes(eosAudioPath, ExtractResource("NewSR2MP.Networking.SatyEOS.SRMP.EpicSDK.Libs.xaudio2_9redist.dll"));
+            //    File.WriteAllBytes(eosAudioPath, ExtractResource("NewSR2MP.SatyEOS.SRMP.EpicSDK.Libs.xaudio2_9redist.dll"));
             //}
         }
 

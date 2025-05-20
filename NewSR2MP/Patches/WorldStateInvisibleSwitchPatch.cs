@@ -1,10 +1,10 @@
 ﻿using HarmonyLib;
 using Il2CppMonomiPark.SlimeRancher.World;
 using Il2CppXGamingRuntime.Interop;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
+using NewSR2MP.Component;
+using NewSR2MP.Packet;
 
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(WorldStateInvisibleSwitch), nameof(WorldStateInvisibleSwitch.SetStateForAll))]
     internal class WorldStateInvisibleSwitchSetStateForAll

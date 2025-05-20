@@ -1,4 +1,4 @@
-namespace NewSR2MP.Networking.Patches;
+namespace NewSR2MP.Patches;
 
 public class Il2CppErrorPatch
 {

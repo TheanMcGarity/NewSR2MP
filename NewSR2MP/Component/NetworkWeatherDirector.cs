@@ -1,6 +1,6 @@
-
+﻿
 using Il2CppMonomiPark.SlimeRancher.Weather;
-using NewSR2MP.Networking.Packet;
+using NewSR2MP.Packet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace NewSR2MP.Networking.Component
+namespace NewSR2MP.Component
 {
     [RegisterTypeInIl2Cpp(false)]
     public class NetworkWeatherDirector : MonoBehaviour

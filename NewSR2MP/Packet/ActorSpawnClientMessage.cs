@@ -1,8 +1,8 @@
-
+﻿
 using Il2CppMonomiPark.SlimeRancher.Regions;
 using UnityEngine;
 
-namespace NewSR2MP.Networking.Packet
+namespace NewSR2MP.Packet
 {
     public class ActorSpawnClientMessage : IPacket
     {

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace NewSR2MP.Networking.Component
+namespace NewSR2MP.Component
 {
     [RegisterTypeInIl2Cpp(false)]
     public class TransformSmoother : MonoBehaviour

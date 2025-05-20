@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 using HarmonyLib;
 
 using Il2CppMonomiPark.SlimeRancher.DataModel;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
+using NewSR2MP.Component;
+using NewSR2MP.Packet;
 using UnityEngine;
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(GordoEat), nameof(GordoEat.DoEat))]
     public class GordoDoEat

@@ -1,4 +1,4 @@
-
+﻿
 using Il2CppMonomiPark.SlimeRancher.Regions;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Epic.OnlineServices.P2P;
 using UnityEngine;
 
-namespace NewSR2MP.Networking.Packet
+namespace NewSR2MP.Packet
 {
     public class GardenPlantMessage : IPacket
     {        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;

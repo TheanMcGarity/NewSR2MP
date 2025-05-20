@@ -1,9 +1,9 @@
-
+﻿
 using Il2CppMonomiPark.SlimeRancher.Persist;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
-using NewSR2MP.Networking.Patches;
-using NewSR2MP.Networking.SaveModels;
+using NewSR2MP.Component;
+using NewSR2MP.Packet;
+using NewSR2MP.Patches;
+using NewSR2MP.SaveModels;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,7 +21,7 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 
-namespace NewSR2MP.Networking
+namespace NewSR2MP
 {
     public struct NetGameInitialSettings
     {

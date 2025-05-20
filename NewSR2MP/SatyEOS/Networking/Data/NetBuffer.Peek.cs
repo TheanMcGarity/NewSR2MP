@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace NewSR2MP.Networking.Data
+namespace NewSR2MP.Data
 {
     public partial class NetBuffer
     {

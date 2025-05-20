@@ -1,4 +1,4 @@
-﻿using NewSR2MP.Networking.Data;
+﻿using NewSR2MP.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Epic.OnlineServices.P2P;
 
-namespace NewSR2MP.Networking
+namespace NewSR2MP
 {
     public interface IPacket
     {

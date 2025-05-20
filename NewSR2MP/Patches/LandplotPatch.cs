@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 using HarmonyLib;
 
 using Il2CppMonomiPark.SlimeRancher.DataModel;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
+using NewSR2MP.Component;
+using NewSR2MP.Packet;
 using UnityEngine;
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(LandPlot), nameof(Il2Cpp.LandPlot.AddUpgrade))]
     public class LandPlotApplyUpgrades

@@ -1,5 +1,5 @@
 using Il2CppMonomiPark.SlimeRancher.Weather;
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(WeatherRegistry), nameof(WeatherRegistry.Awake))]
     public class WeatherRegistryAwake

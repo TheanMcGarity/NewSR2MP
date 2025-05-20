@@ -1,4 +1,4 @@
-using Epic.OnlineServices.P2P;
+﻿using Epic.OnlineServices.P2P;
 using NewSR2MP.EpicSDK;
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NewSR2MP.Networking
+namespace NewSR2MP
 {
     public static class NetworkingExtensions
     {

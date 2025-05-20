@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NewSR2MP.Networking.Data
+namespace NewSR2MP.Data
 {
     public class OutgoingMessage : NetBuffer
     {

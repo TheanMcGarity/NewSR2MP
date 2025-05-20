@@ -1,6 +1,6 @@
 ﻿using HarmonyLib;
 
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(Ammo), nameof(Ammo.MaybeAddToSpecificSlot), typeof(IdentifiableType), typeof(Identifiable), typeof(int), typeof(int), typeof(bool))]
     public class AmmoMaybeAddToSpecificSlot

@@ -1,14 +1,14 @@
 ﻿using HarmonyLib;
 
 using NewSR2MP;
-using NewSR2MP.Networking;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
+using NewSR2MP;
+using NewSR2MP.Component;
+using NewSR2MP.Packet;
 using System;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.UI.Map;
 
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(Il2Cpp.PlayerState), nameof(Il2Cpp.PlayerState.AddCurrency))]
     internal class PlayerStateAddCurrency

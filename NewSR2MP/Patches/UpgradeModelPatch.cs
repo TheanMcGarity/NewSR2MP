@@ -1,6 +1,6 @@
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 
-namespace NewSR2MP.Networking.Patches;
+namespace NewSR2MP.Patches;
 
 [HarmonyPatch(typeof(UpgradeModel), nameof(UpgradeModel.IncrementUpgradeLevel))]
 internal class UpgradeModelIncrementUpgradeLevel

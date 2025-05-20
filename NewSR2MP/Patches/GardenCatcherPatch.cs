@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
-namespace NewSR2MP.Networking.Patches
+using NewSR2MP.Component;
+using NewSR2MP.Packet;
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(GardenCatcher),nameof(GardenCatcher.Plant))]
     public class GardenCatcherPlant

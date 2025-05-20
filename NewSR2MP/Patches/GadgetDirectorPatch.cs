@@ -1,7 +1,7 @@
 using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.SlimeRancher.World;
 
-namespace NewSR2MP.Networking.Patches;
+namespace NewSR2MP.Patches;
 [HarmonyPatch(typeof(GadgetDirector), nameof(GadgetDirector.InstantiateGadget))]
 public class GadgetDirectorInstantiateGadget
 {

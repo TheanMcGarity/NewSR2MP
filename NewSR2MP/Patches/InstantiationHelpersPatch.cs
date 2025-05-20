@@ -4,7 +4,7 @@ using Il2CppMonomiPark.SlimeRancher.SceneManagement;
 using Il2CppMonomiPark.SlimeRancher.World;
 using UnityEngine;
 
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     internal static class ActorSpawnHelper
     {

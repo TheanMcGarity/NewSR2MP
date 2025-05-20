@@ -1,5 +1,5 @@
-
-using NewSR2MP.Networking.Packet;
+﻿
+using NewSR2MP.Packet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
 using UnityEngine;
 
-namespace NewSR2MP.Networking.Component
+namespace NewSR2MP.Component
 {
     // Just a toggle thing
     [RegisterTypeInIl2Cpp(false)]

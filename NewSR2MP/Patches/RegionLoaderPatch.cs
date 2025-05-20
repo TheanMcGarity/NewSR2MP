@@ -8,12 +8,12 @@ using HarmonyLib;
 using Il2CppInterop.Runtime.Runtime;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Regions;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
+using NewSR2MP.Component;
+using NewSR2MP.Packet;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(RegionLoader), nameof(RegionLoader.UpdateHibernated))]
     public class RegionLoaderUpdateHibernated

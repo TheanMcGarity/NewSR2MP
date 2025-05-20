@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace NewSR2MP.Networking.Packet
+namespace NewSR2MP.Packet
 {
     public class WeatherSyncMessage : IPacket
     {

@@ -1,7 +1,7 @@
 ﻿using Il2CppMonomiPark.SlimeRancher.Persist;
 using System.IO;
 
-namespace NewSR2MP.Networking.SaveModels
+namespace NewSR2MP.SaveModels
 {
 
     // To future self; make sure you use VersionedPersistedDataSet<NetworkV01> for upgrading the network version

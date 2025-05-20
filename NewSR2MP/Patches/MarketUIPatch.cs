@@ -1,6 +1,6 @@
 using Il2CppMonomiPark.SlimeRancher.UI;
 
-namespace NewSR2MP.Networking.Patches;
+namespace NewSR2MP.Patches;
 
 [HarmonyPatch(typeof(MarketUI), nameof(MarketUI.Awake))]
 public class MarketUIAwake

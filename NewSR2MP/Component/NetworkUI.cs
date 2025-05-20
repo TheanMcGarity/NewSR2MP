@@ -1,6 +1,6 @@
 using SR2E.Managers;
 
-namespace NewSR2MP.Networking.Component;
+namespace NewSR2MP.Component;
 
 [RegisterTypeInIl2Cpp(false)]
 public class NetworkUI : MonoBehaviour

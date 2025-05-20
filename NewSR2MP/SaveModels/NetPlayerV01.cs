@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using UnityEngine;
-namespace NewSR2MP.Networking.SaveModels
+namespace NewSR2MP.SaveModels
 {
     /// <summary>
     /// TODO: Add health, stamina, and rads.

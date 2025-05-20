@@ -12,7 +12,7 @@ using Il2CppSystem.Data.Common;
 using Il2CppTMPro;
 using Il2CppXGamingRuntime.Interop;
 using NewSR2MP.Attributes;
-using NewSR2MP.Networking.Patches;
+using NewSR2MP.Patches;
 using SRMP.Enums;
 using Unity.Mathematics;
 using UnityEngine;
@@ -20,7 +20,7 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 
-namespace NewSR2MP.Networking;
+namespace NewSR2MP;
 
 public partial class NetworkHandler
 {

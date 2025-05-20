@@ -1,7 +1,7 @@
-using Il2CppMonomiPark.SlimeRancher.World;
+﻿using Il2CppMonomiPark.SlimeRancher.World;
 using UnityEngine;
 
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(Destroyer), nameof(Destroyer.DestroyActor), typeof(GameObject), typeof(string), typeof(bool))]
     public class DestroyerDestroyActor

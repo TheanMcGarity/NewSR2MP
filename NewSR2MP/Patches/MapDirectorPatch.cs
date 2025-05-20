@@ -1,5 +1,5 @@
 using Il2CppMonomiPark.SlimeRancher.Map;
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(MapDirector), nameof(MapDirector.SetPlayerNavigationMarker))]
     internal class MapDirectorSetPlayerNavigationMarker

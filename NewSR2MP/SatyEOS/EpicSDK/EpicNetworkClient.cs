@@ -1,8 +1,8 @@
 ﻿using Epic.OnlineServices;
 using Epic.OnlineServices.P2P;
 using SRMP.Enums;
-using NewSR2MP.Networking;
-using NewSR2MP.Networking.Data;
+using NewSR2MP;
+using NewSR2MP.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;

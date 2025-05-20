@@ -1,7 +1,7 @@
 using SR2E;
 using SR2E.Buttons;
 
-namespace NewSR2MP.Networking.Patches;
+namespace NewSR2MP.Patches;
 
 //[HarmonyPatch(typeof(GameContext), nameof(GameContext.Start))]
 public class GameContextStart

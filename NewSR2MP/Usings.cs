@@ -1,12 +1,12 @@
 global using Il2Cpp;
 
 global using NewSR2MP;
-global using NewSR2MP.Networking;
+global using NewSR2MP;
 global using NewSR2MP.EpicSDK;
-global using NewSR2MP.Networking.Data;
-global using NewSR2MP.Networking.Component;
-global using NewSR2MP.Networking.Packet;
-global using NewSR2MP.Networking.SaveModels;
+global using NewSR2MP.Data;
+global using NewSR2MP.Component;
+global using NewSR2MP.Packet;
+global using NewSR2MP.SaveModels;
 global using Il2CppMonomiPark;
 global using Il2CppMonomiPark.SlimeRancher;
 global using MelonLoader;
@@ -27,4 +27,4 @@ global using GameBinaryWriter = Il2CppSystem.IO.BinaryWriter;
 global using GameStream = Il2CppSystem.IO.FileStream;
 global using CppFile = Il2CppSystem.IO.File;
 
-global using handler = NewSR2MP.Networking.NetworkHandler;
+global using handler = NewSR2MP.NetworkHandler;

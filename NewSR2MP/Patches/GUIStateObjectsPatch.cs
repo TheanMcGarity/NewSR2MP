@@ -1,6 +1,6 @@
 using HarmonyLib;
 using UnityEngine;
-namespace NewSR2MP.Networking.Patches;
+namespace NewSR2MP.Patches;
 
 [HarmonyPatch(typeof(UnityEngine.GUIStateObjects))]
 internal static class GUIStateObjectsMultiPatch

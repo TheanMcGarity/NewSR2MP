@@ -1,13 +1,13 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
 
-using NewSR2MP.Networking.Component;
+using NewSR2MP.Component;
 using UnityEngine;
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(SiloStorage), nameof(SiloStorage.InitAmmo))]
     public class SiloStorageInitAmmo

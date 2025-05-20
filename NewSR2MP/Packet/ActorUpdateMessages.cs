@@ -1,4 +1,4 @@
-
+﻿
 using Il2CppMonomiPark.SlimeRancher.Regions;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace NewSR2MP.Networking.Packet
+namespace NewSR2MP.Packet
 {
     public struct NetworkEmotions
     {

@@ -1,6 +1,6 @@
-using Il2CppSystem.Xml;
+﻿using Il2CppSystem.Xml;
 
-namespace NewSR2MP.Networking.Packet
+namespace NewSR2MP.Packet
 {
     public class RefineryItemMessage : IPacket
     {

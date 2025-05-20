@@ -1,11 +1,11 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using Il2CppMonomiPark.SlimeRancher.UI;
 using Il2CppMonomiPark.SlimeRancher.UI.Pause;
 
-using NewSR2MP.Networking;
-using NewSR2MP.Networking.Packet;
+using NewSR2MP;
+using NewSR2MP.Packet;
 
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(QuitPauseItemModel), nameof(QuitPauseItemModel.InvokeBehavior))]
     internal class PauseMenuQuit

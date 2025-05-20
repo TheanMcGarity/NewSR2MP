@@ -1,7 +1,7 @@
 using Il2CppSystem.Text;
 using Il2CppSystem.IO;
 
-namespace NewSR2MP.Networking.SaveModels
+namespace NewSR2MP.SaveModels
 {
     public class NetworkPersistedDataSet
     {

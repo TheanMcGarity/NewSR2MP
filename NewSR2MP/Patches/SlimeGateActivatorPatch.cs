@@ -1,7 +1,7 @@
-using HarmonyLib;
-using NewSR2MP.Networking.Packet;
+﻿using HarmonyLib;
+using NewSR2MP.Packet;
 
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(SlimeGateActivator), nameof(SlimeGateActivator.Activate))]
     internal class SlimeGateActivatorActivate

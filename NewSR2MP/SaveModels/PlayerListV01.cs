@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NewSR2MP.Networking.SaveModels
+namespace NewSR2MP.SaveModels
 {
     
     public class PlayerListV01 : NetworkPersistedDataSet

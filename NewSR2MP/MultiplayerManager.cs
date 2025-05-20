@@ -1,4 +1,4 @@
-
+﻿
 using System.Collections;
 using System.Reflection;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
@@ -14,13 +14,13 @@ using Il2CppMonomiPark.UnitPropertySystem;
 using Il2CppMonomiPark.World;
 using Il2CppTMPro;
 using NewSR2MP.EpicSDK;
-using NewSR2MP.Networking.Patches;
+using NewSR2MP.Patches;
 using SR2E;
 using SR2E.Managers;
 using SR2E.Menus;
 using UnityEngine.Serialization;
 
-namespace NewSR2MP.Networking
+namespace NewSR2MP
 {
     [RegisterTypeInIl2Cpp(false)]
     public partial class MultiplayerManager : SRBehaviour

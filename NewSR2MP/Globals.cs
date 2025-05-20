@@ -20,7 +20,7 @@ using Il2CppMonomiPark.SlimeRancher.Weather;
 using Il2CppMonomiPark.SlimeRancher.World;
 using Il2CppMonomiPark.UnitPropertySystem;
 using Il2CppSystem.Net.WebSockets;
-using NewSR2MP.Networking.SaveModels;
+using NewSR2MP.SaveModels;
 using SR2E;
 using SR2E.Managers;
 using SRMP.Enums;

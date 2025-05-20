@@ -1,7 +1,7 @@
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Player.CharacterController;
 
-namespace NewSR2MP.Networking.Packet;
+namespace NewSR2MP.Packet;
 
 [HarmonyPatch(typeof(SRCharacterController),nameof(SRCharacterController.Awake))]
 public class SRCharacterControllerAwake

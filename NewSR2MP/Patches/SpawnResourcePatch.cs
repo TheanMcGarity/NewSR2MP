@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 
 
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(SpawnResource), nameof(SpawnResource.Awake))]
     internal class SpawnResourceAwake

@@ -2,9 +2,9 @@
 
 
 using Il2CppMonomiPark.SlimeRancher.Persist;
-using NewSR2MP.Networking.Component;
-using NewSR2MP.Networking.Packet;
-using NewSR2MP.Networking.SaveModels;
+using NewSR2MP.Component;
+using NewSR2MP.Packet;
+using NewSR2MP.SaveModels;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,7 +13,7 @@ using Il2CppMonomiPark.SlimeRancher.Pedia;
 using UnityEngine;
 
 
-namespace NewSR2MP.Networking.Patches
+namespace NewSR2MP.Patches
 {
     [HarmonyPatch(typeof(AutoSaveDirector), nameof(AutoSaveDirector.Load),typeof(Il2CppSystem.IO.Stream),typeof(string),typeof(string),typeof(bool))]
     public class AutoSaveDirectorLoadSave
