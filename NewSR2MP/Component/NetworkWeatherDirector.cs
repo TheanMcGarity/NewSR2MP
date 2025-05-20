@@ -1,4 +1,4 @@
-﻿
+
 using Il2CppMonomiPark.SlimeRancher.Weather;
 using NewSR2MP.Networking.Packet;
 using System;

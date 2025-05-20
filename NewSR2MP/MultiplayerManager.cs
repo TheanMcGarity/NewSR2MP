@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections;
 using System.Reflection;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;

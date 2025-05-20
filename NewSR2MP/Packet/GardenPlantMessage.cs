@@ -1,4 +1,4 @@
-﻿
+
 using Il2CppMonomiPark.SlimeRancher.Regions;
 using System.Collections.Generic;
 using System.Linq;

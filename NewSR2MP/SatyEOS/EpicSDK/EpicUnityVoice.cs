@@ -1,4 +1,4 @@
-﻿/*using Epic.OnlineServices;
+/*using Epic.OnlineServices;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

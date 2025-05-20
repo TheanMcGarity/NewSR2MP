@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 
 using NewSR2MP;
 using NewSR2MP.Networking;

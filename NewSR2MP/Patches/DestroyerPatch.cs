@@ -1,4 +1,4 @@
-﻿using Il2CppMonomiPark.SlimeRancher.World;
+using Il2CppMonomiPark.SlimeRancher.World;
 using UnityEngine;
 
 namespace NewSR2MP.Networking.Patches

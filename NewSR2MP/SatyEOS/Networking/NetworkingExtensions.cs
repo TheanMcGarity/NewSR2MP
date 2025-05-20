@@ -1,4 +1,4 @@
-﻿using Epic.OnlineServices.P2P;
+using Epic.OnlineServices.P2P;
 using NewSR2MP.EpicSDK;
 using System;
 using System.Collections.Generic;

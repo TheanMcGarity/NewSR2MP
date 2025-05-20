@@ -1,4 +1,4 @@
-﻿
+
 using Il2CppMonomiPark.SlimeRancher.Persist;
 using NewSR2MP.Networking.Component;
 using NewSR2MP.Networking.Packet;

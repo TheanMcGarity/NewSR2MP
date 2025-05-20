@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using NewSR2MP.Networking.Packet;
 
 namespace NewSR2MP.Networking.Patches

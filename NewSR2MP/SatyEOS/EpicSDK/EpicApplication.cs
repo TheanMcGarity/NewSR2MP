@@ -1,4 +1,4 @@
-﻿using Epic.OnlineServices;
+using Epic.OnlineServices;
 using Epic.OnlineServices.Connect;
 using Epic.OnlineServices.IntegratedPlatform;
 using Epic.OnlineServices.Logging;

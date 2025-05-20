@@ -1,4 +1,4 @@
-﻿using Epic.OnlineServices;
+using Epic.OnlineServices;
 using Epic.OnlineServices.P2P;
 using NewSR2MP.Networking.Data;
 using NewSR2MP.Networking;

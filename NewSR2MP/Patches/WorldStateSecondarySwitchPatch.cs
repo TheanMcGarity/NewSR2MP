@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using Il2CppXGamingRuntime.Interop;
 using NewSR2MP.Networking.Component;
 using NewSR2MP.Networking.Packet;

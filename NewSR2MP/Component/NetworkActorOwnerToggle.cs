@@ -1,4 +1,4 @@
-﻿
+
 using NewSR2MP.Networking.Packet;
 using System;
 using System.Collections.Generic;

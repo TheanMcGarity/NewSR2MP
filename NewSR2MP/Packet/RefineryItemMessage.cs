@@ -1,4 +1,4 @@
-﻿using Il2CppSystem.Xml;
+using Il2CppSystem.Xml;
 
 namespace NewSR2MP.Networking.Packet
 {

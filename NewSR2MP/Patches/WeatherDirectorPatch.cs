@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using Il2CppMonomiPark.SlimeRancher.UI.AccessDoor;
 using Il2CppMonomiPark.SlimeRancher.Weather;
 using NewSR2MP.Networking.Packet;

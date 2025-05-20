@@ -1,4 +1,4 @@
-﻿using Il2CppMonomiPark.SlimeRancher.Analytics.Event;
+using Il2CppMonomiPark.SlimeRancher.Analytics.Event;
 using Il2CppMonomiPark.SlimeRancher.DataModel;
 using Il2CppMonomiPark.SlimeRancher.Event;
 using Il2CppMonomiPark.SlimeRancher.Map;

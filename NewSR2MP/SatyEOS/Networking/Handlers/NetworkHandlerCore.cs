@@ -1,4 +1,4 @@
-﻿using NewSR2MP.Attributes;
+using NewSR2MP.Attributes;
 using NewSR2MP.Networking;
 using NewSR2MP.Networking.Data;
 using System;
