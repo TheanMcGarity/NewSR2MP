@@ -35,7 +35,7 @@ namespace NewSR2MP.SaveModels
             writer.Write(sharedKeys);
             writer.Write(sharedUpgrades);
 
-            savedPlayers.Write(stream);
+            savedPlayers.Write(writer);
         }
     }
 }

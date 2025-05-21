@@ -276,8 +276,6 @@ namespace NewSR2MP
 
         public static void DoNetworkSave()
         {
-            return; // its broken rn
-            
             foreach (var player in players)
             {
                 if (player.playerID == ushort.MaxValue)

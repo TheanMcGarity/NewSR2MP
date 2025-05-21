@@ -25,9 +25,14 @@ namespace NewSR2MP.Patches
             var path = Path.Combine(GameContext.Instance.AutoSaveDirector.StorageProvider.Cast<FileStorageProvider>().savePath, "MultiplayerSaves", $"{gameName}.srmp");
             var networkGame = new NetworkV01();
 
-            GameStream fs = CppFile.Open(path, Il2CppSystem.IO.FileMode.OpenOrCreate);
-            try { networkGame.Load(fs); } catch { }
-            fs.Dispose();
+            if (File.Exists(path))
+            {
+                GameStream fs = CppFile.Open(path, Il2CppSystem.IO.FileMode.Open);
+                
+                try { networkGame.Load(fs); } catch (Exception e) { SRMP.Error($"Error loading multiplayer save file: {e}"); }
+                
+                fs.Dispose();
+            }
             
             savedGame = networkGame;
             savedGamePath = path;

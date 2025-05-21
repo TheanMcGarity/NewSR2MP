@@ -37,7 +37,7 @@ namespace NewSR2MP.SaveModels
             foreach (var player in playerList)
             {
                 writer.Write(player.Key.ToString());
-                player.Value.Write(stream);
+                player.Value.Write(writer);
             }
         }
 

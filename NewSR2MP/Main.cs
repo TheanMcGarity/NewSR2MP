@@ -141,9 +141,9 @@ namespace NewSR2MP
     }
     public static class Extentions
     {
-        public static void RemoveComponent<T>(this GameObject go) where T : Component => UnityEngine.Object.Destroy(go.GetComponent<T>());
+        public static void RemoveComponent<T>(this GameObject go) where T : UnityEngine.Component => UnityEngine.Object.Destroy(go.GetComponent<T>());
 
-        public static bool TryRemoveComponent<T>(this GameObject go) where T : Component
+        public static bool TryRemoveComponent<T>(this GameObject go) where T : UnityEngine.Component
         {
             T component = go.GetComponent<T>();
             
@@ -681,9 +681,15 @@ namespace NewSR2MP
 
                 try
                 {
-                    ammo._ammoModel.slots =
-                        new Il2CppReferenceArray<Ammo.Slot>(MultiplayerAmmoDataToSlots(save.localPlayerSave.ammo,
-                            ammo.Slots.Count));
+                    int i = 0;
+                    //ammo._ammoModel.slots =
+                    //    new Il2CppReferenceArray<Ammo.Slot>(MultiplayerAmmoDataToSlots(save.localPlayerSave.ammo,
+                    //        ammo.Slots.Count));
+                    foreach (var slot in save.localPlayerSave.ammo)
+                    {
+                        ammo.MaybeAddToSpecificSlot(identifiableTypes[slot.id], null, i, slot.count, true);
+                        i++;
+                    }
                 }
                 catch
                 {

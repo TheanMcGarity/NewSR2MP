@@ -790,11 +790,12 @@ namespace NewSR2MP
             Ammo.Slot[] array = new Ammo.Slot[ammo.Count];
             for (int i = 0; i < slotCount; i++)
             {
-                var slot = new Ammo.Slot();
-
-                slot.Count = ammo[i].count;
-                slot._id = identifiableTypes[ammo[i].id];
-                slot.Emotions = new float4(0, 0, 0, 0);
+                array[i] = new Ammo.Slot
+                {
+                    Count = ammo[i].count,
+                    _id = identifiableTypes[ammo[i].id],
+                    Emotions = new float4(0, 0, 0, 0)
+                };
             }
 
             return array;

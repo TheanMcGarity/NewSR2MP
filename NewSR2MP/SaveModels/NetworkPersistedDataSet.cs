@@ -23,6 +23,19 @@ namespace NewSR2MP.SaveModels
             
             binaryWriter.Dispose();
         }
+        public void Write(GameBinaryWriter writer)
+        {
+            stream = writer.BaseStream;
+            
+            Encoding utf = Encoding.UTF8;
+            
+            writer.Write(Identifier);
+            writer.Write(Version);
+            
+            WriteData(writer);
+            
+            writer.Dispose();
+        }
 
         public virtual void WriteData(GameBinaryWriter binaryWriter)
         {
