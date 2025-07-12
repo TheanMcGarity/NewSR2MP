@@ -178,29 +178,9 @@ namespace NewSR2MP.Packet
             velocity = msg.ReadVector3();
         }
     }
-    public class ActorChangeHeldOwnerMessage : IPacket // Largo holder change message.
-    {
-        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
-
-        public PacketType Type => ActorHeldOwner;
-
-        public long id;
-        
-        public void Serialize(OutgoingMessage msg)
-        {
-            
-            msg.Write(id);
-            
-        }
-
-        public void Deserialize(IncomingMessage msg)
-        {
-            // no
-        }
-    }
     public class ActorDestroyGlobalMessage : IPacket // Destroy message. Runs on both client and server (Global)
     {
-        public PacketReliability Reliability => PacketReliability.UnreliableUnordered;
+        public PacketReliability Reliability => PacketReliability.ReliableUnordered;
 
         public PacketType Type => ActorDestroy;
 
