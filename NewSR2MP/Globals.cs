@@ -26,7 +26,6 @@ using SR2E.Managers;
 using SRMP.Enums;
 using Unity.Mathematics;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace NewSR2MP
 {

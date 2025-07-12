@@ -18,7 +18,6 @@ using NewSR2MP.EpicSDK;
 using SRMP.Enums;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
 
 
 namespace NewSR2MP

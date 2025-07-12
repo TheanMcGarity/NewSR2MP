@@ -27,4 +27,4 @@ global using GameBinaryWriter = Il2CppSystem.IO.BinaryWriter;
 global using GameStream = Il2CppSystem.IO.FileStream;
 global using CppFile = Il2CppSystem.IO.File;
 
-global using handler = NewSR2MP.NetworkHandler;
+global using Object = UnityEngine.Object;

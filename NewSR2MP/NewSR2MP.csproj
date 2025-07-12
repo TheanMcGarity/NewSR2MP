@@ -1232,6 +1232,10 @@
       <Compile Remove="Networking\SatyEOS\EpicSDK\Generated\Mods\UpdateModOptions.cs" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="SatyEOS\Networking\Handlers\" />
+    </ItemGroup>
+
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
       <Exec Command="&quot;$(ProjectDir)../VersionHandler/bin/Debug/net9.0/VersionHandler.exe&quot;" />
     </Target>

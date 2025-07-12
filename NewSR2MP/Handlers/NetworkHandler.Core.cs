@@ -91,5 +91,9 @@ namespace NewSR2MP
             {
             }
         }
+        private static void HandleSaveReceived(NetPlayerState netPlayer, LoadMessage packet, byte channel)
+        {
+            latestSaveJoined = packet;
+        }
     }
 }
