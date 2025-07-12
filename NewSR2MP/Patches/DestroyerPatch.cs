@@ -17,7 +17,7 @@ namespace NewSR2MP.Patches
                     {
                         return false;
                     }
-                    else if (source.Equals("SlimeFeral.Awake"))
+                    if (source.Equals("SlimeFeral.Awake"))
                     {
                         return false;
                     }

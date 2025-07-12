@@ -14,11 +14,11 @@ using System.Resources;
 [assembly: AssemblyCulture("")]
 
 // Version information 
-[assembly: AssemblyVersion("0.0.0.773")]
-[assembly: AssemblyFileVersion("0.0.0.773")]
+[assembly: AssemblyVersion("0.0.0.777")]
+[assembly: AssemblyFileVersion("0.0.0.777")]
 [assembly: NeutralResourcesLanguage( "en-US" )]
 
 [assembly: MelonGame("MonomiPark", "SlimeRancher2")]
-[assembly: MelonInfo(typeof(NewSR2MP.Main),"New SR2MP", "773", "PinkTarr")]
+[assembly: MelonInfo(typeof(NewSR2MP.Main),"New SR2MP", "777", "PinkTarr")]
 [assembly: SR2E.Expansion.SR2EExpansion]
 [assembly: MelonOptionalDependencies("RiptideNetworking.dll")]

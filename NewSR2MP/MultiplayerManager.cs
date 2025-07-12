@@ -184,25 +184,15 @@ namespace NewSR2MP
 
 
                 // Gordos
-                foreach (var g in Resources.FindObjectsOfTypeAll<GordoEat>())
+                foreach (var g in sceneContext.GameModel.gordos)
                 {
-                    try
+                    gordos.Add(new InitGordoData()
                     {
-                        if (g.gameObject.hideFlags != HideFlags.HideAndDontSave && g.gameObject.scene.name != "")
-                        {
-
-                        }
-
-                        InitGordoData data = new InitGordoData()
-                        {
-                            id = g._id,
-                            eaten = g.GordoModel.gordoEatCount
-                        };
-                        gordos.Add(data);
-                    }
-                    catch
-                    {
-                    }
+                        id = g.key,
+                        eaten = g.value.GordoEatenCount,
+                        ident = GetIdentID(g.value.identifiableType),
+                        targetCount = g.value.targetCount,
+                    });
                 }
 
                 // Current Players

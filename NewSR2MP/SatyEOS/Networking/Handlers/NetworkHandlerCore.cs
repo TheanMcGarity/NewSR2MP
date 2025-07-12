@@ -25,10 +25,10 @@ namespace NewSR2MP
                 Attribute = attribute;
             }
 
-            public bool Execute(Globals.PlayerState player, IncomingMessage im, byte channel)
+            public bool Execute(NetPlayerState netPlayer, IncomingMessage im, byte channel)
             {
                 Packet.Deserialize(im);
-                var value = Method.Invoke(null, new object[] { player, Packet, channel });
+                var value = Method.Invoke(null, new object[] { netPlayer, Packet, channel });
                 if (value == null) return true;
 
                 return value is bool returnBool ? returnBool : true;
@@ -43,7 +43,7 @@ namespace NewSR2MP
             foreach (var method in typeof(NetworkHandler).GetMethods(BindingFlags.Static | BindingFlags.NonPublic))
             {
                 var parameters = method.GetParameters();
-                if (parameters.Length == 3 && parameters[0].ParameterType == typeof(Globals.PlayerState) && typeof(IPacket).IsAssignableFrom(parameters[1].ParameterType) && parameters[2].ParameterType == typeof(byte))
+                if (parameters.Length == 3 && parameters[0].ParameterType == typeof(NetPlayerState) && typeof(IPacket).IsAssignableFrom(parameters[1].ParameterType) && parameters[2].ParameterType == typeof(byte))
                 {
                     var packet = (IPacket)System.Activator.CreateInstance(parameters[1].ParameterType);
                     var attribute = method.GetCustomAttribute<PacketResponseAttribute>();
@@ -64,11 +64,11 @@ namespace NewSR2MP
             }
         }
 
-        internal static void HandleServerPacket(Globals.PlayerState player, byte channel, PacketType type, IncomingMessage im)
+        internal static void HandleServerPacket(NetPlayerState netPlayer, byte channel, PacketType type, IncomingMessage im)
         {
             if (packetHandlers.TryGetValue(type, out var handler))
             {
-                if (!handler.Execute(player, im, channel))
+                if (!handler.Execute(netPlayer, im, channel))
                 {
                     SRMP.Error($"Failed to handle packet {type}");
                     return;
@@ -79,7 +79,7 @@ namespace NewSR2MP
                     channel = handler.Attribute.Channel.HasValue ? handler.Attribute.Channel.Value : channel;
                     if (handler.Attribute.ExcludeSender)
                     {
-                        handler.Packet.SendPacket(handler.Packet.Reliability, channel, player);
+                        handler.Packet.SendPacket(handler.Packet.Reliability, channel, netPlayer);
                     }
                     else
                     {

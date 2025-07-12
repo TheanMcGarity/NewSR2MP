@@ -10,10 +10,10 @@ using Il2CppMonomiPark.SlimeRancher.UI.Map;
 
 namespace NewSR2MP.Patches
 {
-    [HarmonyPatch(typeof(Il2Cpp.PlayerState), nameof(Il2Cpp.PlayerState.AddCurrency))]
+    [HarmonyPatch(typeof(PlayerState), nameof(PlayerState.AddCurrency))]
     internal class PlayerStateAddCurrency
     {
-        public static void Postfix(Il2Cpp.PlayerState __instance, int adjust, Il2Cpp.PlayerState.CoinsType coinsType)
+        public static void Postfix(PlayerState __instance, int adjust, PlayerState.CoinsType coinsType)
         {
 
             if (ClientActive() || ServerActive())
@@ -26,10 +26,10 @@ namespace NewSR2MP.Patches
             }
         }
     }
-    [HarmonyPatch(typeof(Il2Cpp.PlayerState), nameof(Il2Cpp.PlayerState.SpendCurrency))]
+    [HarmonyPatch(typeof(PlayerState), nameof(PlayerState.SpendCurrency))]
     internal class PlayerStateSpendCurrency
     {
-        public static void Postfix(Il2Cpp.PlayerState __instance, int adjust)
+        public static void Postfix(PlayerState __instance, int adjust)
         {
 
             if (ClientActive() || ServerActive())

@@ -25,7 +25,7 @@ namespace NewSR2MP;
 public partial class NetworkHandler
 {
     [PacketResponse]
-    private static void HandleResourceState(Globals.PlayerState player, ResourceStateMessage packet, byte channel)
+    private static void HandleResourceState(NetPlayerState netPlayer, ResourceStateMessage packet, byte channel)
     {
         try
         {
@@ -95,20 +95,20 @@ public partial class NetworkHandler
 
 
     [PacketResponse]
-    private static void HandleDoor(Globals.PlayerState player, DoorOpenMessage packet, byte channel)
+    private static void HandleDoor(NetPlayerState netPlayer, DoorOpenMessage packet, byte channel)
     {
         sceneContext.GameModel.doors[packet.id].gameObj.GetComponent<AccessDoor>().CurrState =
             AccessDoor.State.OPEN;
     }
     [PacketResponse]
-    private static void HandleMoneyChange(Globals.PlayerState player, SetMoneyMessage packet, byte channel)
+    private static void HandleMoneyChange(NetPlayerState netPlayer, SetMoneyMessage packet, byte channel)
     {
         sceneContext.PlayerState._model.currency = packet.newMoney;
 
 
     }
     
-    private static void HandleActorSpawn(Globals.PlayerState player, ActorSpawnMessage packet, byte channel)
+    private static void HandleActorSpawn(NetPlayerState netPlayer, ActorSpawnMessage packet, byte channel)
     {
         try
         {
@@ -141,7 +141,7 @@ public partial class NetworkHandler
             
             if (obj && !ident.TryCast<GadgetDefinition>())
             {
-                obj.AddComponent<NetworkResource>(); // Try add resource network component. Will remove if its not a resource so please do not change
+                obj.AddComponent<NetworkResource>(); // Try add resource network component. Will remove if it's not a resource so please do not change
 
                 if (!actors.ContainsKey(obj.GetComponent<Identifiable>().GetActorId().Value))
                 {
@@ -153,7 +153,7 @@ public partial class NetworkHandler
                 }
                 else
                 {
-                    if (!obj.TryGetComponent<Gadget>(out var gadget))
+                    if (!obj.TryGetComponent<Gadget>(out _))
                         obj.GetComponent<TransformSmoother>().enabled = false;
                     obj.GetComponent<TransformSmoother>().interpolPeriod = ActorTimer;
                     if (obj.TryGetComponent<Vacuumable>(out var vac))
@@ -177,7 +177,7 @@ public partial class NetworkHandler
 
     
     [PacketResponse]
-    private static void HandlePlayerJoin(Globals.PlayerState player, PlayerJoinMessage packet, byte channel)
+    private static void HandlePlayerJoin(NetPlayerState netPlayer, PlayerJoinMessage packet, byte channel)
     {
 
         try
@@ -193,23 +193,23 @@ public partial class NetworkHandler
                 var playerObj = Object.Instantiate(MultiplayerManager.Instance.onlinePlayerPrefab);
                 playerObj.name = $"Player{packet.id}";
                 
-                var netPlayer = playerObj.GetComponent<NetworkPlayer>();     
+                var netPlayerNew = playerObj.GetComponent<NetworkPlayer>();     
                 
-                netPlayer.usernamePanel = netPlayer.transform.GetChild(1).GetComponent<TextMesh>();
-                netPlayer.usernamePanel.text = packet.username;
-                netPlayer.usernamePanel.characterSize = 0.2f;
-                netPlayer.usernamePanel.anchor = TextAnchor.MiddleCenter;
-                netPlayer.usernamePanel.fontSize = 24;
+                netPlayerNew.usernamePanel = netPlayerNew.transform.GetChild(1).GetComponent<TextMesh>();
+                netPlayerNew.usernamePanel.text = packet.username;
+                netPlayerNew.usernamePanel.characterSize = 0.2f;
+                netPlayerNew.usernamePanel.anchor = TextAnchor.MiddleCenter;
+                netPlayerNew.usernamePanel.fontSize = 24;
                 
-                netPlayer.id = packet.id;
+                netPlayerNew.id = packet.id;
 
                 playerUsernames.Add(packet.username, packet.id);
                 playerUsernamesReverse.Add(packet.id, packet.username);
-                players.Add(new Globals.PlayerState
+                players.Add(new NetPlayerState
                 {
                     connectionState = NetworkPlayerConnectionState.Connected,
                     epicID = null,
-                    gameObject = netPlayer,
+                    gameObject = netPlayerNew,
                     playerID = (ushort)packet.id
                 });
                 
@@ -223,16 +223,16 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandlePlayerLeave(Globals.PlayerState player, PlayerLeaveMessage packet, byte channel)
+    private static void HandlePlayerLeave(NetPlayerState netPlayer, PlayerLeaveMessage packet, byte channel)
     {
 
-        var playerObj = player.gameObject;
-        players.Remove(player);
+        var playerObj = netPlayer.gameObject;
+        players.Remove(netPlayer);
         Object.Destroy(playerObj.gameObject);
     }
 
     [PacketResponse]
-    private static void HandleTime(Globals.PlayerState player, TimeSyncMessage packet, byte channel)
+    private static void HandleTime(NetPlayerState netPlayer, TimeSyncMessage packet, byte channel)
     {
         try
         {
@@ -246,7 +246,7 @@ public partial class NetworkHandler
     
     
 
-    private static void HandleClientActorSpawn(Globals.PlayerState player, ActorSpawnClientMessage packet, byte channel)
+    private static void HandleClientActorSpawn(NetPlayerState netPlayer, ActorSpawnClientMessage packet, byte channel)
     {
         try
         {
@@ -301,7 +301,7 @@ public partial class NetworkHandler
                 id = actorID,
                 velocity = packet.velocity
             };
-            MultiplayerManager.NetworkSend(ownPacket, MultiplayerManager.ServerSendOptions.SendToPlayer(player.playerID));
+            MultiplayerManager.NetworkSend(ownPacket, MultiplayerManager.ServerSendOptions.SendToPlayer(netPlayer.playerID));
             MultiplayerManager.NetworkSend(forwardPacket);
         }
         catch (Exception e)
@@ -314,7 +314,7 @@ public partial class NetworkHandler
 
     
     [PacketResponse]
-    private static void HandleActorOwner(Globals.PlayerState player, ActorUpdateOwnerMessage packet, byte channel)
+    private static void HandleActorOwner(NetPlayerState netPlayer, ActorUpdateOwnerMessage packet, byte channel)
     {
         try
         {
@@ -339,7 +339,7 @@ public partial class NetworkHandler
 
     
     [PacketResponse]
-    private static void HandleDestroyActor(Globals.PlayerState player, ActorDestroyGlobalMessage packet, byte channel)
+    private static void HandleDestroyActor(NetPlayerState netPlayer, ActorDestroyGlobalMessage packet, byte channel)
     {
         try
         {
@@ -366,7 +366,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandleActorVelocity(Globals.PlayerState player, ActorVelocityMessage packet, byte channel)
+    private static void HandleActorVelocity(NetPlayerState netPlayer, ActorVelocityMessage packet, byte channel)
     {
         try
         {
@@ -391,7 +391,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandleActorSetOwner(Globals.PlayerState player, ActorSetOwnerMessage packet, byte channel)
+    private static void HandleActorSetOwner(NetPlayerState netPlayer, ActorSetOwnerMessage packet, byte channel)
     {
         try
         {
@@ -408,7 +408,7 @@ public partial class NetworkHandler
 
     
     [PacketResponse]
-    private static void HandlePlayer(Globals.PlayerState player, PlayerUpdateMessage packet, byte channel)
+    private static void HandlePlayer(NetPlayerState netPlayer, PlayerUpdateMessage packet, byte channel)
     {
 
         try
@@ -437,7 +437,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandleLandPlot(Globals.PlayerState player, LandPlotMessage packet, byte channel)
+    private static void HandleLandPlot(NetPlayerState netPlayer, LandPlotMessage packet, byte channel)
     {
 
 
@@ -481,7 +481,7 @@ public partial class NetworkHandler
 
     
     [PacketResponse]
-    private static void HandleGarden(Globals.PlayerState player, GardenPlantMessage packet, byte channel)
+    private static void HandleGarden(NetPlayerState netPlayer, GardenPlantMessage packet, byte channel)
     {     
         
         try
@@ -535,7 +535,7 @@ public partial class NetworkHandler
 
     
     [PacketResponse]
-    private static void HandleGordoEat(Globals.PlayerState player, GordoEatMessage packet, byte channel)
+    private static void HandleGordoEat(NetPlayerState netPlayer, GordoEatMessage packet, byte channel)
     {
 
         try
@@ -561,7 +561,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandlePedia(Globals.PlayerState player, PediaMessage packet, byte channel)
+    private static void HandlePedia(NetPlayerState netPlayer, PediaMessage packet, byte channel)
     {
 
         handlingPacket = true;
@@ -570,7 +570,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandleGordoBurst(Globals.PlayerState player, GordoBurstMessage packet, byte channel)
+    private static void HandleGordoBurst(NetPlayerState netPlayer, GordoBurstMessage packet, byte channel)
     {
 
         try
@@ -606,7 +606,7 @@ public partial class NetworkHandler
 
     }
 
-    private static void HandleSleep(Globals.PlayerState player, SleepMessage packet, byte channel)
+    private static void HandleSleep(NetPlayerState netPlayer, SleepMessage packet, byte channel)
     {
 
         try
@@ -622,7 +622,7 @@ public partial class NetworkHandler
     
 
     [PacketResponse]
-    private static void HandleAmmoSlot(Globals.PlayerState player, AmmoEditSlotMessage packet, byte channel)
+    private static void HandleAmmoSlot(NetPlayerState netPlayer, AmmoEditSlotMessage packet, byte channel)
     {
 
         try
@@ -641,7 +641,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandleAmmo(Globals.PlayerState player, AmmoAddMessage packet, byte channel)
+    private static void HandleAmmo(NetPlayerState netPlayer, AmmoAddMessage packet, byte channel)
     {
 
         try
@@ -660,7 +660,7 @@ public partial class NetworkHandler
 
     
     [PacketResponse]
-    private static void HandleAmmoSelect(Globals.PlayerState player, AmmoSelectMessage packet, byte channel)
+    private static void HandleAmmoSelect(NetPlayerState netPlayer, AmmoSelectMessage packet, byte channel)
     {
 
         try
@@ -679,7 +679,7 @@ public partial class NetworkHandler
 
     
     [PacketResponse]
-    private static void HandleAmmoReverse(Globals.PlayerState player, AmmoRemoveMessage packet, byte channel)
+    private static void HandleAmmoReverse(NetPlayerState netPlayer, AmmoRemoveMessage packet, byte channel)
     {
 
         try
@@ -697,7 +697,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandleActor(Globals.PlayerState player, ActorUpdateMessage packet, byte channel)
+    private static void HandleActor(NetPlayerState netPlayer, ActorUpdateMessage packet, byte channel)
     {
 
         try
@@ -722,14 +722,14 @@ public partial class NetworkHandler
 
     }
 
-    private static void HandleSavedPlayers(Globals.PlayerState player, LoadMessage packet, byte channel)
+    private static void HandleSavedPlayers(NetPlayerState netPlayer, LoadMessage packet, byte channel)
     {
         latestSaveJoined = packet;
     }
 
 
     [PacketResponse]
-    private static void HandleNavPlace(Globals.PlayerState player, PlaceNavMarkerNessage packet, byte channel)
+    private static void HandleNavPlace(NetPlayerState netPlayer, PlaceNavMarkerNessage packet, byte channel)
     {
 
 
@@ -750,7 +750,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandleNavRemove(Globals.PlayerState player, RemoveNavMarkerNessage packet, byte channel)
+    private static void HandleNavRemove(NetPlayerState netPlayer, RemoveNavMarkerNessage packet, byte channel)
     {
         handlingNavPacket = true;
         sceneContext.MapDirector.ClearPlayerNavigationMarker();
@@ -760,13 +760,13 @@ public partial class NetworkHandler
 
 
     [PacketResponse]
-    private static void HandleWeather(Globals.PlayerState player, WeatherSyncMessage packet, byte channel)
+    private static void HandleWeather(NetPlayerState netPlayer, WeatherSyncMessage packet, byte channel)
     {
         MelonCoroutines.Start(WeatherHandlingCoroutine(packet));
     }
 
     [PacketResponse]
-    private static void HandleMarketRefresh(Globals.PlayerState player, MarketRefreshMessage packet, byte channel)
+    private static void HandleMarketRefresh(NetPlayerState netPlayer, MarketRefreshMessage packet, byte channel)
     {
 
         int i = 0;
@@ -792,7 +792,7 @@ public partial class NetworkHandler
 
     
     [PacketResponse]
-    private static void HandleKillAllCommand(Globals.PlayerState player, KillAllCommandMessage packet, byte channel)
+    private static void HandleKillAllCommand(NetPlayerState netPlayer, KillAllCommandMessage packet, byte channel)
     {
 
         SRMP.Debug("Ran KillAll command!");
@@ -837,7 +837,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandleSwitchModify(Globals.PlayerState player, SwitchModifyMessage packet, byte channel)
+    private static void HandleSwitchModify(NetPlayerState netPlayer, SwitchModifyMessage packet, byte channel)
     {
 
         if (sceneContext.GameModel.switches.TryGetValue(packet.id, out var model))
@@ -871,7 +871,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandleMapUnlock(Globals.PlayerState player, MapUnlockMessage packet, byte channel)
+    private static void HandleMapUnlock(NetPlayerState netPlayer, MapUnlockMessage packet, byte channel)
     {
 
         sceneContext.MapDirector.NotifyZoneUnlocked(GetGameEvent(packet.id), false, 0);
@@ -904,7 +904,7 @@ public partial class NetworkHandler
 
     
     [PacketResponse]
-    private static void HandleRefineryItem(Globals.PlayerState player, RefineryItemMessage packet, byte channel)
+    private static void HandleRefineryItem(NetPlayerState netPlayer, RefineryItemMessage packet, byte channel)
     {
 
         handlingPacket = true;
@@ -913,7 +913,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandlePlayerUpgrade(Globals.PlayerState player, PlayerUpgradeMessage packet, byte channel)
+    private static void HandlePlayerUpgrade(NetPlayerState netPlayer, PlayerUpgradeMessage packet, byte channel)
     {
 
         handlingPacket = true;
@@ -924,7 +924,7 @@ public partial class NetworkHandler
     }
 
     [PacketResponse]
-    private static void HandleTreasurePod(Globals.PlayerState player, TreasurePodMessage packet, byte channel)
+    private static void HandleTreasurePod(NetPlayerState netPlayer, TreasurePodMessage packet, byte channel)
     {
         
         var identifier = $"pod{ExtendInteger(packet.id)}";

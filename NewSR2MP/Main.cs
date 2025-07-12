@@ -431,7 +431,7 @@ namespace NewSR2MP
                             var playerobj = UnityEngine.Object.Instantiate(MultiplayerManager.Instance.onlinePlayerPrefab);
                             playerobj.name = $"Player{player.id}";
                             var netPlayer = playerobj.GetComponent<NetworkPlayer>();
-                            players.Add(new Globals.PlayerState()
+                            players.Add(new NetPlayerState()
                             {
                                 playerID = (ushort)player.id,
                                 epicID = null,
@@ -465,7 +465,7 @@ namespace NewSR2MP
                         try
                         {
                             if (!sceneContext.GameModel.gordos.TryGetValue(gordo.id, out var gm))
-                                sceneContext.GameModel.gordos.Add(gordo.id, new GordoModel()
+                                sceneContext.GameModel.gordos.Add(gordo.id, new GordoModel
                                 {
                                     fashions = new Il2CppSystem.Collections.Generic.List<IdentifiableType>(),
                                     gordoEatCount = gordo.eaten,
@@ -473,12 +473,14 @@ namespace NewSR2MP
                                     identifiableType = identifiableTypes[gordo.ident],
                                     gameObj = null,
                                     GordoEatenCount = gordo.eaten,
-                                    targetCount = gameContext.LookupDirector._gordoDict[identifiableTypes[gordo.ident]].GetComponent<GordoEat>().TargetCount,
+                                    targetCount = gordo.targetCount
                                 });
 
                             if (gordo.eaten <= -1 || gordo.eaten >= gm.targetCount)
                             {
-                                gm.gameObj.SetActive(false);
+                                var eat = gm.gameObj.GetComponent<GordoEat>();
+                                eat._rewards._activeRewards.Clear();
+                                eat.ImmediateReachedTarget();
                             }
 
                             gm.gordoEatCount = gordo.eaten;

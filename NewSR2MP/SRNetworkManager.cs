@@ -77,7 +77,7 @@ namespace NewSR2MP
             var hostNetworkPlayer = sceneContext.player.AddComponent<NetworkPlayer>();
             hostNetworkPlayer.id = ushort.MaxValue;
             currentPlayerID = hostNetworkPlayer.id;
-            players.Add(new Globals.PlayerState
+            players.Add(new NetPlayerState
             {
                 epicID = EpicApplication.Instance.Authentication.ProductUserId,
                 playerID = ushort.MaxValue,
@@ -276,6 +276,8 @@ namespace NewSR2MP
 
         public static void DoNetworkSave()
         {
+            return;
+            
             foreach (var player in players)
             {
                 if (player.playerID == ushort.MaxValue)

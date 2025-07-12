@@ -79,6 +79,7 @@ namespace NewSR2MP.Packet
                 msg.Write(gordo.id);
                 msg.Write(gordo.eaten);
                 msg.Write(gordo.ident);
+                msg.Write(gordo.targetCount);
             }
             msg.Write(initPedias.Count);
             foreach (var pedia in initPedias)
@@ -231,11 +232,13 @@ namespace NewSR2MP.Packet
                 string id = msg.ReadString();
                 int eaten = msg.ReadInt32();
                 int ident = msg.ReadInt32();
+                int target = msg.ReadInt32();
                 initGordos.Add(new InitGordoData()
                 {
                     id = id,
                     eaten = eaten,
                     ident = ident,
+                    targetCount = target,
                 });
             }
 
@@ -342,6 +345,7 @@ namespace NewSR2MP.Packet
         public string id;
         public int eaten;
         public int ident;
+        public int targetCount;
     }
     /*public class InitGadgetData
     {

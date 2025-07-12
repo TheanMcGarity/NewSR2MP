@@ -154,17 +154,17 @@ namespace NewSR2MP.EpicSDK
             else SRMP.Error($"Unknown player {senderUserId} tried to send a packet!");
         }
 
-        private void HandleAuthentication(Globals.PlayerState player, IncomingMessage im)
+        private void HandleAuthentication(NetPlayerState netPlayer, IncomingMessage im)
         {
             var username = im.ReadString();
             var guid = im.ReadString();
 
 
-            MultiplayerManager.PlayerJoin(player.playerID, Guid.Parse(guid), username);
-            player.gameObject = MultiplayerManager.Instance.OnPlayerJoined(username, player.playerID, player.epicID);
-            player.gameObject.Intialize(player.epicID);
-            player.gameObject.SetUsername(username);
-            player.connectionState = NetworkPlayerConnectionState.Connected;
+            MultiplayerManager.PlayerJoin(netPlayer.playerID, Guid.Parse(guid), username);
+            netPlayer.gameObject = MultiplayerManager.Instance.OnPlayerJoined(username, netPlayer.playerID, netPlayer.epicID);
+            netPlayer.gameObject.Intialize(netPlayer.epicID);
+            netPlayer.gameObject.SetUsername(username);
+            netPlayer.connectionState = NetworkPlayerConnectionState.Connected;
         }
 
         public override void OnConnected(ProductUserId remoteUserId, NetworkConnectionType networkType, ConnectionEstablishedType connectionType)
@@ -179,7 +179,7 @@ namespace NewSR2MP.EpicSDK
                 nextId = nextPlayerId++;
             }
 
-            players.Add(new Globals.PlayerState
+            players.Add(new NetPlayerState
             {
                 epicID = remoteUserId,
                 playerID = nextId,

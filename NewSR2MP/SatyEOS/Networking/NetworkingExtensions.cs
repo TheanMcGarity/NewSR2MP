@@ -10,7 +10,7 @@ namespace NewSR2MP
 {
     public static class NetworkingExtensions
     {
-        public static void SendPacket(this IPacket packet, PacketReliability packetReliability = PacketReliability.ReliableOrdered, byte channel = 0, Globals.PlayerState except = null)
+        public static void SendPacket(this IPacket packet, PacketReliability packetReliability = PacketReliability.ReliableOrdered, byte channel = 0, NetPlayerState except = null)
         {
             if(ClientActive())
             {

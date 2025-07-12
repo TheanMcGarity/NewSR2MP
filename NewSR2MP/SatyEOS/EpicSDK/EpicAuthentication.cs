@@ -3,9 +3,12 @@ using Epic.OnlineServices.Connect;
 using Epic.OnlineServices.Platform;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LogoutCallbackInfo = Epic.OnlineServices.Connect.LogoutCallbackInfo;
+using LogoutOptions = Epic.OnlineServices.Connect.LogoutOptions;
 
 namespace NewSR2MP.EpicSDK
 {
@@ -45,7 +48,7 @@ namespace NewSR2MP.EpicSDK
             }
 
             Username = username;
-
+            
             var connectLoginOptions = new Epic.OnlineServices.Connect.LoginOptions()
             {
                 UserLoginInfo = new Epic.OnlineServices.Connect.UserLoginInfo()
@@ -55,10 +58,11 @@ namespace NewSR2MP.EpicSDK
                 Credentials = new Epic.OnlineServices.Connect.Credentials()
                 {
                     Type = ExternalCredentialType.DeviceidAccessToken,
-                    Token = null
                 }
             };
 
+            
+            
             connectInterface.Login(ref connectLoginOptions, null, OnConnectLogin);
         }
 

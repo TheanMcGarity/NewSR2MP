@@ -9,7 +9,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine.SceneManagement;
-using static NewSR2MP.Globals.PlayerState;
 
 namespace NewSR2MP.EpicSDK
 {

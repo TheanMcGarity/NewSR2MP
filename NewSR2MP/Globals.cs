@@ -104,19 +104,19 @@ namespace NewSR2MP
             return Guid.Parse(net.ReadString());
         }
         
-        public static bool TryGetPlayer(ProductUserId id, out PlayerState player)
+        public static bool TryGetPlayer(ProductUserId id, out NetPlayerState netPlayer)
         {
-            player = players.FirstOrDefault(x => x.epicID == id);
-            return player != null;
+            netPlayer = players.FirstOrDefault(x => x.epicID == id);
+            return netPlayer != null;
         }
-        public static bool TryGetPlayer(ushort id, out PlayerState player)
+        public static bool TryGetPlayer(ushort id, out NetPlayerState netPlayer)
         {
-            player = players.FirstOrDefault(x => x.playerID == id);
-            return player != null;
+            netPlayer = players.FirstOrDefault(x => x.playerID == id);
+            return netPlayer != null;
         }
         
         /// <summary>
-        /// Auto host port in options. can be 0/off, 7777, 16500
+        /// Auto host port in options. can be 0 (off), 7777, 16500
         /// </summary>
         public static int autoHostPort => scriptedAutoHostPort ? scriptedAutoHostPort.Value : 0;
 
@@ -343,7 +343,7 @@ namespace NewSR2MP
         /// </summary>
         public static Dictionary<string, int> weatherStatesReverseLookup;
 
-        public static List<PlayerState> players = new List<PlayerState>();
+        public static List<NetPlayerState> players = new List<NetPlayerState>();
 
         public static Dictionary<int, Guid> clientToGuid = new Dictionary<int, Guid>();
 
@@ -979,7 +979,12 @@ namespace NewSR2MP
         
         public static StaticGameEvent GetGameEvent(string dataKey) => Resources.FindObjectsOfTypeAll<StaticGameEvent>().FirstOrDefault(x => x._dataKey == dataKey);
         
-        public const bool DEBUG_MODE = true;
+        public const bool DEBUG_MODE = 
+#if DEBUG
+            true;
+#else
+            false;
+#endif        
 
         public static long NextMultiplayerActorID => ++sceneContext.GameModel._actorIdProvider._nextActorId;
         
@@ -987,7 +992,7 @@ namespace NewSR2MP
 
         public static string ExtendInteger(int value) => new string('0', 10 - value.ToString().Length) + value;
 
-        public class PlayerState
+        public class NetPlayerState
         {
             public NetworkPlayerConnectionState connectionState = NetworkPlayerConnectionState.Authenticating;
             public ProductUserId epicID;
